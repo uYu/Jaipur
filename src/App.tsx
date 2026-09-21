@@ -14,7 +14,6 @@ import {
   RotateCcw,
   Settings2,
   ShoppingBag,
-  Trophy,
   Upload,
   X,
 } from "lucide-react";
@@ -39,6 +38,8 @@ import {
 } from "./game/storage.ts";
 import { GoodsArt, Palace } from "./components/Art.tsx";
 import { Card } from "./components/Card.tsx";
+import { MobileSupply } from "./components/MobileSupply.tsx";
+import { ResultDialog, resultTitle } from "./components/ResultDialog.tsx";
 import { SaleReceipt } from "./components/SaleReceipt.tsx";
 import { saleReceipts } from "./game/receipts.ts";
 import { ActionAnimation } from "./components/ActionAnimation.tsx";
@@ -85,6 +86,8 @@ export default function App() {
     initial.save ? replay(initial.save) : null,
   );
   const [screen, setScreen] = useState<"menu" | "game" | "replay">("menu");
+  const [dismissedResult, setDismissedResult] = useState("");
+  const [inspectResult, setInspectResult] = useState(false);
   const [menu, setMenu] = useState<"home" | "new" | "settings">("home");
   const [modal, setModal] = useState<"rules" | "log" | null>(null),
     [paused, setPaused] = useState(false);
@@ -262,6 +265,20 @@ export default function App() {
           : game,
     [screen, save, replayIndex, game, transition],
   );
+  const resultKey = viewed
+    ? `${viewed.seed}:${viewed.round}:${viewed.phase}`
+    : "";
+  const showResult =
+    !!viewed &&
+    viewed.phase !== "playing" &&
+    !transition &&
+    !modal &&
+    ((screen === "game" && dismissedResult !== resultKey) ||
+      (screen === "replay" && inspectResult));
+  const closeResult = () => {
+    setDismissedResult(resultKey);
+    setInspectResult(false);
+  };
   function animateDeal(state: State) {
     const duration = speed === 350 ? 1700 : speed === 2000 ? 3600 : 2700;
     transitionRemaining.current = duration;
@@ -283,6 +300,7 @@ export default function App() {
   function start() {
     const seed = crypto.getRandomValues(new Uint32Array(1))[0];
     const fresh: Save = { version: 1, seed, difficulty, events: [] };
+    setDismissedResult("");
     const freshGame = newGame(seed);
     animateDeal(freshGame);
     setSave(fresh);
@@ -299,6 +317,7 @@ export default function App() {
       if (file.size > 2000000) throw new Error("存档文件过大");
       const imported = parseSave(await file.text());
       setTransition(null);
+      setDismissedResult("");
       setSave(imported);
       setGame(replay(imported));
       setDifficulty(imported.difficulty);
@@ -621,8 +640,35 @@ export default function App() {
               </span>
             </div>
           )}
+          {viewed.phase !== "playing" && (
+            <div
+              className={`result-banner ${viewed.phase === "finished" ? "final-banner" : ""}`}
+              role="status"
+            >
+              <div>
+                <strong>{resultTitle(viewed)}</strong>
+                <span>
+                  印章 {viewed.seals[0]} : {viewed.seals[1]} ·{" "}
+                  {viewed.phase === "finished"
+                    ? "整场比赛已结束"
+                    : `第 ${viewed.round} 轮已结束`}
+                </span>
+              </div>
+              <button
+                className="primary"
+                onClick={() => {
+                  setDismissedResult("");
+                  setInspectResult(true);
+                  setReplayPlaying(false);
+                }}
+              >
+                查看结算
+              </button>
+            </div>
+          )}
           <div className="game-grid">
             <section className="table-column">
+              <MobileSupply state={viewed} />
               <div
                 className={`opponent-panel ${viewed.current === 1 && viewed.phase === "playing" ? "turn-active" : ""}`}
               >
@@ -1010,93 +1056,6 @@ export default function App() {
               </div>
             </aside>
           </div>
-          {viewed.phase !== "playing" && (
-            <section className="result-panel">
-              <div className="result-icon">
-                <Trophy size={29} />
-              </div>
-              <p className="eyebrow">
-                {viewed.phase === "finished"
-                  ? "THE MAHARAJA’S CHOICE"
-                  : "AT THE END OF THE DAY"}
-              </p>
-              <h2>
-                {viewed.phase === "finished"
-                  ? viewed.seals[0] >= 2
-                    ? "你成为了大君的御用商人！"
-                    : "米拉赢得了大君的青睐"
-                  : viewed.results.at(-1)?.winner === null
-                    ? "势均力敌，再开一场。"
-                    : viewed.results.at(-1)?.winner === 0
-                      ? "这一轮，好生意属于你。"
-                      : "这一轮，米拉略胜一筹。"}
-              </h2>
-              <p>
-                {viewed.results.at(-1)?.reason} · 卓越印章 {viewed.seals[0]} :{" "}
-                {viewed.seals[1]}
-              </p>
-              <div className="results-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>轮次</th>
-                      <th>你 · 货物 / 奖励 / 驼队</th>
-                      <th>米拉 · 货物 / 奖励 / 驼队</th>
-                      <th>胜者</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {viewed.results.map((r) => (
-                      <tr key={r.round}>
-                        <td>第 {r.round} 轮</td>
-                        {[0, 1].map((i) => (
-                          <td key={i}>
-                            <b>{r.scores[i]}</b>
-                            <small>
-                              {r.goods[i]} + {r.bonuses[i]} +{" "}
-                              {r.camel === i ? 5 : 0}
-                            </small>
-                          </td>
-                        ))}
-                        <td>
-                          {r.winner === null
-                            ? "平局"
-                            : r.winner === 0
-                              ? "你"
-                              : "米拉"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="muted">
-                本轮驼队：你 {p.camels} 头 · 米拉 {opponent.camels}{" "}
-                头。同分时依次比较奖励筹码枚数、货物筹码枚数。
-              </p>
-              {screen === "game" &&
-                (viewed.phase === "roundEnd" ? (
-                  <button
-                    className="primary"
-                    onClick={() => commit({ type: "next" })}
-                  >
-                    下一轮，重新开市
-                    <ArrowRight size={18} />
-                  </button>
-                ) : (
-                  <button
-                    className="primary"
-                    onClick={() => {
-                      setScreen("menu");
-                      setMenu("new");
-                    }}
-                  >
-                    再赴集市
-                    <ArrowRight size={18} />
-                  </button>
-                ))}
-            </section>
-          )}
           <footer className="game-footer">
             <span>JAIPUR · 每一笔交易，都是一次取舍。</span>
             <span>
@@ -1107,6 +1066,36 @@ export default function App() {
           </footer>
         </main>
       ) : null}
+      {showResult && viewed && (
+        <ResultDialog
+          state={viewed}
+          onClose={closeResult}
+          onNext={
+            screen === "game"
+              ? () => {
+                  setPaused(false);
+                  commit({ type: "next" });
+                }
+              : undefined
+          }
+          onNew={
+            screen === "game"
+              ? () => {
+                  setScreen("menu");
+                  setMenu("new");
+                }
+              : undefined
+          }
+          onMenu={
+            screen === "game"
+              ? () => {
+                  setScreen("menu");
+                  setMenu("home");
+                }
+              : undefined
+          }
+        />
+      )}
       {transition && screen === "game" && (
         <ActionAnimation
           flights={transition.flights}

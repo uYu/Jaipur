@@ -21,7 +21,14 @@ export function ActionAnimation({
   useLayoutEffect(() => {
     const hidden = new Map<HTMLElement, string>();
     const find = (name: string) =>
-      document.querySelector<HTMLElement>(`[data-motion-anchor="${name}"]`);
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          `[data-motion-anchor="${name}"]`,
+        ),
+      ).find((element) => {
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
