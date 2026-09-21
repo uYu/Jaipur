@@ -1,8 +1,14 @@
 import { chooseAction } from "./ai.ts";
-self.onmessage = (event) => {
+import { chooseWasmAction } from "./ai-wasm.ts";
+
+self.onmessage = async (event) => {
   try {
+    const action =
+      event.data.difficulty === "hard"
+        ? await chooseWasmAction(event.data.observation)
+        : chooseAction(event.data.observation, event.data.difficulty);
     self.postMessage({
-      action: chooseAction(event.data.observation, event.data.difficulty),
+      action,
     });
   } catch (error) {
     self.postMessage({

@@ -16,6 +16,8 @@ npm run dev
 ```bash
 npm test                    # 规则、信息隔离、存档和完整比赛
 npm run simulate -- 100 hard # 100 场完整困难档 AI 对局
+npm run tournament -- 5 30000 # MCTS 对原最高难度，5 个种子并交换先后手
+npm run build:wasm          # 修改 C++ 后用 Emscripten 重建内嵌 Wasm
 npm run build               # TypeScript 检查与生产构建
 npm run preview             # 本地预览生产构建
 ```
@@ -23,12 +25,21 @@ npm run preview             # 本地预览生产构建
 Docker 部署：
 
 ```bash
-docker-compose up
+docker compose up -d --build
 # http://localhost:8204
-# 修改端口：JAIPUR_PORT=8080 docker-compose up
+# 修改端口：JAIPUR_PORT=8080 docker compose up -d --build
 ```
 
-`docker-compose up` 会自动构建当前源码（复用构建缓存）并启动服务，无需 `--build`。也支持 `docker compose up`。
+镜像使用 Node.js 22 构建静态资源，再由 Nginx 提供服务；生成的 Wasm 已作为跨平台 JavaScript 模块纳入源码，Linux 服务器构建镜像时不需要安装 Emscripten。镜像支持 Docker 提供的 amd64／arm64 平台，容器使用只读文件系统、`no-new-privileges`、临时 Nginx 缓存目录与 `/healthz` 健康检查。
+
+```bash
+docker compose ps                    # 查看健康状态
+curl -fsS http://127.0.0.1:8204/healthz
+docker compose logs -f jaipur
+docker compose down
+```
+
+旧版 Docker Compose 也可使用 `docker-compose up -d --build`。
 
 `dist/` 可交给任意静态服务器，支持子目录部署。图片为本地原创 SVG，无外部字体、图片或 API 请求。首次打开需要 HTTP 服务；未提供离线缓存 Service Worker，不支持双击 HTML 文件直接运行。
 
@@ -56,13 +67,13 @@ docker-compose up
 
 ## AI
 
-AI 在 Web Worker 中执行，仅接收自己的手牌、驼队、市场、公开弃牌与筹码、对手手牌数量和牌堆剩余数量。不会接收对手真实手牌、对手秘密奖励、牌堆顺序或洗牌种子。
+AI 在 Web Worker 中执行，仅接收自己的手牌与驼队、双方公开收入、市场、公开弃牌与筹码、对手手牌数量、牌堆剩余数量和已提交的公开行动历史。不会接收对手真实手牌、对手秘密奖励、牌堆顺序或洗牌种子。
 
 - 轻松：对合法行动加入较大随机扰动。
 - 普通：穷举合法行动，评估手牌成组潜力、可售价值、批量奖励、驼队边际价值和交换给对手的收益。
-- 困难：在普通估值基础上增加珍贵货物竞争、尾盘变现和结束本轮后的残余手牌成本，减少随机扰动。
+- 困难：在 Worker 中运行 C++/WebAssembly ED-MCTS，八棵独立确定化树共搜索 240,000 次。每棵树只根据可见信息与公开行动历史采样一种可能的对手手牌、驼队、牌堆与隐藏奖励；交换在搜索树中拆成“拿取—支付—确认”三个阶段，叶节点直接评估已兑现分数、手牌潜力、驼队与残局结束控制，再按访问次数汇总各树结论。
 
-三档都是本地启发式策略；困难档不是神经网络、MCTS 或深度搜索，也不声称达到专家水平。相同观察下选择可复现。
+三档均完全在本地运行；困难档不使用神经网络，也不读取真实隐藏状态。相同观察下的采样和选择可复现。
 
 ## 代码
 
@@ -70,7 +81,11 @@ AI 在 Web Worker 中执行，仅接收自己的手牌、驼队、市场、公�
 src/game/types.ts        牌、行动、状态与存档类型
 src/game/data.ts         牌堆、筹码、标签和确定性随机数
 src/game/engine.ts       不可变规则引擎、合法行动和结算
-src/game/ai.ts           隔离观察与 AI 评估
+src/game/ai.ts           隔离观察、公开记忆与轻松／普通 AI
+src/game/ai-search.ts    TypeScript 搜索参考实现
+src/game/ai-wasm.ts      C++/Wasm 编解码与调用边界
+cpp/jaipur_ai.cpp        紧凑规则仿真与确定化集成 MCTS
+scripts/build-wasm.sh    Emscripten 构建脚本
 src/game/ai.worker.ts    后台 AI 入口
 src/game/storage.ts      行动重放、导入验证、导出
 src/game/preferences.ts 本地设置
@@ -84,9 +99,11 @@ scripts/simulate.ts      批量完整比赛
 
 ## 验证记录
 
-- 27 项自动测试通过，其中完整比赛测试覆盖三档各 12 场，共 36 场。
+- 29 项自动测试通过，其中完整比赛测试覆盖三档各 12 场，共 36 场；困难档走实际 Wasm 内核。
 - 每步检查 55 张牌、38 枚货物筹码、18 枚奖励筹码守恒及手牌限制；终局状态与存档重放一致。
-- 额外 100 场困难档完整比赛通过，平均 109.8 次行动，最多 148 次。
+- C++/Wasm 困难档在 64,000 次搜索预算下，使用 20 个相同种子并交换先后手，对普通档的 40 场基准为 30:10；样本用于回归比较，不代表稳定胜率。
+- 将预算提升至 240,000 次后，定向复测上述 10 个失败局翻转了 6 局；单步基准约 0.8 秒。该结果不是重新跑完的 40 场总胜率。
+- 同一 C++/Wasm 内核中的正面对局：64,000 次搜索预算下，MCTS 对原最高难度为 17:3；游戏采用的 240,000 次预算下，10 场复核为 8:2。两组均使用相同种子并交换先后手。
 - 浏览器实测新比赛、收取骆驼、AI 接续、货物与骆驼混合交换、出售和刷新恢复；检查桌面与 390px 手机布局。
 - TypeScript 与 Vite 生产构建通过。Docker 配置已提供，未实际构建容器。
 

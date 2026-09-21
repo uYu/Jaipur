@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
+    "build:wasm": "sh scripts/build-wasm.sh",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "simulate": "node --experimental-strip-types scripts/simulate.ts"
+    "simulate": "node --experimental-strip-types scripts/simulate.ts",
+    "tournament": "node --experimental-strip-types scripts/tournament.ts"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

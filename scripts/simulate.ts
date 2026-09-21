@@ -1,5 +1,6 @@
 import { newGame } from "../src/game/engine.ts";
 import { chooseAction, observe } from "../src/game/ai.ts";
+import { chooseWasmAction } from "../src/game/ai-wasm.ts";
 import { advance } from "../src/game/storage.ts";
 import type { Difficulty } from "../src/game/types.ts";
 const count = Number(process.argv[2] ?? 100),
@@ -16,13 +17,16 @@ let max = 0,
 for (let seed = 1; seed <= count; seed++) {
   let s = newGame(seed),
     turns = 0;
+  const events = [];
   while (s.phase !== "finished" && turns++ < 1000) {
-    s = advance(
-      s,
+    const event =
       s.phase === "roundEnd"
-        ? { type: "next" }
-        : chooseAction(observe(s), difficulty),
-    );
+        ? { type: "next" as const }
+        : difficulty === "hard"
+          ? await chooseWasmAction(observe(s, events))
+          : chooseAction(observe(s, events), difficulty);
+    events.push(event);
+    s = advance(s, event);
   }
   if (s.phase !== "finished") throw new Error(`Seed ${seed} did not finish`);
   max = Math.max(max, turns);

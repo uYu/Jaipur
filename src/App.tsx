@@ -208,7 +208,7 @@ export default function App() {
       if (active) setAiError("米拉暂时无法完成思考，请重试。");
     };
     worker.postMessage({
-      observation: observe(game),
+      observation: observe(game, save?.events),
       difficulty: save?.difficulty ?? difficulty,
     });
     return () => {

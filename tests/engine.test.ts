@@ -9,8 +9,13 @@ import {
 } from "../src/game/engine.ts";
 import { COUNTS, makeDeck, sum } from "../src/game/data.ts";
 import { GOODS } from "../src/game/types.ts";
-import type { Card, State } from "../src/game/types.ts";
+import type { Card, Event, State } from "../src/game/types.ts";
 import { chooseAction, observe } from "../src/game/ai.ts";
+import {
+  chooseOriginalWasmAction,
+  chooseWasmAction,
+  encodeObservation,
+} from "../src/game/ai-wasm.ts";
 import { advance, parseSave, replay } from "../src/game/storage.ts";
 function fixture() {
   const s = newGame(123);
@@ -213,6 +218,22 @@ test("AI observation excludes hidden hands, deck order, opponent bonus values an
   for (const d of ["easy", "normal", "hard"] as const)
     assert.deepEqual(chooseAction(before, d), chooseAction(observe(s), d));
 });
+test("AI remembers only opponent cards revealed by public actions", () => {
+  let s = newGame(41);
+  const events: Event[] = [];
+  const ownAction = legalActions(s).find((action) => action.type === "take")!;
+  events.push(ownAction);
+  s = applyAction(s, ownAction);
+  const opponentAction = legalActions(s).find(
+    (action) => action.type === "take",
+  )!;
+  const revealed = s.market[opponentAction.index];
+  assert.notEqual(revealed, "camel");
+  events.push(opponentAction);
+  s = applyAction(s, opponentAction);
+  assert.deepEqual(observe(s, events).knownOpponentHand, [revealed]);
+  assert.deepEqual(observe(s).knownOpponentHand, []);
+});
 test("replay-validated saves reject tampering and malformed events", () => {
   const s = newGame(3);
   const events = [legalActions(s)[0]];
@@ -237,7 +258,21 @@ test("replay-validated saves reject tampering and malformed events", () => {
   assert.throws(() => parseSave("bad json"));
   assert.throws(() => parseSave(JSON.stringify({ ...save, version: 2 })));
 });
-test("complete AI matches across all difficulties conserve cards and tokens and replay identically", () => {
+test("C++/Wasm search and original-hard policies return legal deterministic actions", async () => {
+  const s = newGame(9);
+  const observation = observe(s);
+  const encoded = encodeObservation(observation);
+  assert.equal(encoded[0], 0x4a4149);
+  assert.equal(encoded[1], 1);
+  const first = await chooseWasmAction(observation);
+  const second = await chooseWasmAction(observation);
+  assert.equal(actionError(s, first), null);
+  assert.deepEqual(second, first);
+  const original = await chooseOriginalWasmAction(observation);
+  assert.equal(actionError(s, original), null);
+  assert.deepEqual(await chooseOriginalWasmAction(observation), original);
+});
+test("complete AI matches across all difficulties conserve cards and tokens and replay identically", async () => {
   for (const difficulty of ["easy", "normal", "hard"] as const)
     for (let seed = 1; seed <= 12; seed++) {
       let s = newGame(seed);
@@ -248,7 +283,15 @@ test("complete AI matches across all difficulties conserve cards and tokens and 
         const e =
           s.phase === "roundEnd"
             ? { type: "next" as const }
-            : chooseAction(observe(s), difficulty);
+            : difficulty === "hard"
+              ? await chooseWasmAction(observe(s, events), 2_000)
+              : chooseAction(observe(s, events), difficulty);
+        if (s.phase === "playing")
+          assert.equal(
+            actionError(s, e),
+            null,
+            `${difficulty} seed ${seed} turn ${turns}`,
+          );
         events.push(e);
         s = advance(s, e);
       }
