@@ -1,0 +1,7 @@
+services:
+  jaipur:
+    build: .
+    pull_policy: build
+    ports:
+      - "${JAIPUR_PORT:-8204}:80"
+    restart: unless-stopped
