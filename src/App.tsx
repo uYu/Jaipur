@@ -60,6 +60,26 @@ function initialSave(): { save: Save | null; error: string } {
     };
   }
 }
+const DIFFICULTY_NAME: Record<Difficulty, string> = {
+  easy: "入门",
+  normal: "重度",
+  hard: "高难",
+};
+type AiInsight = {
+  algorithm: string;
+  searching: boolean;
+  elapsedMs?: number;
+  stats?: {
+    trees: number;
+    iterationsPerTree: number;
+    simulations: number;
+    rootActionFamilies: number;
+    selectedVisitShare: number;
+    exchangeCandidates: number;
+    maxTreeDepth: number;
+    elapsedMs: number;
+  };
+};
 function DifficultySelect({
   value,
   onChange,
@@ -73,9 +93,9 @@ function DifficultySelect({
       value={value}
       onChange={(e) => onChange(e.target.value as Difficulty)}
     >
-      <option value="easy">轻松 · 随性商人</option>
-      <option value="normal">普通 · 精明商人</option>
-      <option value="hard">困难 · 老练商人</option>
+      <option value="easy">入门 · 学徒商人</option>
+      <option value="normal">重度 · 资深商人</option>
+      <option value="hard">高难 · 粉城大师</option>
     </select>
   );
 }
@@ -102,6 +122,7 @@ export default function App() {
   const [error, setError] = useState(initial.error),
     [aiError, setAiError] = useState(""),
     [retry, setRetry] = useState(0);
+  const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
   const [transition, setTransition] = useState<{
     before: State;
     action: Presentation;
@@ -188,6 +209,16 @@ export default function App() {
     const worker = new Worker(new URL("./game/ai.worker.ts", import.meta.url), {
       type: "module",
     });
+    const activeDifficulty = save?.difficulty ?? difficulty;
+    setAiInsight({
+      algorithm:
+        activeDifficulty === "hard"
+          ? "ED-MCTS · C++/Wasm"
+          : activeDifficulty === "normal"
+            ? "战术穷举 · C++/Wasm"
+            : "轻量启发式 · TypeScript",
+      searching: true,
+    });
     let active = true;
     const started = Date.now();
     let timer: ReturnType<typeof setTimeout>;
@@ -197,6 +228,19 @@ export default function App() {
         setAiError(e.data.error);
         return;
       }
+      const insight: AiInsight = {
+        algorithm: e.data.algorithm,
+        searching: false,
+        elapsedMs: e.data.elapsedMs,
+        stats: e.data.stats,
+      };
+      setAiInsight(insight);
+      if (e.data.stats)
+        console.info("[Jaipur MCTS] 本手搜索统计", {
+          algorithm: e.data.algorithm,
+          ...e.data.stats,
+          pipeline: "selection → expansion → rollout → backpropagation",
+        });
       timer = setTimeout(
         () => {
           if (active) commit(e.data.action);
@@ -209,7 +253,7 @@ export default function App() {
     };
     worker.postMessage({
       observation: observe(game, save?.events),
-      difficulty: save?.difficulty ?? difficulty,
+      difficulty: activeDifficulty,
     });
     return () => {
       active = false;
@@ -309,6 +353,7 @@ export default function App() {
     setMenu("home");
     setPaused(false);
     setAiError("");
+    setAiInsight(null);
     clear();
   }
   async function importFile(file?: File) {
@@ -464,10 +509,10 @@ export default function App() {
                   </label>
                   <p className="muted">
                     {difficulty === "easy"
-                      ? "更多随机选择，适合熟悉规则。"
+                      ? "轻量启发式并保留探索性，适合熟悉规则与操作。"
                       : difficulty === "normal"
-                        ? "平衡收集、交易收益与驼队资源。"
-                        : "额外考虑筹码竞争、收市时机和留给你的机会。"}
+                        ? "C++ 穷举当前合法行动，权衡收益、手牌潜力与收市风险。"
+                        : "C++/Wasm 确定化 MCTS：8 棵树模拟隐藏信息与后续对局。"}
                     {menu === "settings" ? " 难度设置应用于新比赛。" : ""}
                   </p>
                   <label>
@@ -678,11 +723,7 @@ export default function App() {
                     米拉{" "}
                     <span>
                       集市商人 ·{" "}
-                      {
-                        { easy: "轻松", normal: "普通", hard: "困难" }[
-                          save?.difficulty ?? difficulty
-                        ]
-                      }
+                      {DIFFICULTY_NAME[save?.difficulty ?? difficulty]}
                     </span>
                   </h2>
                   <div className="seals">
@@ -787,6 +828,60 @@ export default function App() {
                             : "轮到你了，今天想做哪笔生意？"}
                 <span>第 {viewed.turn + 1} 手</span>
               </div>
+              {screen === "game" &&
+                (save?.difficulty ?? difficulty) === "hard" && (
+                  <section className="mcts-proof" aria-live="polite">
+                    <div className="mcts-proof-title">
+                      <strong>MCTS 搜索证据</strong>
+                      <span>
+                        {aiInsight?.algorithm ?? "ED-MCTS · C++/Wasm"}
+                      </span>
+                    </div>
+                    {aiInsight?.stats ? (
+                      <div className="mcts-proof-stats">
+                        <span>
+                          <b>{aiInsight.stats.trees}</b> 棵确定化树
+                        </span>
+                        <span>
+                          <b>{aiInsight.stats.simulations.toLocaleString()}</b>{" "}
+                          次模拟
+                        </span>
+                        <span>
+                          根行动 <b>{aiInsight.stats.rootActionFamilies}</b>
+                        </span>
+                        <span>
+                          访问支持率{" "}
+                          <b>
+                            {(aiInsight.stats.selectedVisitShare * 100).toFixed(
+                              1,
+                            )}
+                            %
+                          </b>
+                        </span>
+                        <span>
+                          交换候选 <b>{aiInsight.stats.exchangeCandidates}</b>
+                        </span>
+                        <span>
+                          <b>{aiInsight.stats.elapsedMs}</b> ms
+                        </span>
+                      </div>
+                    ) : aiInsight?.searching && viewed.current === 1 ? (
+                      <div className="mcts-proof-stats searching">
+                        <span>
+                          <b>8 × 30,000</b> 次树搜索正在运行
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="mcts-proof-stats">
+                        <span>米拉行动后显示本手真实搜索统计</span>
+                      </div>
+                    )}
+                    <small>
+                      选择 UCT → 扩展节点 → 模拟后续 →
+                      反向传播；每棵树独立采样隐藏牌。
+                    </small>
+                  </section>
+                )}
               <section className="hand-panel">
                 <div className="hand-heading">
                   <div className="you-label">

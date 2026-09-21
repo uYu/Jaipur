@@ -20,6 +20,19 @@ type JaipurModule = {
   ): number;
 };
 
+export type MctsStats = {
+  trees: number;
+  iterationsPerTree: number;
+  simulations: number;
+  rootActionFamilies: number;
+  selectedVisitShare: number;
+  exchangeCandidates: number;
+  maxTreeDepth: number;
+  elapsedMs: number;
+};
+
+export type MctsDecision = { action: Action; stats: MctsStats };
+
 const modulePromise = createJaipurAi() as Promise<JaipurModule>;
 const goodIndex = (good: Good) => GOODS.indexOf(good);
 
@@ -103,10 +116,19 @@ export async function chooseWasmAction(
   observation: Observation,
   iterationsPerTree = 30_000,
 ): Promise<Action> {
+  return (await chooseWasmActionWithStats(observation, iterationsPerTree))
+    .action;
+}
+
+export async function chooseWasmActionWithStats(
+  observation: Observation,
+  iterationsPerTree = 30_000,
+): Promise<MctsDecision> {
   const module = await modulePromise;
   const encoded = encodeObservation(observation);
   const inputPointer = module._malloc(encoded.byteLength);
-  const outputPointer = module._malloc(16 * Int32Array.BYTES_PER_ELEMENT);
+  const outputPointer = module._malloc(24 * Int32Array.BYTES_PER_ELEMENT);
+  const started = performance.now();
   try {
     module.HEAP32.set(encoded, inputPointer / Int32Array.BYTES_PER_ELEMENT);
     if (
@@ -120,9 +142,23 @@ export async function chooseWasmAction(
       throw new Error("C++ AI 无法解析当前局面");
     const output = module.HEAP32.slice(
       outputPointer / Int32Array.BYTES_PER_ELEMENT,
-      outputPointer / Int32Array.BYTES_PER_ELEMENT + 16,
+      outputPointer / Int32Array.BYTES_PER_ELEMENT + 24,
     );
-    return decodeAction(output, observation);
+    if (output[16] !== 0x4d435453)
+      throw new Error("C++ AI 未返回 MCTS 搜索统计");
+    return {
+      action: decodeAction(output, observation),
+      stats: {
+        trees: output[17],
+        iterationsPerTree: output[18],
+        simulations: output[19],
+        rootActionFamilies: output[20],
+        selectedVisitShare: output[21] / 10000,
+        exchangeCandidates: output[22],
+        maxTreeDepth: output[23],
+        elapsedMs: Math.round(performance.now() - started),
+      },
+    };
   } finally {
     module._free(outputPointer);
     module._free(inputPointer);

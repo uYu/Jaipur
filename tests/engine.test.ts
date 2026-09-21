@@ -14,6 +14,7 @@ import { chooseAction, observe } from "../src/game/ai.ts";
 import {
   chooseOriginalWasmAction,
   chooseWasmAction,
+  chooseWasmActionWithStats,
   encodeObservation,
 } from "../src/game/ai-wasm.ts";
 import { advance, parseSave, replay } from "../src/game/storage.ts";
@@ -258,7 +259,7 @@ test("replay-validated saves reject tampering and malformed events", () => {
   assert.throws(() => parseSave("bad json"));
   assert.throws(() => parseSave(JSON.stringify({ ...save, version: 2 })));
 });
-test("C++/Wasm search and original-hard policies return legal deterministic actions", async () => {
+test("C++/Wasm MCTS exposes real search statistics and both policies stay deterministic", async () => {
   const s = newGame(9);
   const observation = observe(s);
   const encoded = encodeObservation(observation);
@@ -271,6 +272,14 @@ test("C++/Wasm search and original-hard policies return legal deterministic acti
   const original = await chooseOriginalWasmAction(observation);
   assert.equal(actionError(s, original), null);
   assert.deepEqual(await chooseOriginalWasmAction(observation), original);
+  const decision = await chooseWasmActionWithStats(observation, 100);
+  assert.equal(decision.stats.trees, 8);
+  assert.equal(decision.stats.iterationsPerTree, 100);
+  assert.equal(decision.stats.simulations, 800);
+  assert.ok(decision.stats.rootActionFamilies > 1);
+  assert.ok(decision.stats.selectedVisitShare > 0);
+  assert.ok(decision.stats.selectedVisitShare <= 1);
+  assert.equal(decision.stats.maxTreeDepth, 28);
 });
 test("complete AI matches across all difficulties conserve cards and tokens and replay identically", async () => {
   for (const difficulty of ["easy", "normal", "hard"] as const)
@@ -285,7 +294,9 @@ test("complete AI matches across all difficulties conserve cards and tokens and 
             ? { type: "next" as const }
             : difficulty === "hard"
               ? await chooseWasmAction(observe(s, events), 2_000)
-              : chooseAction(observe(s, events), difficulty);
+              : difficulty === "normal"
+                ? await chooseOriginalWasmAction(observe(s, events))
+                : chooseAction(observe(s, events), "easy");
         if (s.phase === "playing")
           assert.equal(
             actionError(s, e),

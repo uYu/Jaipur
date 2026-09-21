@@ -2767,3 +2767,305 @@ select {
     gap: 9px;
   }
 }
+
+/* Dense board layout: keep the whole decision area within a desktop viewport. */
+.game-shell {
+  max-width: 1320px;
+  padding: 13px 24px 7px;
+}
+.game-header {
+  min-height: 45px;
+  padding-bottom: 9px;
+}
+.game-header nav {
+  gap: 6px;
+}
+.game-header nav button {
+  width: 30px;
+  height: 30px;
+}
+.game-grid {
+  grid-template-columns: minmax(0, 1fr) 258px;
+  gap: 19px;
+  margin-top: 11px;
+}
+.opponent-panel {
+  min-height: 58px;
+  margin-bottom: 9px;
+  padding: 6px 11px;
+  gap: 10px;
+}
+.opponent-panel .avatar {
+  width: 37px;
+  height: 37px;
+  border-width: 3px;
+  font-size: 18px;
+}
+.opponent-panel .seals {
+  height: 18px;
+}
+.opponent-panel .seals > span:not(.muted) {
+  font-size: 19px;
+}
+.opponent-score > b {
+  font-size: 22px;
+}
+.opponent-score small {
+  margin-top: 1px;
+}
+.opponent-cards .card-back {
+  width: 24px;
+  height: 36px;
+}
+.market-table {
+  padding: 13px 18px 11px;
+  border-radius: 11px;
+  box-shadow: inset 0 0 0 4px #f3f2e6;
+}
+.market-heading {
+  margin-bottom: 9px;
+}
+.market-heading .eyebrow {
+  margin-bottom: 2px;
+}
+.market-heading h2 {
+  font-size: 16px;
+}
+.market-cards {
+  min-height: 132px;
+  gap: 9px;
+}
+.market-cards .card {
+  max-width: 108px;
+  padding-top: 8px;
+  padding-bottom: 9px;
+}
+.market-cards .goods-art {
+  max-width: 77px;
+}
+.market-cards .card-name {
+  font-size: 14px;
+}
+.market-bottom {
+  margin-top: 11px;
+  gap: 14px;
+}
+.market-bottom .sale-slot {
+  width: 29px;
+  height: 38px;
+}
+.market-bottom .sale-slot .goods-art {
+  width: 27px;
+  height: 34px;
+}
+.market-bottom .deck-icon {
+  width: 25px;
+  height: 34px;
+  font-size: 13px;
+}
+.turn-line {
+  padding: 8px 2px 6px;
+  min-height: 29px;
+}
+.mcts-proof {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 14px;
+  margin: 0 0 7px;
+  padding: 7px 10px;
+  border: 1px solid #d5dbc8;
+  border-radius: 7px;
+  background: #f0f2e7;
+  color: #67735f;
+}
+.mcts-proof-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  white-space: nowrap;
+}
+.mcts-proof-title strong {
+  color: #455a48;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.mcts-proof-title span,
+.mcts-proof small {
+  font-size: 8px;
+  color: #8b927f;
+}
+.mcts-proof-stats {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.mcts-proof-stats span {
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #fffdf7;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.mcts-proof-stats b {
+  color: #4e684f;
+  font-size: 10px;
+}
+.mcts-proof-stats.searching span {
+  background: #e5eadb;
+}
+.mcts-proof small {
+  grid-column: 1 / -1;
+  text-align: right;
+}
+.hand-panel {
+  min-height: 186px;
+  padding: 10px 14px 11px;
+}
+.hand-heading {
+  margin-bottom: 7px;
+}
+.hand-heading .avatar {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+  font-size: 15px;
+}
+.hand-and-herd {
+  min-height: 100px;
+  gap: 10px;
+}
+.card.small {
+  max-width: 76px;
+  min-height: 84px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+}
+.small .goods-art {
+  max-width: 58px;
+}
+.herd {
+  width: 74px;
+  padding-left: 9px;
+}
+.herd > .goods-art {
+  width: 51px;
+  height: 44px;
+}
+.action-panel {
+  min-height: 61px;
+  margin-top: 7px;
+  padding: 7px 9px;
+}
+.action-description {
+  gap: 3px;
+}
+.recent-log {
+  min-height: 29px;
+  padding: 6px 4px;
+}
+.token-column {
+  padding-left: 18px;
+}
+.tokens-title {
+  padding-top: 2px;
+}
+.tokens-title .eyebrow {
+  margin-bottom: 3px;
+}
+.tokens-title h2 {
+  font-size: 17px;
+}
+.token-note {
+  margin: 5px 0 10px;
+}
+.premium-guide {
+  margin-bottom: 10px;
+  padding: 6px 8px;
+}
+.token-row {
+  margin-bottom: 9px;
+}
+.token-min {
+  margin-top: 3px;
+}
+.bonus-section {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.bonus-section h3 {
+  margin-bottom: 8px;
+}
+.camel-award {
+  margin-top: 10px;
+  padding: 8px;
+}
+.game-footer {
+  padding-top: 6px;
+  padding-bottom: 2px;
+}
+
+@media (max-width: 860px) {
+  .game-shell {
+    padding: 10px 14px 6px;
+  }
+  .game-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .mcts-proof {
+    grid-template-columns: 1fr;
+  }
+  .mcts-proof-stats {
+    justify-content: flex-start;
+  }
+  .mcts-proof small {
+    text-align: left;
+  }
+}
+
+@media (max-width: 620px) {
+  .game-header {
+    min-height: 0;
+    padding-bottom: 8px;
+  }
+  .opponent-panel {
+    min-height: 54px;
+    margin-bottom: 7px;
+  }
+  .market-table {
+    padding: 11px 9px 9px;
+  }
+  .market-cards {
+    min-height: 102px;
+    gap: 6px;
+  }
+  .market-cards .card {
+    width: calc((100% - 24px) / 5);
+    min-height: 92px;
+  }
+  .mcts-proof {
+    gap: 5px;
+    padding: 7px 8px;
+  }
+  .mcts-proof-stats {
+    gap: 4px;
+  }
+  .mcts-proof-stats span {
+    padding: 3px 5px;
+    font-size: 8px;
+  }
+  .hand-panel {
+    min-height: 190px;
+    padding: 10px 9px;
+  }
+  .hand-heading {
+    margin-bottom: 8px;
+  }
+  .action-panel {
+    min-height: 90px;
+  }
+}

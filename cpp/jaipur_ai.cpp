@@ -730,7 +730,15 @@ int family_key(const Action& action) {
   return 100 + action.good * 10 + action.count;
 }
 
-Action choose(const Observation& observation, uint32_t seed, int iterations) {
+struct SearchDecision {
+  Action action;
+  int root_families = 0;
+  int exchange_actions = 0;
+  double selected_support = 0;
+};
+
+SearchDecision choose(const Observation& observation, uint32_t seed,
+                      int iterations) {
   struct FamilyStat {
     int key;
     double score;
@@ -786,12 +794,18 @@ Action choose(const Observation& observation, uint32_t seed, int iterations) {
   const auto best_family = std::max_element(
       families.begin(), families.end(),
       [](const FamilyStat& a, const FamilyStat& b) { return a.score < b.score; });
-  if (best_family->key != -1) return best_family->action;
+  const int root_families = static_cast<int>(families.size());
+  const int exchange_actions = static_cast<int>(exchanges.size());
+  const double selected_support = best_family->score / TREES;
+  if (best_family->key != -1)
+    return {best_family->action, root_families, exchange_actions,
+            selected_support};
   if (exchanges.empty()) {
     Position fallback{determinize(observation, rng), {}};
     Action exchange;
     apply_step(fallback, {StepKind::StartExchange}, exchange);
-    if (complete_draft(fallback, exchange)) return exchange;
+    if (complete_draft(fallback, exchange))
+      return {exchange, root_families, exchange_actions, selected_support};
     auto direct = std::max_element(
         families.begin(), families.end(), [](const FamilyStat& a,
                                              const FamilyStat& b) {
@@ -799,16 +813,18 @@ Action choose(const Observation& observation, uint32_t seed, int iterations) {
           const double score_b = b.key == -1 ? -1 : b.score;
           return score_a < score_b;
         });
-    return direct->action;
+    return {direct->action, root_families, exchange_actions,
+            direct->score / TREES};
   }
-  return std::max_element(
-             exchanges.begin(), exchanges.end(), [](const ActionStat& a,
-                                                     const ActionStat& b) {
-               if (a.visits != b.visits) return a.visits < b.visits;
-               return a.total / std::max(1.0, a.visits) <
-                      b.total / std::max(1.0, b.visits);
-             })
-      ->action;
+  const auto best_exchange = std::max_element(
+      exchanges.begin(), exchanges.end(), [](const ActionStat& a,
+                                             const ActionStat& b) {
+        if (a.visits != b.visits) return a.visits < b.visits;
+        return a.total / std::max(1.0, a.visits) <
+               b.total / std::max(1.0, b.visits);
+      });
+  return {best_exchange->action, root_families, exchange_actions,
+          selected_support};
 }
 
 double observation_potential(const Observation& observation,
@@ -995,9 +1011,18 @@ extern "C" int jaipur_choose(const int32_t* input, int length, int32_t* output,
   if (!input || !output || !jaipur::parse_observation(input, length, observation))
     return 0;
   iterations = std::clamp(iterations, 100, 100000);
-  const auto action = jaipur::choose(
+  const auto decision = jaipur::choose(
       observation, jaipur::hash_input(input, length), iterations);
-  jaipur::encode_action(action, output);
+  jaipur::encode_action(decision.action, output);
+  output[16] = 0x4d435453;
+  output[17] = jaipur::TREES;
+  output[18] = iterations;
+  output[19] = jaipur::TREES * iterations;
+  output[20] = decision.root_families;
+  output[21] = static_cast<int32_t>(
+      std::round(std::clamp(decision.selected_support, 0.0, 1.0) * 10000));
+  output[22] = decision.exchange_actions;
+  output[23] = 28;
   return 1;
 }
 
@@ -1016,7 +1041,7 @@ int main() {
   if (!(std::cin >> length) || length <= 0) return 2;
   std::vector<int32_t> input(length);
   for (int32_t& value : input) std::cin >> value;
-  std::array<int32_t, 16> output{};
+  std::array<int32_t, 24> output{};
   if (!jaipur_choose(input.data(), length, output.data(), 30000)) return 3;
   for (int value : output) std::cout << value << ' ';
   std::cout << '\n';

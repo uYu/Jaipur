@@ -1,6 +1,9 @@
 import { newGame } from "../src/game/engine.ts";
 import { chooseAction, observe } from "../src/game/ai.ts";
-import { chooseWasmAction } from "../src/game/ai-wasm.ts";
+import {
+  chooseOriginalWasmAction,
+  chooseWasmAction,
+} from "../src/game/ai-wasm.ts";
 import { advance } from "../src/game/storage.ts";
 import type { Difficulty } from "../src/game/types.ts";
 const count = Number(process.argv[2] ?? 100),
@@ -24,7 +27,9 @@ for (let seed = 1; seed <= count; seed++) {
         ? { type: "next" as const }
         : difficulty === "hard"
           ? await chooseWasmAction(observe(s, events))
-          : chooseAction(observe(s, events), difficulty);
+          : difficulty === "normal"
+            ? await chooseOriginalWasmAction(observe(s, events))
+            : chooseAction(observe(s, events), "easy");
     events.push(event);
     s = advance(s, event);
   }
