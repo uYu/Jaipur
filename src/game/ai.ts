@@ -1,4 +1,3 @@
-import { chooseEnsembleAction } from "./ai-search.ts";
 import { GOODS } from "./types.ts";
 import type { Action, Card, Difficulty, Event, Good, State } from "./types.ts";
 import { COUNTS, precious, random, sum } from "./data.ts";
@@ -184,8 +183,10 @@ function chooseHeuristicAction(
     .sort((a, b) => b.score - a.score)[0].action;
 }
 
-export function chooseAction(o: Observation, difficulty: Difficulty): Action {
-  return difficulty === "hard"
-    ? chooseEnsembleAction(o)
-    : chooseHeuristicAction(o, difficulty);
+// High difficulty is asynchronous and lives exclusively in ai-wasm.ts.
+export function chooseAction(
+  o: Observation,
+  difficulty: Exclude<Difficulty, "hard">,
+): Action {
+  return chooseHeuristicAction(o, difficulty);
 }

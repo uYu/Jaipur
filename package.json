@@ -9,6 +9,12 @@
     "build:wasm": "sh scripts/build-wasm.sh",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:native": "sh scripts/test-native.sh",
+    "benchmark:ai": "node --experimental-strip-types scripts/benchmark-ai.ts",
+    "build:ai-research": "node scripts/build-ai-research.mjs",
+    "train:ai": "node scripts/train-ai.mjs",
+    "diagnose:ai": "node --experimental-strip-types scripts/diagnose-ai.ts",
+    "benchmark:timed": "node --experimental-strip-types scripts/benchmark-native.ts",
     "simulate": "node --experimental-strip-types scripts/simulate.ts",
     "tournament": "node --experimental-strip-types scripts/tournament.ts"
   },

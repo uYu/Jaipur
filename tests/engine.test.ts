@@ -18,6 +18,7 @@ import {
   encodeObservation,
 } from "../src/game/ai-wasm.ts";
 import { advance, parseSave, replay } from "../src/game/storage.ts";
+import { collectionScenario } from "../scripts/ai-scenarios.ts";
 function fixture() {
   const s = newGame(123);
   s.current = 0;
@@ -205,7 +206,7 @@ test("two seals end match and prevent future actions", () => {
   assert.throws(() => nextRound(n));
   assert.equal(legalActions(n).length, 0);
 });
-test("AI observation excludes hidden hands, deck order, opponent bonus values and random seed", () => {
+test("AI observation excludes hidden hands, deck order, opponent bonus values and random seed", async () => {
   const s = fixture();
   const before = observe(s);
   s.players[1].hand = s.players[1].hand.map(() => "diamond");
@@ -216,8 +217,12 @@ test("AI observation excludes hidden hands, deck order, opponent bonus values an
   s.deck.reverse();
   s.bonus[3].reverse();
   assert.deepEqual(observe(s), before);
-  for (const d of ["easy", "normal", "hard"] as const)
+  for (const d of ["easy", "normal"] as const)
     assert.deepEqual(chooseAction(before, d), chooseAction(observe(s), d));
+  assert.deepEqual(
+    await chooseWasmAction(before, 100),
+    await chooseWasmAction(observe(s), 100),
+  );
 });
 test("AI remembers only opponent cards revealed by public actions", () => {
   let s = newGame(41);
@@ -279,8 +284,29 @@ test("C++/Wasm MCTS exposes real search statistics and both policies stay determ
   assert.ok(decision.stats.rootActionFamilies > 1);
   assert.ok(decision.stats.selectedVisitShare > 0);
   assert.ok(decision.stats.selectedVisitShare <= 1);
-  assert.equal(decision.stats.maxTreeDepth, 28);
+  assert.ok(decision.stats.maxTreeDepth > 0);
+  assert.equal(
+    decision.stats.terminalSimulations + decision.stats.truncatedSimulations,
+    decision.stats.simulations,
+  );
+  assert.ok(
+    decision.stats.terminalSimulations / decision.stats.simulations > 0.99,
+  );
+  assert.ok(decision.stats.rolloutTurns > 0);
 });
+test("MCTS keeps collecting visible leather instead of cashing out three or four early", async () => {
+  for (const count of [3, 4]) {
+    const s = collectionScenario(
+      Array<"leather">(count).fill("leather"),
+      ["leather", "leather", "camel", "cloth", "spice"],
+    );
+    const action = await chooseWasmAction(observe(s));
+    assert.equal(actionError(s, action), null);
+    assert.equal(action.type, "take", `hand size ${count}`);
+    if (action.type === "take") assert.equal(s.market[action.index], "leather");
+  }
+});
+
 test("complete AI matches across all difficulties conserve cards and tokens and replay identically", async () => {
   for (const difficulty of ["easy", "normal", "hard"] as const)
     for (let seed = 1; seed <= 12; seed++) {

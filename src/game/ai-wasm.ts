@@ -2,6 +2,7 @@ import { GOODS } from "./types.ts";
 import type { Action, Good } from "./types.ts";
 import type { Observation } from "./ai.ts";
 import createJaipurAi from "./wasm/jaipur_ai.mjs";
+import { MCTS_ITERATIONS_PER_TREE } from "./ai-config.ts";
 
 type JaipurModule = {
   HEAP32: Int32Array;
@@ -28,6 +29,9 @@ export type MctsStats = {
   selectedVisitShare: number;
   exchangeCandidates: number;
   maxTreeDepth: number;
+  terminalSimulations: number;
+  truncatedSimulations: number;
+  rolloutTurns: number;
   elapsedMs: number;
 };
 
@@ -114,7 +118,7 @@ export function decodeAction(
 
 export async function chooseWasmAction(
   observation: Observation,
-  iterationsPerTree = 30_000,
+  iterationsPerTree = MCTS_ITERATIONS_PER_TREE,
 ): Promise<Action> {
   return (await chooseWasmActionWithStats(observation, iterationsPerTree))
     .action;
@@ -122,12 +126,12 @@ export async function chooseWasmAction(
 
 export async function chooseWasmActionWithStats(
   observation: Observation,
-  iterationsPerTree = 30_000,
+  iterationsPerTree = MCTS_ITERATIONS_PER_TREE,
 ): Promise<MctsDecision> {
   const module = await modulePromise;
   const encoded = encodeObservation(observation);
   const inputPointer = module._malloc(encoded.byteLength);
-  const outputPointer = module._malloc(24 * Int32Array.BYTES_PER_ELEMENT);
+  const outputPointer = module._malloc(27 * Int32Array.BYTES_PER_ELEMENT);
   const started = performance.now();
   try {
     module.HEAP32.set(encoded, inputPointer / Int32Array.BYTES_PER_ELEMENT);
@@ -142,7 +146,7 @@ export async function chooseWasmActionWithStats(
       throw new Error("C++ AI 无法解析当前局面");
     const output = module.HEAP32.slice(
       outputPointer / Int32Array.BYTES_PER_ELEMENT,
-      outputPointer / Int32Array.BYTES_PER_ELEMENT + 24,
+      outputPointer / Int32Array.BYTES_PER_ELEMENT + 27,
     );
     if (output[16] !== 0x4d435453)
       throw new Error("C++ AI 未返回 MCTS 搜索统计");
@@ -156,6 +160,9 @@ export async function chooseWasmActionWithStats(
         selectedVisitShare: output[21] / 10000,
         exchangeCandidates: output[22],
         maxTreeDepth: output[23],
+        terminalSimulations: output[24],
+        truncatedSimulations: output[25],
+        rolloutTurns: output[26],
         elapsedMs: Math.round(performance.now() - started),
       },
     };

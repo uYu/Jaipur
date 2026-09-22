@@ -18,6 +18,8 @@ import {
   X,
 } from "lucide-react";
 import type { Difficulty, Event, Save, State } from "./game/types.ts";
+import type { MctsStats } from "./game/ai-wasm.ts";
+import { MCTS_ITERATIONS_PER_TREE, MCTS_TREES } from "./game/ai-config.ts";
 import { GOODS } from "./game/types.ts";
 import { ENGLISH, LABEL, precious, sum } from "./game/data.ts";
 import { newGame } from "./game/engine.ts";
@@ -69,16 +71,7 @@ type AiInsight = {
   algorithm: string;
   searching: boolean;
   elapsedMs?: number;
-  stats?: {
-    trees: number;
-    iterationsPerTree: number;
-    simulations: number;
-    rootActionFamilies: number;
-    selectedVisitShare: number;
-    exchangeCandidates: number;
-    maxTreeDepth: number;
-    elapsedMs: number;
-  };
+  stats?: MctsStats;
 };
 function DifficultySelect({
   value,
@@ -213,7 +206,7 @@ export default function App() {
     setAiInsight({
       algorithm:
         activeDifficulty === "hard"
-          ? "ED-MCTS · C++/Wasm"
+          ? "自对弈引导 MCTS · C++/Wasm"
           : activeDifficulty === "normal"
             ? "战术穷举 · C++/Wasm"
             : "轻量启发式 · TypeScript",
@@ -834,7 +827,7 @@ export default function App() {
                     <div className="mcts-proof-title">
                       <strong>MCTS 搜索证据</strong>
                       <span>
-                        {aiInsight?.algorithm ?? "ED-MCTS · C++/Wasm"}
+                        {aiInsight?.algorithm ?? "自对弈引导 MCTS · C++/Wasm"}
                       </span>
                     </div>
                     {aiInsight?.stats ? (
@@ -862,13 +855,28 @@ export default function App() {
                           交换候选 <b>{aiInsight.stats.exchangeCandidates}</b>
                         </span>
                         <span>
+                          模拟到终局{" "}
+                          <b>
+                            {aiInsight.stats.terminalSimulations.toLocaleString()}
+                          </b>
+                          {" / "}
+                          {aiInsight.stats.simulations.toLocaleString()}
+                        </span>
+                        <span>
+                          搜索深度 <b>{aiInsight.stats.maxTreeDepth}</b> 手
+                        </span>
+                        <span>
                           <b>{aiInsight.stats.elapsedMs}</b> ms
                         </span>
                       </div>
                     ) : aiInsight?.searching && viewed.current === 1 ? (
                       <div className="mcts-proof-stats searching">
                         <span>
-                          <b>8 × 30,000</b> 次树搜索正在运行
+                          <b>
+                            {MCTS_TREES} ×{" "}
+                            {MCTS_ITERATIONS_PER_TREE.toLocaleString()}
+                          </b>{" "}
+                          次终局模拟正在运行
                         </span>
                       </div>
                     ) : (
@@ -877,7 +885,7 @@ export default function App() {
                       </div>
                     )}
                     <small>
-                      选择 UCT → 扩展节点 → 模拟后续 →
+                      自对弈先验 + PUCT → 执行完整行动 → 模拟至终局 →
                       反向传播；每棵树独立采样隐藏牌。
                     </small>
                   </section>

@@ -5,16 +5,17 @@ import {
 import { observe } from "../src/game/ai.ts";
 import { newGame } from "../src/game/engine.ts";
 import { advance } from "../src/game/storage.ts";
+import { MCTS_ITERATIONS_PER_TREE } from "../src/game/ai-config.ts";
 
 const seeds = Number(process.argv[2] ?? 5);
-const iterationsPerTree = Number(process.argv[3] ?? 30_000);
+const iterationsPerTree = Number(process.argv[3] ?? MCTS_ITERATIONS_PER_TREE);
 if (
   !Number.isInteger(seeds) ||
   seeds < 1 ||
   !Number.isInteger(iterationsPerTree) ||
   iterationsPerTree < 100
 )
-  throw new Error("Usage: npm run tournament -- 5 30000");
+  throw new Error("Usage: npm run tournament -- 5 1000");
 
 let mctsWins = 0;
 let originalWins = 0;

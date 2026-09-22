@@ -11,7 +11,7 @@ self.onmessage = async (event) => {
       const decision = await chooseWasmActionWithStats(event.data.observation);
       self.postMessage({
         action: decision.action,
-        algorithm: "ED-MCTS · C++/Wasm",
+        algorithm: "自对弈引导 MCTS · C++/Wasm",
         stats: decision.stats,
       });
       return;
