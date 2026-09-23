@@ -15,6 +15,7 @@ import {
   chooseOriginalWasmAction,
   chooseWasmAction,
   chooseWasmActionWithStats,
+  chooseTimedWasmActionWithStats,
   encodeObservation,
 } from "../src/game/ai-wasm.ts";
 import { advance, parseSave, replay } from "../src/game/storage.ts";
@@ -293,13 +294,33 @@ test("C++/Wasm MCTS exposes real search statistics and both policies stay determ
     decision.stats.terminalSimulations / decision.stats.simulations > 0.99,
   );
   assert.ok(decision.stats.rolloutTurns > 0);
+  const neural = await chooseWasmActionWithStats(observation, 100, "neural");
+  assert.equal(actionError(s, neural.action), null);
+  assert.equal(neural.stats.simulations, 800);
+  assert.deepEqual(
+    (await chooseWasmActionWithStats(observation, 100, "neural")).action,
+    neural.action,
+  );
+  for (const model of ["linear", "neural"] as const) {
+    const timed = await chooseTimedWasmActionWithStats(observation, 150, model);
+    assert.equal(actionError(s, timed.action), null);
+    assert.ok(timed.stats.elapsedMs >= 100);
+    assert.ok(timed.stats.simulations > 0);
+    assert.equal(
+      timed.stats.terminalSimulations + timed.stats.truncatedSimulations,
+      timed.stats.simulations,
+    );
+  }
 });
 test("MCTS keeps collecting visible leather instead of cashing out three or four early", async () => {
   for (const count of [3, 4]) {
-    const s = collectionScenario(
-      Array<"leather">(count).fill("leather"),
-      ["leather", "leather", "camel", "cloth", "spice"],
-    );
+    const s = collectionScenario(Array<"leather">(count).fill("leather"), [
+      "leather",
+      "leather",
+      "camel",
+      "cloth",
+      "spice",
+    ]);
     const action = await chooseWasmAction(observe(s));
     assert.equal(actionError(s, action), null);
     assert.equal(action.type, "take", `hand size ${count}`);

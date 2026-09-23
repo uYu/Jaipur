@@ -95,6 +95,9 @@ int main(int argc,char** argv) {
   if(argc>5) options.learned_rollout=std::stoi(argv[5]);
   if(argc>6) options.time_limit_ms=std::stod(argv[6]);
   if(argc>7) options.learned_prior=std::stoi(argv[7]);
+  if(argc>8) options.neural_prior=std::stoi(argv[8]);
+  if(argc>9) options.neural_rollout=std::stoi(argv[9]);
+  if(argc>10) options.neural_root_only=std::stoi(argv[10]);
   int iterations,length;
   while(std::cin >> iterations >> length) {
     std::vector<int32_t> input(length);

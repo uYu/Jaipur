@@ -7,6 +7,7 @@
 #include <limits>
 #include <numeric>
 #include <vector>
+#include "tiny_nn.h"
 
 namespace jaipur {
 
@@ -81,6 +82,8 @@ struct State {
   std::array<int, GOODS> discarded{};
   bool terminal = false;
   double value = 0;
+  // Bounded final point difference, used only when every sampled root move loses.
+  double score_margin = 0;
 };
 
 enum class ActionKind : uint8_t { Take, Camels, Sell, Exchange };
@@ -109,6 +112,7 @@ void finish(State& state) {
   const int camel = a.camels == b.camels ? -1 : (a.camels > b.camels ? 0 : 1);
   const int score_a = a.goods + a.bonuses + (camel == 0 ? 5 : 0);
   const int score_b = b.goods + b.bonuses + (camel == 1 ? 5 : 0);
+  state.score_margin = std::tanh((score_a - score_b) / 20.0);
   int difference = score_a - score_b;
   if (difference == 0) difference = a.bonus_count - b.bonus_count;
   if (difference == 0) difference = a.goods_count - b.goods_count;
@@ -469,19 +473,21 @@ void encode_action(const Action& action, int32_t* output) {
 
 }  // namespace jaipur
 
-extern "C" int jaipur_choose(const int32_t* input, int length, int32_t* output,
-                             int iterations) {
+int jaipur_choose_with_options(const int32_t* input, int length,
+                               int32_t* output, int iterations,
+                               const jaipur::SearchOptions& options) {
   jaipur::Observation observation;
   if (!input || !output || !jaipur::parse_observation(input, length, observation))
     return 0;
   iterations = std::clamp(iterations, 100, 100000);
   const auto decision = jaipur::choose(
-      observation, jaipur::hash_input(input, length), iterations);
+      observation, jaipur::hash_input(input, length), iterations, options);
   jaipur::encode_action(decision.action, output);
   output[16] = 0x4d435453;
   output[17] = jaipur::TREES;
-  output[18] = iterations;
-  output[19] = jaipur::TREES * iterations;
+  output[19] = decision.stats.terminal + decision.stats.truncated;
+  output[18] = options.time_limit_ms > 0
+      ? output[19] / jaipur::TREES : iterations;
   output[20] = decision.root_families;
   output[21] = static_cast<int32_t>(
       std::round(std::clamp(decision.selected_support, 0.0, 1.0) * 10000));
@@ -491,6 +497,33 @@ extern "C" int jaipur_choose(const int32_t* input, int length, int32_t* output,
   output[25] = decision.stats.truncated;
   output[26] = static_cast<int32_t>(decision.stats.rollout_turns);
   return 1;
+}
+
+extern "C" int jaipur_choose(const int32_t* input, int length, int32_t* output,
+                             int iterations) {
+  return jaipur_choose_with_options(input, length, output, iterations, {});
+}
+
+extern "C" int jaipur_choose_neural(const int32_t* input, int length,
+                                    int32_t* output, int iterations) {
+  jaipur::SearchOptions options;
+  options.neural_prior = true;
+  return jaipur_choose_with_options(input, length, output, iterations, options);
+}
+
+extern "C" int jaipur_choose_timed(const int32_t* input, int length,
+                                    int32_t* output, int milliseconds) {
+  jaipur::SearchOptions options;
+  options.time_limit_ms = std::clamp(milliseconds, 100, 30000);
+  return jaipur_choose_with_options(input, length, output, 100000, options);
+}
+
+extern "C" int jaipur_choose_neural_timed(const int32_t* input, int length,
+                                           int32_t* output, int milliseconds) {
+  jaipur::SearchOptions options;
+  options.neural_prior = true;
+  options.time_limit_ms = std::clamp(milliseconds, 100, 30000);
+  return jaipur_choose_with_options(input, length, output, 100000, options);
 }
 
 extern "C" int jaipur_choose_original(const int32_t* input, int length,

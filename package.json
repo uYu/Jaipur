@@ -13,6 +13,7 @@
     "benchmark:ai": "node --experimental-strip-types scripts/benchmark-ai.ts",
     "build:ai-research": "node scripts/build-ai-research.mjs",
     "train:ai": "node scripts/train-ai.mjs",
+    "train:neural": "node scripts/train-neural.mjs",
     "diagnose:ai": "node --experimental-strip-types scripts/diagnose-ai.ts",
     "benchmark:timed": "node --experimental-strip-types scripts/benchmark-native.ts",
     "simulate": "node --experimental-strip-types scripts/simulate.ts",

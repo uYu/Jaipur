@@ -136,28 +136,37 @@ Action rollout_action(const State& state, Rng& rng) {
 }
 
 #include "rollout-policy.hpp"
+#include "neural-policy.hpp"
 #include "rollout-weights.hpp"
 
-double rollout(State& state, Rng& rng, SearchStats& stats, bool learned = false) {
+struct RolloutResult {
+  double outcome = 0;
+  double margin = 0;
+};
+
+RolloutResult rollout(State& state, Rng& rng, SearchStats& stats,
+                      bool learned = false, bool neural = false) {
   // Exchanges can cycle indefinitely. A cutoff is recorded separately and
   // contributes neutral value, never a fabricated terminal win or hand score.
   for (int turn = 0; turn < 256 && !state.terminal; ++turn) {
-    apply_action(state, learned ? policy_action(state, rng, TRAINED_POLICY, 100)
-                               : rollout_action(state, rng));
+    apply_action(state, neural ? neural_action(state, rng, 100) :
+                        learned ? policy_action(state, rng, TRAINED_POLICY, 100)
+                                : rollout_action(state, rng));
     ++stats.rollout_turns;
   }
   if (state.terminal) {
     ++stats.terminal;
-    return state.value;
+    return {state.value, state.score_margin};
   }
   ++stats.truncated;
-  return 0;
+  return {};
 }
 
 struct UctEdge {
   Action action;
   int visits = 0;
   double total = 0;
+  double margin_total = 0;
   int child = -1;
   double prior = 0;
 };
@@ -175,6 +184,9 @@ struct SearchOptions {
   // Research benchmarks only; zero keeps production decisions reproducible.
   double time_limit_ms = 0;
   bool learned_prior = true;
+  bool neural_prior = false;
+  bool neural_rollout = false;
+  bool neural_root_only = false;
 };
 
 std::vector<UctEdge> terminal_tree(const State& root, int iterations,
@@ -182,7 +194,7 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
                                   const SearchOptions& options = {}) {
   const auto started=std::chrono::steady_clock::now();
   std::vector<UctNode> nodes(1);
-  nodes.reserve(iterations + 1);
+  nodes.reserve(std::min(iterations, 8192) + 1);
   for (int iteration = 0; iteration < iterations; ++iteration) {
     if(iteration && iteration%16==0 && options.time_limit_ms>0 &&
        std::chrono::duration<double,std::milli>(
@@ -196,18 +208,22 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
         auto actions = atomic_actions(state);
         shuffle(actions, rng);
         for (const auto& a : actions) nodes[node].edges.push_back({a});
-        if(options.learned_prior) {
+        const bool use_neural_prior = options.neural_prior &&
+            (!options.neural_root_only || node == 0);
+        if(options.learned_prior || use_neural_prior) {
           double min_value=1,max_value=-1;
           for(auto& edge:nodes[node].edges) {
             State next=state;
             apply_action(next,edge.action);
-            edge.prior=(state.current==0?1:-1)*policy_value(next,TRAINED_POLICY);
+            edge.prior=(state.current==0?1:-1)*
+                (use_neural_prior ? neural_value(next) : policy_value(next,TRAINED_POLICY));
             min_value=std::min(min_value,edge.prior);
             max_value=std::max(max_value,edge.prior);
           }
           double total=0;
           for(auto& edge:nodes[node].edges) {
-            edge.prior=std::exp(4*(edge.prior-max_value)/std::max(.05,max_value-min_value));
+            edge.prior=std::exp(4 * (edge.prior-max_value)/
+                                std::max(.05,max_value-min_value));
             total+=edge.prior;
           }
           for(auto& edge:nodes[node].edges) edge.prior/=total;
@@ -222,9 +238,11 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
           : int(nodes[node].edges.size());
       for (int i = 0; i < width; ++i) {
         const auto& edge = nodes[node].edges[i];
-        if (!edge.visits && !options.learned_prior) { selected = i; break; }
+        if (!edge.visits && !options.learned_prior && !options.neural_prior) {
+          selected = i; break;
+        }
         const double mean = edge.total / std::max(1,edge.visits);
-        const double exploration=options.learned_prior
+        const double exploration=(options.learned_prior || options.neural_prior)
           ? edge.prior*std::sqrt(nodes[node].visits+1.0)/(1+edge.visits)
           : std::sqrt(std::log(nodes[node].visits+1.0)/edge.visits);
         const double ucb = (state.current == 0 ? mean : -mean) +
@@ -248,12 +266,14 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
       if (depth >= 128) break;
     }
     stats.max_depth = std::max(stats.max_depth, depth);
-    const double value = rollout(state, rng, stats, options.learned_rollout);
+    const auto result = rollout(state, rng, stats, options.learned_rollout,
+                                options.neural_rollout);
     for (const auto& [parent, index] : path) {
       ++nodes[parent].visits;
       auto& edge = nodes[parent].edges[index];
       ++edge.visits;
-      edge.total += value;
+      edge.total += result.outcome;
+      edge.margin_total += result.margin;
     }
   }
   return std::move(nodes[0].edges);
@@ -270,7 +290,7 @@ struct SearchDecision {
 SearchDecision choose(const Observation& observation, uint32_t seed,
                       int iterations, const SearchOptions& options = {}) {
   Rng sampling{seed}, search{seed ^ 0x9e3779b9u};
-  struct Vote { Action action; double visits=0, total=0; };
+  struct Vote { Action action; double visits=0, total=0, margin_total=0; };
   std::vector<Vote> aggregate;
   SearchStats stats;
   for (int tree = 0; tree < options.trees; ++tree) {
@@ -284,14 +304,33 @@ SearchDecision choose(const Observation& observation, uint32_t seed,
       auto found = std::find_if(aggregate.begin(), aggregate.end(),
           [&](const Vote& other) { return other.action == edge.action; });
       if (found == aggregate.end())
-        aggregate.push_back({edge.action,edge.visits/total_visits,edge.total/total_visits});
-      else { found->visits += edge.visits/total_visits; found->total += edge.total/total_visits; }
+        aggregate.push_back({edge.action,edge.visits/total_visits,
+                             edge.total/total_visits,
+                             edge.margin_total/total_visits});
+      else {
+        found->visits += edge.visits/total_visits;
+        found->total += edge.total/total_visits;
+        found->margin_total += edge.margin_total/total_visits;
+      }
     }
   }
+  // Pure win/loss search cannot rank moves once every sampled continuation
+  // loses. In that case alone, prefer the smaller final point deficit.
+  const bool all_lost = !aggregate.empty() && std::all_of(
+      aggregate.begin(), aggregate.end(), [](const Vote& vote) {
+        return vote.visits > 0 &&
+               std::abs(vote.total + vote.visits) < 1e-9;
+      });
   const auto best = std::max_element(aggregate.begin(), aggregate.end(),
-      [](const Vote& a, const Vote& b) {
+      [all_lost](const Vote& a, const Vote& b) {
+        if (all_lost) {
+          const double a_margin = a.margin_total / a.visits;
+          const double b_margin = b.margin_total / b.visits;
+          if (a_margin != b_margin) return a_margin < b_margin;
+        }
         if (a.visits != b.visits) return a.visits < b.visits;
-        return a.total / std::max(1e-12, a.visits) < b.total / std::max(1e-12, b.visits);
+        return a.total / std::max(1e-12, a.visits) <
+               b.total / std::max(1e-12, b.visits);
       });
   if (best == aggregate.end()) return {};
   int exchanges = 0;

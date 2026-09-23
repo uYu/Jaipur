@@ -8,6 +8,24 @@ type JaipurAiModule = {
     output: number,
     iterationsPerTree: number,
   ): number;
+  _jaipur_choose_neural(
+    input: number,
+    length: number,
+    output: number,
+    iterationsPerTree: number,
+  ): number;
+  _jaipur_choose_timed(
+    input: number,
+    length: number,
+    output: number,
+    milliseconds: number,
+  ): number;
+  _jaipur_choose_neural_timed(
+    input: number,
+    length: number,
+    output: number,
+    milliseconds: number,
+  ): number;
   _jaipur_choose_original(
     input: number,
     length: number,

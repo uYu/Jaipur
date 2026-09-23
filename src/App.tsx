@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import type { Difficulty, Event, Save, State } from "./game/types.ts";
 import type { MctsStats } from "./game/ai-wasm.ts";
-import { MCTS_ITERATIONS_PER_TREE, MCTS_TREES } from "./game/ai-config.ts";
+import { MCTS_TIME_BUDGET_MS, MCTS_TREES } from "./game/ai-config.ts";
 import { GOODS } from "./game/types.ts";
 import { ENGLISH, LABEL, precious, sum } from "./game/data.ts";
 import { newGame } from "./game/engine.ts";
@@ -203,10 +203,14 @@ export default function App() {
       type: "module",
     });
     const activeDifficulty = save?.difficulty ?? difficulty;
+    const neuralExperiment =
+      new URLSearchParams(window.location.search).get("ai") === "neural";
     setAiInsight({
       algorithm:
         activeDifficulty === "hard"
-          ? "自对弈引导 MCTS · C++/Wasm"
+          ? neuralExperiment
+            ? "实验神经先验 MCTS · C++/Wasm"
+            : "自对弈引导 MCTS · C++/Wasm"
           : activeDifficulty === "normal"
             ? "战术穷举 · C++/Wasm"
             : "轻量启发式 · TypeScript",
@@ -247,6 +251,7 @@ export default function App() {
     worker.postMessage({
       observation: observe(game, save?.events),
       difficulty: activeDifficulty,
+      model: neuralExperiment ? "neural" : "linear",
     });
     return () => {
       active = false;
@@ -872,11 +877,8 @@ export default function App() {
                     ) : aiInsight?.searching && viewed.current === 1 ? (
                       <div className="mcts-proof-stats searching">
                         <span>
-                          <b>
-                            {MCTS_TREES} ×{" "}
-                            {MCTS_ITERATIONS_PER_TREE.toLocaleString()}
-                          </b>{" "}
-                          次终局模拟正在运行
+                          <b>{MCTS_TREES} 棵树</b> · 约{" "}
+                          <b>{MCTS_TIME_BUDGET_MS / 1000} 秒</b>搜索中
                         </span>
                       </div>
                     ) : (

@@ -24,6 +24,8 @@ function compile(source, name) {
 }
 compile("scripts/ai-research.cpp", "search");
 compile("scripts/train-rollout.cpp", "train");
+compile("scripts/generate-nn-data.cpp", "generate-nn-data");
+compile("scripts/verify-nn.cpp", "verify-nn");
 
 // Pin the original pre-refactor AI. Only add a wall-clock stop, normalize root
 // visits by work actually performed, and replace its one-shot CLI with a pipe.

@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { appendFileSync, writeFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -31,6 +32,8 @@ if (
   );
 const dir =
   process.env.JAIPUR_AI_BIN_DIR ?? join(tmpdir(), "jaipur-ai-research");
+const logPath = process.env.JAIPUR_BENCH_LOG;
+if (logPath) writeFileSync(logPath, "");
 const search = join(dir, "search"),
   original = join(dir, "original");
 const profiles: Record<string, [string, string[]]> = {
@@ -49,9 +52,61 @@ const profiles: Record<string, [string, string[]]> = {
     search,
     ["search", "1.4142135623730951", "0", "8", "1", String(budget), "1"],
   ],
+  guided5x: [
+    search,
+    ["search", "1.4142135623730951", "0", "8", "1", String(budget * 5), "1"],
+  ],
+  guided5s: [
+    search,
+    ["search", "1.4142135623730951", "0", "8", "1", "5000", "1"],
+  ],
+  guided1s: [
+    search,
+    ["search", "1.4142135623730951", "0", "8", "1", "1000", "1"],
+  ],
+  exploreHigh: [
+    search,
+    ["search", "2.5", "0", "8", "1", String(budget), "1"],
+  ],
+  neural: [
+    search,
+    [
+      "search",
+      "1.4142135623730951",
+      "0",
+      "8",
+      "1",
+      String(budget),
+      "1",
+      "1",
+      "1",
+    ],
+  ],
+  neuralPrior: [
+    search,
+    [
+      "search",
+      "1.4142135623730951",
+      "0",
+      "8",
+      "1",
+      String(budget),
+      "1",
+      "1",
+      "0",
+    ],
+  ],
+  neuralRoot: [
+    search,
+    ["search", "1.4142135623730951", "0", "8", "1", String(budget),
+     "1", "1", "0", "1"],
+  ],
 };
 function client(profile: string) {
-  const config = profiles[profile];
+  const treeConfig = /^guided(2|4|8|16|32)(?:x([1-9]\d*))?$/.exec(profile);
+  const config: [string, string[]] | undefined = treeConfig
+    ? [search, ["search", "1.4142135623730951", "0", treeConfig[1], "1", treeConfig[2] ?? String(budget), "1"]]
+    : profiles[profile];
   if (!config) throw Error("Unknown profile " + profile);
   const process = spawn(config[0], config[1], {
     stdio: ["pipe", "pipe", "inherit"],
@@ -89,7 +144,7 @@ const wins = [0, 0],
   times = [0, 0],
   moves = [0, 0],
   sales: Record<number, number>[] = [{}, {}];
-let terminals = 0;
+const terminals = [0, 0];
 try {
   for (let seed = start; seed < start + pairs; seed++)
     for (let seat = 0; seat < 2; seat++) {
@@ -111,7 +166,7 @@ try {
           );
         moves[side]++;
         times[side] += r.elapsedMs;
-        if (side === 0) terminals += r.terminal ?? 0;
+        terminals[side] += r.terminal ?? 0;
         if (r.action.type === "sell")
           sales[side][r.action.count] = (sales[side][r.action.count] ?? 0) + 1;
         s = applyAction(s, r.action);
@@ -128,6 +183,10 @@ try {
           scores: s.results.map((r) => r.scores),
         }),
       );
+      if (logPath)
+        appendFileSync(logPath, JSON.stringify({
+          candidate, baseline, budget, seed, seat, winner, events,
+        }) + "\n");
     }
   console.log(
     JSON.stringify(

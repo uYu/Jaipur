@@ -25,6 +25,10 @@ void check_actions(const State& s, Rng& rng) {
   std::swap(swapped.players[0],swapped.players[1]);
   swapped.current=1-swapped.current;
   assert(std::abs(policy_value(s,TRAINED_POLICY)+policy_value(swapped,TRAINED_POLICY))<1e-12);
+  const auto neural_input=neural_features(s);
+  assert(neural_input.size()==NN_FEATURES);
+  assert(std::isfinite(neural_value(s)));
+  assert(std::abs(neural_value(s))<=1);
   const auto actions = atomic_actions(s);
   const auto reference = observation_actions(observation_of(s));
   assert(!actions.empty());
@@ -119,6 +123,61 @@ int main() {
       [](const auto& a, const auto& b) { return a.visits < b.visits; });
   assert(best->action.kind == ActionKind::Sell);
   assert(stats.terminal == 1000 && stats.truncated == 0);
+  // In this late round the opponent's last leather is publicly known. Every
+  // move loses to its immediate sale, but cashing out gold loses by less than
+  // exchanging for cards that will never be sold.
+  Observation late;
+  late.hand[1] = 2;
+  late.hand[2] = 1;
+  late.hand_count = 3;
+  late.camels = 7;
+  late.goods_sum = 47;
+  late.goods_count = 13;
+  late.bonuses = {2, 6};
+  late.opponent_goods_sum = 71;
+  late.opponent_goods_count = 21;
+  late.known[5] = 1;
+  late.market = {4, 5, CAMEL, 3, 2};
+  late.token_count = {0, 1, 1, 1, 0, 1};
+  late.tokens[1][0] = 5;
+  late.tokens[2][0] = 5;
+  late.tokens[3][0] = 1;
+  late.tokens[5][0] = 1;
+  late.bonus_count = {5, 4, 4};
+  late.discarded = {6, 4, 4, 6, 7, 8};
+  late.deck_count = 1;
+  late.opponent_hand_count = 1;
+  late.turn = 43;
+  const auto late_decision = choose(late, 42, 100000);
+  assert(late_decision.action.kind == ActionKind::Sell);
+  assert(late_decision.action.good == 1 && late_decision.action.count == 2);
+  // Earlier in the same round, taking all five camels keeps a realistic
+  // comeback alive; selling two silver gives the entire herd to the opponent.
+  Observation herd;
+  herd.hand[2] = 2;
+  herd.hand[3] = 2;
+  herd.hand_count = 4;
+  herd.goods_sum = 11;
+  herd.goods_count = 3;
+  herd.bonuses = {2};
+  herd.opponent_goods_sum = 26;
+  herd.opponent_goods_count = 4;
+  herd.known[1] = 1;
+  herd.known[5] = 1;
+  herd.market.fill(CAMEL);
+  herd.token_count = {3, 3, 5, 7, 4, 9};
+  herd.tokens[0] = {5, 5, 5};
+  herd.tokens[1] = {5, 5, 5};
+  herd.tokens[2] = {5, 5, 5, 5, 5};
+  herd.tokens[3] = {5, 3, 3, 2, 2, 1, 1};
+  herd.tokens[4] = {2, 2, 1, 1};
+  herd.tokens[5] = {4, 3, 2, 1, 1, 1, 1, 1, 1};
+  herd.bonus_count = {6, 6, 5};
+  herd.discarded = {2, 2, 0, 0, 3, 0};
+  herd.deck_count = 33;
+  herd.opponent_hand_count = 4;
+  herd.turn = 9;
+  assert(choose(herd, 42, 5000).action.kind == ActionKind::Camels);
   std::cout << positions << " positions: atomic actions match independent enumeration; "
-            << "rollouts legal; winning terminal sale found.\n";
+            << "rollouts legal; comeback and terminal decisions found.\n";
 }

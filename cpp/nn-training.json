@@ -1,0 +1,15 @@
+{
+  "target": "win",
+  "train_games": 12000,
+  "validation_games": 2000,
+  "train_positions": 88789,
+  "validation_positions": 14788,
+  "baseline_validation_mse": 0.8101452170278668,
+  "neural_validation_mse": 0.6732233762741089,
+  "seed_train": 20260923,
+  "seed_validation": 20260924,
+  "architecture": "symmetric",
+  "hidden_units": 64,
+  "data_id": "db88631deaa7",
+  "weights_sha256": "03fb668084cc779a986900e10e41a5e21e0652289531c5864a6b99175dbe5f0b"
+}

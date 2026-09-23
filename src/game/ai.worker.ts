@@ -1,17 +1,26 @@
 import { chooseAction } from "./ai.ts";
 import {
   chooseOriginalWasmAction,
-  chooseWasmActionWithStats,
+  chooseTimedWasmActionWithStats,
 } from "./ai-wasm.ts";
+import { MCTS_TIME_BUDGET_MS } from "./ai-config.ts";
 
 self.onmessage = async (event) => {
   try {
     const started = performance.now();
     if (event.data.difficulty === "hard") {
-      const decision = await chooseWasmActionWithStats(event.data.observation);
+      const model = event.data.model === "neural" ? "neural" : "linear";
+      const decision = await chooseTimedWasmActionWithStats(
+        event.data.observation,
+        MCTS_TIME_BUDGET_MS,
+        model,
+      );
       self.postMessage({
         action: decision.action,
-        algorithm: "自对弈引导 MCTS · C++/Wasm",
+        algorithm:
+          model === "neural"
+            ? "实验神经先验 MCTS · C++/Wasm"
+            : "自对弈引导 MCTS · C++/Wasm",
         stats: decision.stats,
       });
       return;

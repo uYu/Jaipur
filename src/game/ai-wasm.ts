@@ -14,6 +14,24 @@ type JaipurModule = {
     output: number,
     iterationsPerTree: number,
   ): number;
+  _jaipur_choose_neural(
+    input: number,
+    length: number,
+    output: number,
+    iterationsPerTree: number,
+  ): number;
+  _jaipur_choose_timed(
+    input: number,
+    length: number,
+    output: number,
+    milliseconds: number,
+  ): number;
+  _jaipur_choose_neural_timed(
+    input: number,
+    length: number,
+    output: number,
+    milliseconds: number,
+  ): number;
   _jaipur_choose_original(
     input: number,
     length: number,
@@ -127,6 +145,26 @@ export async function chooseWasmAction(
 export async function chooseWasmActionWithStats(
   observation: Observation,
   iterationsPerTree = MCTS_ITERATIONS_PER_TREE,
+  model: "linear" | "neural" = "linear",
+): Promise<MctsDecision> {
+  return chooseWasmActionWithStatsInternal(observation, iterationsPerTree, model);
+}
+
+export async function chooseTimedWasmActionWithStats(
+  observation: Observation,
+  milliseconds: number,
+  model: "linear" | "neural" = "linear",
+): Promise<MctsDecision> {
+  if (!Number.isInteger(milliseconds) || milliseconds < 100 || milliseconds > 30000)
+    throw new RangeError("MCTS time budget must be 100–30000 ms");
+  return chooseWasmActionWithStatsInternal(observation, milliseconds, model, true);
+}
+
+async function chooseWasmActionWithStatsInternal(
+  observation: Observation,
+  budget: number,
+  model: "linear" | "neural",
+  timed = false,
 ): Promise<MctsDecision> {
   const module = await modulePromise;
   const encoded = encodeObservation(observation);
@@ -136,12 +174,15 @@ export async function chooseWasmActionWithStats(
   try {
     module.HEAP32.set(encoded, inputPointer / Int32Array.BYTES_PER_ELEMENT);
     if (
-      !module._jaipur_choose(
-        inputPointer,
-        encoded.length,
-        outputPointer,
-        iterationsPerTree,
-      )
+      !(
+        timed
+          ? model === "neural"
+            ? module._jaipur_choose_neural_timed
+            : module._jaipur_choose_timed
+          : model === "neural"
+            ? module._jaipur_choose_neural
+            : module._jaipur_choose
+      )(inputPointer, encoded.length, outputPointer, budget)
     )
       throw new Error("C++ AI 无法解析当前局面");
     const output = module.HEAP32.slice(
