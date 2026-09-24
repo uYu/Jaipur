@@ -1,0 +1,10 @@
+{
+  "type": "verification",
+  "verified": true,
+  "games": 4096,
+  "actions": 422215,
+  "samples": 323675,
+  "final_iteration": 144,
+  "elapsed_s": 862.9620931148529,
+  "promoted": false
+}

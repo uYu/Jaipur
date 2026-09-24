@@ -1,0 +1,19 @@
+{
+  "verified": true,
+  "pairedSeeds": 512,
+  "games": 1024,
+  "replayedActions": 117733,
+  "wins": [
+    542,
+    482
+  ],
+  "pairOutcomes": {
+    "newModelTwo": 139,
+    "split": 264,
+    "oldModelTwo": 109
+  },
+  "newModelWinRate": 0.529296875,
+  "pairedTwoSidedP": 0.06533102568813429,
+  "meetsPreregisteredGate": false,
+  "promoted": false
+}

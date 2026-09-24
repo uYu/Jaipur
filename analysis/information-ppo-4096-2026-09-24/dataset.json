@@ -1,0 +1,99 @@
+{
+  "counts": {
+    "train": 6180,
+    "dev": 1163,
+    "games": 135
+  },
+  "seeds": {
+    "train": [
+      8101,
+      8102,
+      8103,
+      8104,
+      8201,
+      8202,
+      8302,
+      9101,
+      9102,
+      9104,
+      9105,
+      9106,
+      9107,
+      9108,
+      12003,
+      12004,
+      12005,
+      12006,
+      12008,
+      12009,
+      12010,
+      12011,
+      12012,
+      12013,
+      12014,
+      12015,
+      12016,
+      12017,
+      12019,
+      12020,
+      12023,
+      41001,
+      41002,
+      41003,
+      41004,
+      41005,
+      41006,
+      41007,
+      41008
+    ],
+    "dev": [
+      8301,
+      9103,
+      12001,
+      12002,
+      12007,
+      12018,
+      12021,
+      12022,
+      12024
+    ]
+  },
+  "sources": [
+    {
+      "path": "analysis/dmc-mcts-2026-09-24/mix-50ms-games.jsonl",
+      "sha256": "1ace429966ef70154323fd42282ab2b0058e1aff626da95892e783894e7f7a8e"
+    },
+    {
+      "path": "analysis/dmc-mcts-2026-09-24/mix-1s-games.jsonl",
+      "sha256": "fb75c449599b9deb9ea37b5a3da1c8fad7849876481fc08cbb19b196cd17b44a"
+    },
+    {
+      "path": "analysis/dmc-mcts-2026-09-24/mix-2s-games.jsonl",
+      "sha256": "0bf33045e663f5140a541e47f82d4fc7d00997bd52154b4a69f2f4f70938146e"
+    },
+    {
+      "path": "analysis/dmc-mcts-2026-09-24/pure-50ms-games.jsonl",
+      "sha256": "ada9eaea80e90840d93bbdf582d69bad3e73700329070aa9b3ba5e643f1332fa"
+    },
+    {
+      "path": "analysis/dmc-mcts-fixed-2026-09-24/count-256-games.jsonl",
+      "sha256": "015b5b7320f576ad66ed7ead01fe4e978e29d3cdc15c53d6f5a85df98a18eb98"
+    },
+    {
+      "path": "analysis/dmc-mcts-fixed-2026-09-24/count-1024-games.jsonl",
+      "sha256": "0f062baa17f1ca0e29a632d74f9154933b5f268d4ff88f46aab26cadb48757fa"
+    },
+    {
+      "path": "analysis/dmc-mcts-fixed-2026-09-24/count-4096-games.jsonl",
+      "sha256": "49181f0938c2824af719a20146edf5e202eb62bf62d5782d42050a529248ebd8"
+    },
+    {
+      "path": "analysis/dmc-mcts-holdout-2026-09-24/count-256-games.jsonl",
+      "sha256": "89c30398a77d092290a2aa656a931652c18d02425eefab92a27b0c23b47ed539"
+    },
+    {
+      "path": "analysis/dmc-mcts-1s-738-2026-09-24/matches-games.jsonl",
+      "sha256": "af236ff2e734667462ed5a23ca17eb4187928cd30c5edee618db07391ac50b49"
+    }
+  ]
+}

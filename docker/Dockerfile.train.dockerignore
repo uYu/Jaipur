@@ -1,0 +1,15 @@
+**
+!package.json
+!src/
+!src/game/
+!src/game/**
+!scripts/
+!scripts/train-information-model.py
+!scripts/train-information-ppo.py
+!scripts/collect-information.ts
+!scripts/run-information-swanlab.py
+!scripts/verify-information-continuation.ts
+!scripts/train-container.py
+!docker/
+!docker/Dockerfile.train
+!docker/Dockerfile.train.dockerignore

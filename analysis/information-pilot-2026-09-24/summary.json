@@ -1,0 +1,111 @@
+{
+  "ppo_games": 512,
+  "ppo_samples": 46243,
+  "ppo_seconds": 163.31659388542175,
+  "paired_normal_comparison": {
+    "seeds": 32,
+    "bc_rate": 0.109375,
+    "ppo_rate": 0.34375,
+    "gain": 0.234375,
+    "seed_bootstrap_95_percent_interval": [
+      0.09375,
+      0.375
+    ],
+    "seed_differences": [
+      0.0,
+      0.0,
+      0.5,
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.5,
+      0.0,
+      0.5,
+      0.0,
+      0.0,
+      0.0,
+      0.5,
+      0.5,
+      0.0,
+      -0.5,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.5,
+      0.5,
+      0.5,
+      0.0,
+      0.5,
+      -0.5
+    ]
+  },
+  "promoted": false,
+  "verified_matches": 780,
+  "verified_actions": 86811,
+  "search_results": {
+    "bc_vs_policy": {
+      "candidate": "search1",
+      "baseline": "policy",
+      "start": 52001,
+      "pairs": 2,
+      "wins": [
+        0,
+        4
+      ],
+      "games": 4,
+      "budgetMs": 1000,
+      "candidateMeanMs": 990.2088383791215,
+      "candidateP95Ms": 990.5660000000207,
+      "candidateMaxMs": 990.7139580000076,
+      "searchDecisions": 182,
+      "meanSimulations": 3562.785714285714,
+      "fallbacks": 0,
+      "meanUnvisitedFraction": 0.02969109903634666
+    },
+    "bc_vs_old_search": {
+      "candidate": "search1",
+      "baseline": "guidedBehavior",
+      "start": 53001,
+      "pairs": 2,
+      "wins": [
+        0,
+        4
+      ],
+      "games": 4,
+      "budgetMs": 1000,
+      "candidateMeanMs": 990.1866607127064,
+      "candidateP95Ms": 990.5624169999792,
+      "candidateMaxMs": 990.7233750000014,
+      "searchDecisions": 181,
+      "meanSimulations": 3712.1657458563536,
+      "fallbacks": 0,
+      "meanUnvisitedFraction": 0.029748748992092025
+    },
+    "ppo_vs_policy": {
+      "candidate": "search1",
+      "baseline": "policy",
+      "start": 56001,
+      "pairs": 2,
+      "wins": [
+        2,
+        2
+      ],
+      "games": 4,
+      "budgetMs": 1000,
+      "candidateMeanMs": 990.1797057819903,
+      "candidateP95Ms": 990.4488330000004,
+      "candidateMaxMs": 990.673541999975,
+      "searchDecisions": 211,
+      "meanSimulations": 3772.350710900474,
+      "fallbacks": 0,
+      "meanUnvisitedFraction": 0.08681667099998763
+    }
+  }
+}

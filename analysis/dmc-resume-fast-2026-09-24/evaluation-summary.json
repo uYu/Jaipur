@@ -1,0 +1,130 @@
+{
+  "selectedCheckpoint": "analysis/dmc-resume-fast-2026-09-24/model-738.pt",
+  "finalCheckpoint": "analysis/dmc-resume-fast-2026-09-24/model-786.pt",
+  "promoted": false,
+  "train": {
+    "updates": 128,
+    "matches": 16384,
+    "samples": 2059482
+  },
+  "evaluations": {
+    "selectedNormal": {
+      "checkpoint": "analysis/dmc-resume-fast-2026-09-24/model-738.pt",
+      "opponent": "normal",
+      "start": 3500000000,
+      "pairs": 32,
+      "wins": [
+        51,
+        13
+      ],
+      "roundWins": [
+        109,
+        50
+      ],
+      "truncated": 0,
+      "meanWallMs": [
+        0.2683944362646835,
+        0.17505984210526612
+      ],
+      "promotion": false
+    },
+    "priorNormal": {
+      "checkpoint": "analysis/dmc-10m-2026-09-24/model-612.pt",
+      "opponent": "normal",
+      "start": 3500000000,
+      "pairs": 32,
+      "wins": [
+        48,
+        16
+      ],
+      "roundWins": [
+        104,
+        62
+      ],
+      "truncated": 0,
+      "meanWallMs": [
+        0.2803366434932469,
+        0.1874225802752228
+      ],
+      "promotion": false
+    },
+    "selectedPrior": {
+      "checkpoint": "analysis/dmc-resume-fast-2026-09-24/model-738.pt",
+      "opponent": "analysis/dmc-10m-2026-09-24/model-612.pt",
+      "start": 3600000000,
+      "pairs": 32,
+      "wins": [
+        33,
+        31
+      ],
+      "roundWins": [
+        80,
+        87
+      ],
+      "truncated": 0,
+      "meanWallMs": [
+        0.2887515882659684,
+        0.26996154607151895
+      ],
+      "promotion": false
+    }
+  },
+  "pairedAnalysis": {
+    "seedRange": [
+      3600000000,
+      3600000031
+    ],
+    "pairedSeeds": 32,
+    "games": 64,
+    "newModelWins": 33,
+    "oldModelWins": 31,
+    "pairOutcomes": {
+      "newModelTwo": 9,
+      "split": 15,
+      "oldModelTwo": 8
+    },
+    "newModelWinRate": 0.515625,
+    "hoeffding95": [
+      0.2755443021700198,
+      0.7557056978299802
+    ],
+    "pairedTwoSidedP": 1
+  },
+  "verification": {
+    "initialVersion": 658,
+    "finalVersion": 786,
+    "updates": 128,
+    "completedGames": 16384,
+    "samples": 2059482,
+    "replayedTraining": 9,
+    "replayedEvaluationGames": 192,
+    "replayedEvaluationActions": 21641,
+    "selectedCheckpoint": "analysis/dmc-resume-fast-2026-09-24/model-738.pt",
+    "evaluations": [
+      {
+        "name": "selected-normal",
+        "wins": [
+          51,
+          13
+        ],
+        "pairs": 32
+      },
+      {
+        "name": "prior-normal",
+        "wins": [
+          48,
+          16
+        ],
+        "pairs": 32
+      },
+      {
+        "name": "selected-prior",
+        "wins": [
+          33,
+          31
+        ],
+        "pairs": 32
+      }
+    ]
+  }
+}

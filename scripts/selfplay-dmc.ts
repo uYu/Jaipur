@@ -18,21 +18,27 @@ const iterations = Number(process.argv[3] ?? 12),
   gamesPerIteration = Number(process.argv[4] ?? 128);
 const targetSamples = Number(process.env.DMC_TARGET_SAMPLES ?? 0),
   evalEvery = Number(process.env.DMC_EVAL_EVERY ?? 3),
-  devPairs = Number(process.env.DMC_DEV_PAIRS ?? 4);
+  devPairs = Number(process.env.DMC_DEV_PAIRS ?? 4),
+  devSeed = Number(process.env.DMC_DEV_SEED ?? 3_000_000_000);
 for (const [name, value] of Object.entries({
   iterations,
   gamesPerIteration,
   evalEvery,
   devPairs,
+  devSeed,
 }))
   if (!Number.isSafeInteger(value) || value <= 0)
     throw Error(`Invalid ${name}`);
+if (
+  !Number.isSafeInteger(devSeed + devPairs - 1) ||
+  devSeed + devPairs - 1 > 0xffff_ffff
+)
+  throw Error("Invalid development seed range");
 if (!Number.isSafeInteger(targetSamples) || targetSamples < 0)
   throw Error("Invalid DMC_TARGET_SAMPLES");
 const maxTurns = 700,
   lanes = 16,
-  trainSeed = 1_000_000,
-  devSeed = 3_000_000_000;
+  trainSeed = 1_000_000;
 if (existsSync(join(directory, "config.json")))
   throw Error(
     "Use a fresh output directory; optional fifth argument resumes a checkpoint",

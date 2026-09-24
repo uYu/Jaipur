@@ -50,6 +50,7 @@ const dir =
   process.env.JAIPUR_AI_BIN_DIR ?? join(tmpdir(), "jaipur-ai-research");
 const logPath = process.env.JAIPUR_BENCH_LOG;
 const progressPath = process.env.JAIPUR_BENCH_PROGRESS;
+const verbose = process.env.JAIPUR_BENCH_VERBOSE === "1";
 if (logPath) writeFileSync(logPath, "");
 const search = join(dir, "search"),
   original = join(dir, "original"),
@@ -418,6 +419,10 @@ try {
       let s = newGame(seed),
         turns = 0;
       const events: Event[] = [];
+      if (verbose)
+        console.error(
+          `[开局] 种子 ${seed}，候选座位 ${seat}；已完成胜场 ${wins[0]}:${wins[1]}`,
+        );
       while (s.phase !== "finished" && turns++ < 700) {
         if (s.phase === "roundEnd") {
           events.push({ type: "next" });
@@ -488,6 +493,27 @@ try {
           sales[side][r.action.count] = (sales[side][r.action.count] ?? 0) + 1;
         s = applyAction(s, r.action);
         events.push(r.action);
+        if (verbose && (turns % 10 === 0 || s.phase !== "playing")) {
+          const points = s.players.map(
+            (p) =>
+              p.goods.reduce((total, n) => total + n, 0) +
+              p.bonuses.reduce((total, n) => total + n, 0),
+          );
+          const roundResult = s.results.at(-1);
+          const settled = s.phase !== "playing" && roundResult;
+          const candidatePoints = settled
+            ? settled.scores[seat]
+            : points[seat];
+          const baselinePoints = settled
+            ? settled.scores[1 - seat]
+            : points[1 - seat];
+          console.error(
+            `[进展] 种子 ${seed} 座位 ${seat} 第 ${s.round} 轮 第 ${turns} 手` +
+              ` | 印章 ${s.seals[seat]}:${s.seals[1 - seat]}` +
+              ` | ${settled ? "本轮结算" : "本轮已得筹码"} ${candidatePoints}:${baselinePoints}` +
+              ` | 阶段 ${s.phase}`,
+          );
+        }
         if (progressPath && (turns % 20 === 0 || s.phase !== "playing"))
           writeFileSync(
             progressPath,
@@ -504,6 +530,11 @@ try {
       if (s.phase !== "finished") throw Error("Match exceeded 700 actions");
       const winner = s.seals[seat] > s.seals[1 - seat] ? 0 : 1;
       wins[winner]++;
+      if (verbose)
+        console.error(
+          `[完赛] 种子 ${seed} 座位 ${seat} ${winner === 0 ? "候选胜" : "基线胜"}` +
+            ` | 已完成胜场 ${wins[0]}:${wins[1]}`,
+        );
       console.log(
         JSON.stringify({
           seed,

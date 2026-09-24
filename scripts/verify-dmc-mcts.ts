@@ -66,7 +66,9 @@ for (const name of names) {
   });
 }
 const result = {
-  checkpoint: "analysis/dmc-10m-2026-09-24/model-612.pt",
+  checkpoint:
+    process.env.JAIPUR_DMC_CHECKPOINT ??
+    "analysis/dmc-10m-2026-09-24/model-612.pt",
   temperature: 0.2,
   uniformPriorMass: 0.05,
   rootMix: 0.5,

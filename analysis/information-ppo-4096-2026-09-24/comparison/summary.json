@@ -1,0 +1,74 @@
+{
+  "comparisons": {
+    "144-vs-16": {
+      "wins": [
+        99,
+        29
+      ],
+      "rate": 0.7734375,
+      "seed_bootstrap_95": [
+        0.6953125,
+        0.84375
+      ],
+      "paired_2_0": 39,
+      "paired_1_1": 21,
+      "paired_0_2": 4,
+      "paired_sign_test_p": 3.1081526685738936e-08
+    },
+    "144-vs-normal": {
+      "wins": [
+        60,
+        68
+      ],
+      "rate": 0.46875,
+      "seed_bootstrap_95": [
+        0.375,
+        0.5625
+      ],
+      "paired_2_0": 17,
+      "paired_1_1": 26,
+      "paired_0_2": 21,
+      "paired_sign_test_p": 0.6271025701571489
+    },
+    "16-vs-normal": {
+      "wins": [
+        40,
+        88
+      ],
+      "rate": 0.3125,
+      "seed_bootstrap_95": [
+        0.234375,
+        0.390625
+      ],
+      "paired_2_0": 5,
+      "paired_1_1": 30,
+      "paired_0_2": 29,
+      "paired_sign_test_p": 3.8558151572942734e-05
+    },
+    "144-vs-dmc": {
+      "wins": [
+        27,
+        101
+      ],
+      "rate": 0.2109375,
+      "seed_bootstrap_95": [
+        0.140625,
+        0.28125
+      ],
+      "paired_2_0": 3,
+      "paired_1_1": 21,
+      "paired_0_2": 40,
+      "paired_sign_test_p": 3.0213413992896676e-09
+    }
+  },
+  "normal_paired_gain": {
+    "gain": 0.15625,
+    "seed_bootstrap_95": [
+      0.0234375,
+      0.28125
+    ]
+  },
+  "verified_games": 512,
+  "verified_actions": 50934,
+  "promoted": false
+}

@@ -1,0 +1,21 @@
+{
+  "source": "analysis/information-pilot-2026-09-24/ppo",
+  "source_sha256": "8201b7367f33064f9c5aa6074bf24f8dc2990235519ef5e596ddbb21a727500e",
+  "initial_iteration": 16,
+  "additional_iterations": 128,
+  "additional_games": 4096,
+  "seed_base": 200000,
+  "first_seed": 201700,
+  "last_seed": 214431,
+  "optimizer_restored": false,
+  "dev_directory": "analysis/information-pilot-2026-09-24",
+  "lr": 0.0001,
+  "batch_size": 64,
+  "epochs": 3,
+  "clip": 0.2,
+  "gamma": 1,
+  "gae_lambda": 0.95,
+  "entropy_weight": 0.01,
+  "max_kl": 0.02,
+  "torch_version": "2.14.0"
+}

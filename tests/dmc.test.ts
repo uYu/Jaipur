@@ -82,3 +82,40 @@ test("DMC input is invariant to hidden opponent hand, deck order and bonus value
     dmcState(observe(b, [], true), context),
   );
 });
+
+test("incremental public opponent knowledge matches a fresh replay", () => {
+  let rng = 8127;
+  for (let seed = 8201; seed < 8205; seed++) {
+    let state = newGame(seed);
+    const events: Event[] = [];
+    for (let turn = 0; turn < 130 && state.phase !== "finished"; turn++) {
+      if (state.phase === "roundEnd") {
+        state = nextRound(state);
+        events.push({ type: "next" });
+      }
+      const cached = observe(state, events, 0.75);
+      const fresh = observe(state, events.slice(), 0.75);
+      assert.deepEqual(cached.knownOpponentHand, fresh.knownOpponentHand);
+      const actions = legalActions(state);
+      const [r, next] = random(rng);
+      rng = next;
+      const action = actions[Math.floor(r * actions.length)];
+      state = applyAction(state, action);
+      events.push(action);
+    }
+  }
+});
+
+test("public knowledge cache invalidates when an event history branches", () => {
+  const start = newGame(8421);
+  const alternatives = legalActions(start).filter((a) => a.type === "take");
+  assert.ok(alternatives.length >= 2);
+  const events: Event[] = [alternatives[0]];
+  observe(applyAction(start, alternatives[0]), events, 0.75);
+  events[0] = alternatives[1];
+  const state = applyAction(start, alternatives[1]);
+  assert.deepEqual(
+    observe(state, events, 0.75).knownOpponentHand,
+    observe(state, events.slice(), 0.75).knownOpponentHand,
+  );
+});

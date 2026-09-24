@@ -29,6 +29,14 @@ npm run build               # TypeScript 检查与生产构建
 npm run preview             # 本地预览生产构建
 ```
 
+从0启动PPO训练（Linux Docker，无需现有模型）：
+
+```bash
+docker compose --profile train up --build train
+```
+
+默认32768场，日志和检查点写入 `./training-runs/`，再次启动自动续训。配置、SwanLab及停止方式见 [容器训练说明](docs/TRAINING_DOCKER.md)。
+
 Docker 部署：
 
 ```bash
@@ -76,7 +84,7 @@ docker compose down
 
 当前算法的完整说明见 [AI 算法文档](docs/AI_ALGORITHM.md)。
 
-DMC 自我对局和 MCTS 根先验融合的实验方法、数据、结果与复现入口见 [DMC 实验交接](docs/DMC_RESEARCH.md)；该候选尚未成为默认 AI。
+DMC 自我对局、训练提速与续训，以及 MCTS 根先验融合的实验方法、数据、结果与复现入口见 [DMC 实验交接](docs/DMC_RESEARCH.md)；该候选尚未成为默认 AI。
 
 AI 在 Web Worker 中执行，仅接收自己的手牌与驼队、双方公开收入、市场、公开弃牌与筹码、对手手牌数量、牌堆剩余数量和已提交的公开行动历史。不会接收对手真实手牌、对手秘密奖励、牌堆顺序或洗牌种子。
 

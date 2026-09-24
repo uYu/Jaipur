@@ -4,3 +4,8 @@ dist
 *.tsbuildinfo
 .DS_Store
 .pnpm-store
+.env
+.env.*
+analysis
+training-runs
+**/__pycache__

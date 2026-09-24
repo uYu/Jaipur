@@ -1,0 +1,37 @@
+{
+  "models": {
+    "analysis/information-ppo-4096-2026-09-24/model.json": "e25542ff3a45cef72ecb81c70d761e14705b85809ca64f5505cf25587831040d",
+    "analysis/information-pilot-2026-09-24/ppo/model.json": "5dfc32b37f2b7115367cb58d667e964948854a66907dba981828e846ca17db96",
+    "analysis/dmc-resume-fast-2026-09-24/model-738.pt": "d58d5a5b5dcb3af435cb1ff4fca7231158d65c085af9bcbe4821a3c3b8031f3f"
+  },
+  "cases": [
+    {
+      "name": "144-vs-16",
+      "model": "analysis/information-ppo-4096-2026-09-24",
+      "baseline": "referencePolicy",
+      "start": 300001,
+      "pairs": 64
+    },
+    {
+      "name": "144-vs-normal",
+      "model": "analysis/information-ppo-4096-2026-09-24",
+      "baseline": "normal",
+      "start": 301001,
+      "pairs": 64
+    },
+    {
+      "name": "16-vs-normal",
+      "model": "analysis/information-pilot-2026-09-24/ppo",
+      "baseline": "normal",
+      "start": 301001,
+      "pairs": 64
+    },
+    {
+      "name": "144-vs-dmc",
+      "model": "analysis/information-ppo-4096-2026-09-24",
+      "baseline": "dmc",
+      "start": 302001,
+      "pairs": 64
+    }
+  ]
+}

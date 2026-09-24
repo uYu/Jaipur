@@ -20,3 +20,25 @@ services:
       timeout: 3s
       start_period: 5s
       retries: 3
+
+  train:
+    profiles: [train]
+    image: jaipur-train:latest
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.train
+    init: true
+    restart: "no"
+    stop_grace_period: 30s
+    environment:
+      TRAIN_GAMES: ${TRAIN_GAMES:-32768}
+      TRAIN_THREADS: ${TRAIN_THREADS:-4}
+      TRAIN_SEED_BASE: ${TRAIN_SEED_BASE:-500000}
+      TRAIN_RANDOM_SEED: ${TRAIN_RANDOM_SEED:-9241}
+      TRAIN_RESUME: ${TRAIN_RESUME:-auto}
+      TRAIN_OUTPUT_ROOT: /runs
+      TRAIN_SWANLAB: ${TRAIN_SWANLAB:-auto}
+      INFORMATION_BALANCED_SEATS: ${INFORMATION_BALANCED_SEATS:-1}
+      SWANLAB_API_KEY: ${SWANLAB_API_KEY:-}
+    volumes:
+      - ${TRAIN_OUTPUT_DIR:-./training-runs}:/runs

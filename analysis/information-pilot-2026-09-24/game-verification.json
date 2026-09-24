@@ -1,0 +1,78 @@
+[
+  {
+    "file": "analysis/information-pilot-2026-09-24/final-evaluation/bc-normal/policy-normal-games.jsonl",
+    "games": 64,
+    "actions": 6079,
+    "wins": [
+      7,
+      57
+    ],
+    "pairedSeeds": 32
+  },
+  {
+    "file": "analysis/information-pilot-2026-09-24/final-evaluation/ppo-dmc/policy-dmc-games.jsonl",
+    "games": 64,
+    "actions": 6354,
+    "wins": [
+      6,
+      58
+    ],
+    "pairedSeeds": 32
+  },
+  {
+    "file": "analysis/information-pilot-2026-09-24/final-evaluation/ppo-normal/policy-normal-games.jsonl",
+    "games": 64,
+    "actions": 6642,
+    "wins": [
+      22,
+      42
+    ],
+    "pairedSeeds": 32
+  },
+  {
+    "file": "analysis/information-pilot-2026-09-24/final-evaluation/search-old/search1-guidedBehavior-games.jsonl",
+    "games": 4,
+    "actions": 364,
+    "wins": [
+      0,
+      4
+    ],
+    "pairedSeeds": 2
+  },
+  {
+    "file": "analysis/information-pilot-2026-09-24/policy-normal/policy-normal-games.jsonl",
+    "games": 64,
+    "actions": 6326,
+    "wins": [
+      12,
+      52
+    ],
+    "pairedSeeds": 32
+  },
+  {
+    "file": "analysis/information-pilot-2026-09-24/ppo/selfplay-games.jsonl",
+    "games": 512,
+    "actions": 60260,
+    "pairedSeeds": 0
+  },
+  {
+    "file": "analysis/information-pilot-2026-09-24/ppo-search/search1-policy-games.jsonl",
+    "games": 4,
+    "actions": 421,
+    "wins": [
+      2,
+      2
+    ],
+    "pairedSeeds": 2
+  },
+  {
+    "file": "analysis/information-pilot-2026-09-24/search-policy/search1-policy-games.jsonl",
+    "games": 4,
+    "actions": 365,
+    "wins": [
+      0,
+      4
+    ],
+    "pairedSeeds": 2
+  }
+]

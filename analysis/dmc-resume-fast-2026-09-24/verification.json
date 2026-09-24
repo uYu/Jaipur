@@ -1,0 +1,37 @@
+{
+  "initialVersion": 658,
+  "finalVersion": 786,
+  "updates": 128,
+  "completedGames": 16384,
+  "samples": 2059482,
+  "replayedTraining": 9,
+  "replayedEvaluationGames": 192,
+  "replayedEvaluationActions": 21641,
+  "selectedCheckpoint": "analysis/dmc-resume-fast-2026-09-24/model-738.pt",
+  "evaluations": [
+    {
+      "name": "selected-normal",
+      "wins": [
+        51,
+        13
+      ],
+      "pairs": 32
+    },
+    {
+      "name": "prior-normal",
+      "wins": [
+        48,
+        16
+      ],
+      "pairs": 32
+    },
+    {
+      "name": "selected-prior",
+      "wins": [
+        33,
+        31
+      ],
+      "pairs": 32
+    }
+  ]
+}

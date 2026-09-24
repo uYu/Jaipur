@@ -34,6 +34,14 @@ function removeKnown(cards: Good[], good: Good, count = 1) {
   }
 }
 
+type KnowledgeCache = {
+  seed: number;
+  events: Event[];
+  replay: State;
+  known: Good[];
+};
+const knowledgeCache = new WeakMap<Event[], Map<number, KnowledgeCache>>();
+
 /** Infer only cards revealed by public actions; the dealt hand stays unknown. */
 function publicOpponentKnowledge(
   state: State,
@@ -41,9 +49,16 @@ function publicOpponentKnowledge(
   observer: number,
 ): Good[] {
   if (!events?.length) return [];
-  let replay = newGame(state.seed);
-  let known: Good[] = [];
-  for (const event of events) {
+  const entries = knowledgeCache.get(events) ?? new Map<number, KnowledgeCache>();
+  const previous = entries.get(observer);
+  const reusable =
+    previous?.seed === state.seed &&
+    previous.events.length <= events.length &&
+    previous.events.every((event, index) => event === events[index]);
+  let replay = reusable ? previous.replay : newGame(state.seed);
+  let known: Good[] = reusable ? previous.known : [];
+  for (let index = reusable ? previous.events.length : 0; index < events.length; index++) {
+    const event = events[index];
     if (event.type === "next") {
       replay = nextRound(replay);
       known = [];
@@ -62,6 +77,8 @@ function publicOpponentKnowledge(
     }
     replay = applyAction(replay, event);
   }
+  entries.set(observer, { seed: state.seed, events: events.slice(), replay, known });
+  knowledgeCache.set(events, entries);
   return known.slice(0, state.players[1 - observer].hand.length);
 }
 

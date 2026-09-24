@@ -1,0 +1,7 @@
+{
+  "bestCheckpoint": "analysis/dmc-resume-fast-2026-09-24/model-738.pt",
+  "bestDevScore": 36,
+  "latestCheckpoint": "analysis/dmc-resume-fast-2026-09-24/model-786.pt",
+  "criterion": "paired dev match results; ties keep earlier checkpoint",
+  "promoted": false
+}

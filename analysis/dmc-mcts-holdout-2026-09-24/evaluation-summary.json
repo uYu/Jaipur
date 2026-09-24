@@ -1,0 +1,74 @@
+{
+  "checkpoint": "analysis/dmc-10m-2026-09-24/model-612.pt",
+  "temperature": 0.2,
+  "uniformPriorMass": 0.05,
+  "rootMix": 0.5,
+  "promoted": false,
+  "results": [
+    {
+      "name": "count-256",
+      "verified": true,
+      "matches": 48,
+      "replayedActions": 5216,
+      "candidate": "dmcMcts",
+      "baseline": "guidedBehavior",
+      "start": 12001,
+      "pairs": 24,
+      "budget": 50,
+      "comparison": "equal-search-count",
+      "fixedIterationsPerTree": 256,
+      "simulationsPerDecision": 2048,
+      "searchCountVerifiedEveryDecision": true,
+      "timeLimitMs": null,
+      "wins": [
+        21,
+        27
+      ],
+      "meanMs": [
+        84.87539962063639,
+        83.60197266538908
+      ],
+      "meanWallMs": [
+        85.92600627311042,
+        84.89955198121866
+      ],
+      "meanObserveMs": [
+        1.0467956229381592,
+        1.0511215208893137
+      ],
+      "maxObserveMs": [
+        5.586333999992348,
+        5.944416000005731
+      ],
+      "maxMs": [
+        258.0865829999966,
+        248.531
+      ],
+      "maxWallMs": [
+        260.34795799999847,
+        251.60712500000955
+      ],
+      "slowDecisions": [],
+      "sales": [
+        {
+          "1": 153,
+          "2": 330,
+          "3": 214,
+          "4": 99,
+          "5": 41
+        },
+        {
+          "1": 165,
+          "2": 303,
+          "3": 232,
+          "4": 86,
+          "5": 37
+        }
+      ],
+      "terminals": [
+        5339136,
+        5343232
+      ]
+    }
+  ]
+}

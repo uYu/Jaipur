@@ -19,3 +19,23 @@ analysis/dmc-10m-2026-09-24/model-*.pt
 !analysis/dmc-10m-2026-09-24/model-658.pt
 analysis/dmc-10m-2026-09-24/selfplay-games.jsonl
 analysis/dmc-10m-2026-09-24/console.log
+analysis/dmc-resume-fast-2026-09-24/batch-*.npz
+analysis/dmc-resume-fast-2026-09-24/model-*.pt
+!analysis/dmc-resume-fast-2026-09-24/model-738.pt
+!analysis/dmc-resume-fast-2026-09-24/model-786.pt
+analysis/dmc-resume-fast-2026-09-24/selfplay-games.jsonl
+analysis/dmc-resume-fast-2026-09-24/truncated-games.jsonl
+analysis/dmc-resume-fast-2026-09-24/console.log
+
+# Rebuildable information-policy training arrays and terminal capture.
+analysis/information-pilot-2026-09-24/train.jsonl
+analysis/information-pilot-2026-09-24/dev.jsonl
+analysis/information-pilot-2026-09-24/**/console.log
+analysis/information-pilot-2026-09-24/ppo/fresh.jsonl*
+__pycache__/
+analysis/information-ppo-4096-2026-09-24/fresh.jsonl*
+analysis/information-ppo-4096-2026-09-24/console.log
+analysis/information-ppo-4096-2026-09-24/comparison/console.log
+analysis/information-ppo-4096-2026-09-24/diagnosis/console.log
+analysis/information-ppo-4096-2026-09-24/diagnosis/model-*/model.json
+training-runs/

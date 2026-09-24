@@ -1,0 +1,17 @@
+{
+  "purpose": "retrospective diagnosis, not model selection",
+  "iterations": [
+    16,
+    48,
+    80,
+    112,
+    144
+  ],
+  "seeds": [
+    310001,
+    310032
+  ],
+  "games_per_checkpoint": 64,
+  "opponent": "normal",
+  "acting": "greedy pure policy"
+}

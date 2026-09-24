@@ -1,0 +1,12 @@
+{
+  "sameCheckpoint": "analysis/dmc-10m-2026-09-24/model-658.pt",
+  "gamesPerIteration": 128,
+  "baselineElapsedSeconds": 23.064045666,
+  "cachedElapsedSeconds": 4.72561,
+  "speedup": 4.880649411610353,
+  "identicalGames": true,
+  "identicalModelWeights": true,
+  "samples": 15945,
+  "mseBaseline": 0.8063110995387274,
+  "mseCached": 0.8063110995387274
+}
