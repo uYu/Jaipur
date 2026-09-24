@@ -1,0 +1,8 @@
+{
+  "phase": "evaluation-complete",
+  "cumulativeSamples": 10009435,
+  "cumulativeMatches": 82688,
+  "targetSamples": 10000000,
+  "bestCheckpoint": "analysis/dmc-10m-2026-09-24/model-612.pt",
+  "promoted": false
+}

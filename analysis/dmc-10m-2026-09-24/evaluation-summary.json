@@ -1,0 +1,176 @@
+{
+  "evaluations": {
+    "heldout/normal": {
+      "checkpoint": "analysis/dmc-10m-2026-09-24/model-612.pt",
+      "opponent": "normal",
+      "start": 3300000000,
+      "pairs": 64,
+      "wins": [
+        101,
+        27
+      ],
+      "roundWins": [
+        216,
+        110
+      ],
+      "truncated": 0,
+      "meanWallMs": [
+        1.2250176805617052,
+        1.1171912562784565
+      ],
+      "promotion": false
+    },
+    "initial/normal": {
+      "checkpoint": "analysis/dmc-10m-2026-09-24/model-012.pt",
+      "opponent": "normal",
+      "start": 3300000000,
+      "pairs": 64,
+      "wins": [
+        40,
+        88
+      ],
+      "roundWins": [
+        117,
+        204
+      ],
+      "truncated": 0,
+      "meanWallMs": [
+        1.143213715647716,
+        1.0481937568918656
+      ],
+      "promotion": false
+    },
+    "heldout/initial": {
+      "checkpoint": "analysis/dmc-10m-2026-09-24/model-612.pt",
+      "opponent": "analysis/dmc-10m-2026-09-24/model-012.pt",
+      "start": 3400000000,
+      "pairs": 32,
+      "wins": [
+        62,
+        2
+      ],
+      "roundWins": [
+        125,
+        24
+      ],
+      "truncated": 0,
+      "meanWallMs": [
+        1.1351470903503433,
+        1.1578460589665713
+      ],
+      "promotion": false
+    },
+    "heldout/guided_1s": {
+      "candidate": "dmc",
+      "baseline": "guidedBehavior",
+      "start": 7601,
+      "pairs": 2,
+      "budget": 1000,
+      "wins": [
+        0,
+        4
+      ],
+      "meanMs": [
+        0.6266393128840688,
+        952.9587543209874
+      ],
+      "meanWallMs": [
+        1.523753042944722,
+        954.0993960493824
+      ],
+      "meanObserveMs": [
+        0.8940173435579112,
+        0.8299863580246832
+      ],
+      "maxObserveMs": [
+        2.411292000004323,
+        3.1080409999995027
+      ],
+      "maxMs": [
+        4.0254169999971054,
+        1002.97
+      ],
+      "maxWallMs": [
+        6.166249999994761,
+        1004.6523750000051
+      ],
+      "slowDecisions": [],
+      "sales": [
+        {
+          "1": 8,
+          "2": 17,
+          "3": 16,
+          "4": 5
+        },
+        {
+          "1": 10,
+          "2": 16,
+          "3": 16,
+          "4": 11,
+          "5": 1
+        }
+      ],
+      "terminals": [
+        0,
+        15787845
+      ]
+    },
+    "heldout/guided_2s": {
+      "candidate": "dmc",
+      "baseline": "guidedBehavior",
+      "start": 7701,
+      "pairs": 2,
+      "budget": 2000,
+      "wins": [
+        0,
+        4
+      ],
+      "meanMs": [
+        0.5733108735653305,
+        1887.982814534884
+      ],
+      "meanWallMs": [
+        1.5157825747137381,
+        1889.1992492383702
+      ],
+      "meanObserveMs": [
+        0.939852275862997,
+        0.8820143197668298
+      ],
+      "maxObserveMs": [
+        1.9005420000175945,
+        1.803542000008747
+      ],
+      "maxMs": [
+        1.8016659999993863,
+        2012.93
+      ],
+      "maxWallMs": [
+        3.21875,
+        2014.0596249999944
+      ],
+      "slowDecisions": [],
+      "sales": [
+        {
+          "1": 13,
+          "2": 23,
+          "3": 8,
+          "4": 7,
+          "5": 3
+        },
+        {
+          "1": 13,
+          "2": 18,
+          "3": 18,
+          "4": 3,
+          "5": 4
+        }
+      ],
+      "terminals": [
+        0,
+        27082648
+      ]
+    }
+  },
+  "promoted": false
+}

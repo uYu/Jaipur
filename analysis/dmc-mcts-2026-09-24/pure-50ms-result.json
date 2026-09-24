@@ -1,0 +1,64 @@
+{"seed":8101,"seat":0,"winner":"guidedBehavior","scores":[[60,79],[79,62],[61,86]]}
+{"seed":8101,"seat":1,"winner":"guidedBehavior","scores":[[77,56],[113,31]]}
+{"seed":8102,"seat":0,"winner":"guidedBehavior","scores":[[63,64],[78,78]]}
+{"seed":8102,"seat":1,"winner":"dmcMctsPure","scores":[[78,63],[62,73],[59,72]]}
+{"seed":8103,"seat":0,"winner":"guidedBehavior","scores":[[72,75],[80,77],[73,76]]}
+{"seed":8103,"seat":1,"winner":"guidedBehavior","scores":[[79,70],[86,47]]}
+{"seed":8104,"seat":0,"winner":"guidedBehavior","scores":[[62,82],[62,62]]}
+{"seed":8104,"seat":1,"winner":"dmcMctsPure","scores":[[77,76],[49,77],[75,76]]}
+{
+  "candidate": "dmcMctsPure",
+  "baseline": "guidedBehavior",
+  "start": 8101,
+  "pairs": 4,
+  "budget": 50,
+  "wins": [
+    2,
+    6
+  ],
+  "meanMs": [
+    44.57623379101111,
+    43.813800423162576
+  ],
+  "meanWallMs": [
+    45.727382011235946,
+    45.26312795545662
+  ],
+  "meanObserveMs": [
+    1.1477421191011279,
+    1.239831086859713
+  ],
+  "maxObserveMs": [
+    4.627208000001701,
+    41.065207999999984
+  ],
+  "maxMs": [
+    47.738499999999476,
+    44.9385
+  ],
+  "maxWallMs": [
+    48.964458000002196,
+    47.34670899999992
+  ],
+  "slowDecisions": [],
+  "sales": [
+    {
+      "1": 31,
+      "2": 60,
+      "3": 25,
+      "4": 17,
+      "5": 6
+    },
+    {
+      "1": 23,
+      "2": 56,
+      "3": 35,
+      "4": 16,
+      "5": 9
+    }
+  ],
+  "terminals": [
+    3891650,
+    6528978
+  ]
+}

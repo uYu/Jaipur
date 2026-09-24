@@ -37,6 +37,42 @@ void print_action(const Action& action) {
   std::cout << "]";
 }
 
+// Audit sampled worlds, not the saved game's private hand. Check whether each
+// rollout policy actually takes an available, immediately winning sale.
+void audit_replies(const Observation& o, uint32_t seed, int samples) {
+  Rng initial{seed};
+  const auto actions = atomic_actions(determinize(o, initial));
+  for (const auto& action : actions) {
+    int threats=0, first_eight_threats=0, missed[3]={};
+    Rng worlds{seed};
+    for (int n=0;n<samples;n++) {
+      State s=determinize(o,worlds);
+      apply_action(s,action);
+      if(s.terminal) continue;
+      bool threat=false;
+      for(const auto& reply:atomic_actions(s)) {
+        if(reply.kind!=ActionKind::Sell) continue;
+        State end=s; apply_action(end,reply);
+        if(end.terminal && (s.current==0?end.value:-end.value)>0) {threat=true;break;}
+      }
+      if(!threat) continue;
+      threats++;
+      first_eight_threats += n<8;
+      for(int p=0;p<3;p++) {
+        Rng rng{seed ^ (uint32_t(n+1)*0x9e3779b9u)};
+        auto reply=p==2?neural_action(s,rng,100):policy_action(s,rng,TRAINED_POLICY,p?100:0);
+        State end=s;apply_action(end,reply);
+        missed[p]+=!(end.terminal && (s.current==0?end.value:-end.value)>0);
+      }
+    }
+    std::cout<<"{\"action\":";print_action(action);
+    std::cout<<",\"samples\":"<<samples<<",\"winningReplyWorlds\":"<<threats
+      <<",\"firstEightWinningReplyWorlds\":"<<first_eight_threats
+      <<",\"missedLinearGreedy\":"<<missed[0]<<",\"missedLinearExplore\":"<<missed[1]
+      <<",\"missedNeuralExplore\":"<<missed[2]<<"}"<<std::endl;
+  }
+}
+
 // Common determinization and per-turn random seeds for every root alternative.
 void diagnose(const Observation& observation, uint32_t seed, int samples) {
   Rng worlds{seed};
@@ -98,23 +134,102 @@ int main(int argc,char** argv) {
   if(argc>8) options.neural_prior=std::stoi(argv[8]);
   if(argc>9) options.neural_rollout=std::stoi(argv[9]);
   if(argc>10) options.neural_root_only=std::stoi(argv[10]);
+  if(argc>11) options.stratified_hands=std::stoi(argv[11]);
+  if(argc>12) options.close_risk_weight=std::stod(argv[12]);
+  if(argc>13) options.belief_prior=std::stoi(argv[13]);
+  if(argc>14) options.terminal_tactics=std::stoi(argv[14]);
+  if(argc>15) options.factor_actions=std::stoi(argv[15]);
+#ifndef JAIPUR_BELIEF_WEIGHTS_HEADER
+  if(options.belief_prior) { std::cerr << "Belief weights not compiled\n"; return 3; }
+#endif
+  options.record_root_policy = mode == "teacher";
+  options.record_root_stats = mode == "audit-search";
   int iterations,length;
   while(std::cin >> iterations >> length) {
+    double request_budget_ms=options.time_limit_ms;
+    if(mode=="search-budgeted" || mode=="search-dmc") std::cin >> request_budget_ms;
     std::vector<int32_t> input(length);
     for(auto& value:input) std::cin >> value;
     Observation o;
     if(!parse_observation(input.data(),length,o)) return 2;
+    std::vector<std::pair<Action,double>> external_prior;
+    double external_mix=.5;
+    if(mode=="search-dmc") {
+      int count=0;
+      std::cin >> external_mix >> count;
+      if(count<=0 || count>100000 || external_mix<0 || external_mix>1) return 4;
+      double mass=0;
+      for(int i=0;i<count;++i) {
+        std::array<double,24> f{};
+        for(auto& value:f) std::cin >> value;
+        double probability; std::cin >> probability;
+        if(!std::cin || !std::isfinite(probability) || probability<0) return 4;
+        Action action;
+        action.kind=ActionKind(std::max_element(f.begin(),f.begin()+4)-f.begin());
+        if(action.kind==ActionKind::Take || action.kind==ActionKind::Sell)
+          action.good=std::max_element(f.begin()+17,f.begin()+23)-(f.begin()+17);
+        action.count=std::lround(f[16]*7);
+        action.camels=std::lround(f[23]*7);
+        for(int g=0;g<GOODS;++g) {action.take[g]=std::lround(f[4+g]*7);action.give[g]=std::lround(f[10+g]*7);}
+        external_prior.push_back({action,probability});mass+=probability;
+      }
+      if(std::abs(mass-1)>1e-5) return 4;
+      Rng legal_rng{123};
+      const auto legal=atomic_actions(determinize(o,legal_rng));
+      if(legal.size()!=external_prior.size()) return 4;
+      for(const auto& action:legal) {
+        int matches=0;
+        for(const auto& item:external_prior) matches+=item.first==action;
+        if(matches!=1) return 4;
+      }
+    }
     const auto seed=hash_input(input.data(),length);
+    if(mode=="audit-replies") { audit_replies(o,seed,iterations); continue; }
     if(mode=="diagnose") { diagnose(o,seed,iterations); continue; }
     const auto started=std::chrono::steady_clock::now();
     SearchDecision decision;
     if(mode=="normal") decision.action=choose_original_hard(o);
-    else decision=choose(o,seed,iterations,options);
+    else {
+      auto request_options=options;
+      request_options.time_limit_ms=request_budget_ms;
+      if(mode=="search-dmc") {
+        request_options.root_policy=&external_prior;
+        request_options.root_policy_mix=external_mix;
+      }
+      decision=choose(o,seed,iterations,request_options);
+    }
+    if(mode=="teacher") {
+      const auto features=belief_features(o);
+      std::cout << "{\"features\":[";
+      for(int i=0;i<BELIEF_STATE_FEATURES;i++) std::cout << (i?",":"") << features[i];
+      std::cout << "],\"actions\":[";
+      for(size_t i=0;i<decision.root_policy.size();i++) {
+        const auto& item=decision.root_policy[i];
+        const auto af=belief_action_features(item.first);
+        std::cout << (i?",":"") << "{\"features\":[";
+        for(int j=0;j<BELIEF_ACTION_FEATURES;j++) std::cout << (j?",":"") << af[j];
+        std::cout << "],\"policy\":" << item.second << "}";
+      }
+      std::cout << "]}" << std::endl;
+      continue;
+    }
     const double ms=std::chrono::duration<double,std::milli>(
       std::chrono::steady_clock::now()-started).count();
     std::cout << "{\"action\":";
     print_action(decision.action);
+    if(options.record_root_stats) {
+      std::cout<<",\"root\":[";
+      for(size_t i=0;i<decision.root_stats.size();++i) {
+        const auto& item=decision.root_stats[i];
+        std::cout<<(i?",":"")<<"{\"action\":"; print_action(item.first);
+        std::cout<<",\"visitMass\":"<<item.second[0]<<",\"mean\":"<<item.second[1]<<"}";
+      }
+      std::cout<<"]";
+    }
     std::cout << ",\"elapsedMs\":" << ms << ",\"depth\":" << decision.stats.max_depth
-      << ",\"terminal\":" << decision.stats.terminal << "}" << std::endl;
+      << ",\"simulations\":" << decision.stats.simulations
+      << ",\"terminal\":" << decision.stats.terminal
+      << ",\"truncated\":" << decision.stats.truncated
+      << ",\"tacticalFinishes\":" << decision.stats.tactical_finishes << "}" << std::endl;
   }
 }

@@ -58,7 +58,10 @@ export type MctsDecision = { action: Action; stats: MctsStats };
 const modulePromise = createJaipurAi() as Promise<JaipurModule>;
 const goodIndex = (good: Good) => GOODS.indexOf(good);
 
-export function encodeObservation(observation: Observation): Int32Array {
+export function encodeObservation(
+  observation: Observation,
+  includeDistribution = false,
+): Int32Array {
   const values: number[] = [0x4a4149, 1];
   for (const good of GOODS)
     values.push(observation.hand.filter((card) => card === good).length);
@@ -94,6 +97,15 @@ export function encodeObservation(observation: Observation): Int32Array {
     observation.opponentHandCount,
     observation.turn,
   );
+  if (includeDistribution) {
+    const worlds = observation.opponentHandDistribution ?? [];
+    values.push(worlds.length);
+    for (const world of worlds)
+      values.push(
+        ...world.hand.slice(0, 6),
+        Math.max(0, Math.round(world.probability * 1_000_000_000)),
+      );
+  }
   return Int32Array.from(values);
 }
 
@@ -147,7 +159,11 @@ export async function chooseWasmActionWithStats(
   iterationsPerTree = MCTS_ITERATIONS_PER_TREE,
   model: "linear" | "neural" = "linear",
 ): Promise<MctsDecision> {
-  return chooseWasmActionWithStatsInternal(observation, iterationsPerTree, model);
+  return chooseWasmActionWithStatsInternal(
+    observation,
+    iterationsPerTree,
+    model,
+  );
 }
 
 export async function chooseTimedWasmActionWithStats(
@@ -155,9 +171,18 @@ export async function chooseTimedWasmActionWithStats(
   milliseconds: number,
   model: "linear" | "neural" = "linear",
 ): Promise<MctsDecision> {
-  if (!Number.isInteger(milliseconds) || milliseconds < 100 || milliseconds > 30000)
+  if (
+    !Number.isInteger(milliseconds) ||
+    milliseconds < 100 ||
+    milliseconds > 30000
+  )
     throw new RangeError("MCTS time budget must be 100–30000 ms");
-  return chooseWasmActionWithStatsInternal(observation, milliseconds, model, true);
+  return chooseWasmActionWithStatsInternal(
+    observation,
+    milliseconds,
+    model,
+    true,
+  );
 }
 
 async function chooseWasmActionWithStatsInternal(

@@ -1,0 +1,79 @@
+{"seed":9101,"seat":0,"winner":"dmcMcts","scores":[[67,63],[79,64]]}
+{"seed":9101,"seat":1,"winner":"dmcMcts","scores":[[62,84],[67,81]]}
+{"seed":9102,"seat":0,"winner":"dmcMcts","scores":[[65,71],[77,57],[72,63]]}
+{"seed":9102,"seat":1,"winner":"guidedBehavior","scores":[[66,81],[72,66],[61,58]]}
+{"seed":9103,"seat":0,"winner":"guidedBehavior","scores":[[51,78],[80,58],[65,78]]}
+{"seed":9103,"seat":1,"winner":"dmcMcts","scores":[[60,80],[67,68]]}
+{"seed":9104,"seat":0,"winner":"guidedBehavior","scores":[[69,70],[72,65],[66,68]]}
+{"seed":9104,"seat":1,"winner":"dmcMcts","scores":[[61,73],[77,72],[64,75]]}
+{"seed":9105,"seat":0,"winner":"guidedBehavior","scores":[[67,81],[77,70],[70,83]]}
+{"seed":9105,"seat":1,"winner":"dmcMcts","scores":[[72,65],[64,87],[70,70]]}
+{"seed":9106,"seat":0,"winner":"dmcMcts","scores":[[60,75],[86,65],[76,64]]}
+{"seed":9106,"seat":1,"winner":"dmcMcts","scores":[[65,71],[75,58],[63,83]]}
+{"seed":9107,"seat":0,"winner":"dmcMcts","scores":[[78,76],[70,65]]}
+{"seed":9107,"seat":1,"winner":"guidedBehavior","scores":[[79,59],[67,72],[73,54]]}
+{"seed":9108,"seat":0,"winner":"guidedBehavior","scores":[[51,73],[79,62],[69,82]]}
+{"seed":9108,"seat":1,"winner":"dmcMcts","scores":[[72,72],[69,63],[68,70]]}
+{
+  "candidate": "dmcMcts",
+  "baseline": "guidedBehavior",
+  "start": 9101,
+  "pairs": 8,
+  "budget": 50,
+  "comparison": "equal-search-count",
+  "fixedIterationsPerTree": 4096,
+  "simulationsPerDecision": 32768,
+  "searchCountVerifiedEveryDecision": true,
+  "timeLimitMs": null,
+  "wins": [
+    10,
+    6
+  ],
+  "meanMs": [
+    1216.458111677838,
+    1202.497464296536
+  ],
+  "meanWallMs": [
+    1217.840445646487,
+    1204.2286664880935
+  ],
+  "meanObserveMs": [
+    1.376348885406483,
+    1.3532380097407826
+  ],
+  "maxObserveMs": [
+    8.976334000006318,
+    9.090459000086412
+  ],
+  "maxMs": [
+    3161.940459000063,
+    3259.44
+  ],
+  "maxWallMs": [
+    3167.0446670000674,
+    3264.103790999856
+  ],
+  "slowDecisions": [],
+  "sales": [
+    {
+      "1": 51,
+      "2": 113,
+      "3": 71,
+      "4": 39,
+      "5": 14,
+      "6": 1
+    },
+    {
+      "1": 64,
+      "2": 122,
+      "3": 67,
+      "4": 28,
+      "5": 15,
+      "6": 1
+    }
+  ],
+  "terminals": [
+    30310400,
+    30277632
+  ]
+}

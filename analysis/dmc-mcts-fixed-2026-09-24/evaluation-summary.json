@@ -1,0 +1,207 @@
+{
+  "checkpoint": "analysis/dmc-10m-2026-09-24/model-612.pt",
+  "temperature": 0.2,
+  "uniformPriorMass": 0.05,
+  "rootMix": 0.5,
+  "promoted": false,
+  "results": [
+    {
+      "name": "count-256",
+      "verified": true,
+      "matches": 16,
+      "replayedActions": 1705,
+      "candidate": "dmcMcts",
+      "baseline": "guidedBehavior",
+      "start": 9101,
+      "pairs": 8,
+      "budget": 50,
+      "comparison": "equal-search-count",
+      "fixedIterationsPerTree": 256,
+      "simulationsPerDecision": 2048,
+      "searchCountVerifiedEveryDecision": true,
+      "timeLimitMs": null,
+      "wins": [
+        10,
+        6
+      ],
+      "meanMs": [
+        84.63538478730894,
+        82.18548461358316
+      ],
+      "meanWallMs": [
+        85.75190010340758,
+        83.54885592154572
+      ],
+      "meanObserveMs": [
+        1.1130121844889864,
+        1.1218093829038511
+      ],
+      "maxObserveMs": [
+        6.555874999998196,
+        8.005959000001894
+      ],
+      "maxMs": [
+        388.4399169999997,
+        316.357
+      ],
+      "maxWallMs": [
+        389.6684159999995,
+        318.6247089999997
+      ],
+      "slowDecisions": [],
+      "sales": [
+        {
+          "1": 58,
+          "2": 104,
+          "3": 60,
+          "4": 36,
+          "5": 13
+        },
+        {
+          "1": 48,
+          "2": 93,
+          "3": 72,
+          "4": 31,
+          "5": 16
+        }
+      ],
+      "terminals": [
+        1742848,
+        1748992
+      ]
+    },
+    {
+      "name": "count-1024",
+      "verified": true,
+      "matches": 16,
+      "replayedActions": 1769,
+      "candidate": "dmcMcts",
+      "baseline": "guidedBehavior",
+      "start": 9101,
+      "pairs": 8,
+      "budget": 50,
+      "comparison": "equal-search-count",
+      "fixedIterationsPerTree": 1024,
+      "simulationsPerDecision": 8192,
+      "searchCountVerifiedEveryDecision": true,
+      "timeLimitMs": null,
+      "wins": [
+        9,
+        7
+      ],
+      "meanMs": [
+        328.28604704519773,
+        320.9947679276022
+      ],
+      "meanWallMs": [
+        329.5260743468914,
+        322.55541153959234
+      ],
+      "meanObserveMs": [
+        1.2358492994343815,
+        1.2209842703624565
+      ],
+      "maxObserveMs": [
+        25.638541000007535,
+        7.719041999953333
+      ],
+      "maxMs": [
+        890.4968750000698,
+        837.464
+      ],
+      "maxWallMs": [
+        891.9974999999395,
+        840.4577500000014
+      ],
+      "slowDecisions": [],
+      "sales": [
+        {
+          "1": 72,
+          "2": 116,
+          "3": 67,
+          "4": 25,
+          "5": 17
+        },
+        {
+          "1": 54,
+          "2": 106,
+          "3": 86,
+          "4": 22,
+          "5": 11,
+          "6": 1
+        }
+      ],
+      "terminals": [
+        7249920,
+        7241728
+      ]
+    },
+    {
+      "name": "count-4096",
+      "verified": true,
+      "matches": 16,
+      "replayedActions": 1849,
+      "candidate": "dmcMcts",
+      "baseline": "guidedBehavior",
+      "start": 9101,
+      "pairs": 8,
+      "budget": 50,
+      "comparison": "equal-search-count",
+      "fixedIterationsPerTree": 4096,
+      "simulationsPerDecision": 32768,
+      "searchCountVerifiedEveryDecision": true,
+      "timeLimitMs": null,
+      "wins": [
+        10,
+        6
+      ],
+      "meanMs": [
+        1216.458111677838,
+        1202.497464296536
+      ],
+      "meanWallMs": [
+        1217.840445646487,
+        1204.2286664880935
+      ],
+      "meanObserveMs": [
+        1.376348885406483,
+        1.3532380097407826
+      ],
+      "maxObserveMs": [
+        8.976334000006318,
+        9.090459000086412
+      ],
+      "maxMs": [
+        3161.940459000063,
+        3259.44
+      ],
+      "maxWallMs": [
+        3167.0446670000674,
+        3264.103790999856
+      ],
+      "slowDecisions": [],
+      "sales": [
+        {
+          "1": 51,
+          "2": 113,
+          "3": 71,
+          "4": 39,
+          "5": 14,
+          "6": 1
+        },
+        {
+          "1": 64,
+          "2": 122,
+          "3": 67,
+          "4": 28,
+          "5": 15,
+          "6": 1
+        }
+      ],
+      "terminals": [
+        30310400,
+        30277632
+      ]
+    }
+  ]
+}

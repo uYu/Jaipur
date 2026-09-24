@@ -2,6 +2,11 @@ import { GOODS } from "./types.ts";
 import type { Action, Card, Difficulty, Event, Good, State } from "./types.ts";
 import { COUNTS, precious, random, sum } from "./data.ts";
 import { applyAction, legalActions, newGame, nextRound } from "./engine.ts";
+import {
+  nextSaleCloseProbability,
+  publicHandDistribution,
+} from "./hand-belief.ts";
+import type { HandWorld } from "./hand-belief.ts";
 
 export type Observation = {
   hand: Good[];
@@ -10,6 +15,8 @@ export type Observation = {
   bonuses: number[];
   opponentGoods: number[];
   knownOpponentHand: Good[];
+  opponentHandDistribution?: HandWorld[];
+  opponentNextSaleCloseProbability?: number;
   market: Card[];
   tokens: State["tokens"];
   bonusCounts: Record<3 | 4 | 5, number>;
@@ -58,10 +65,23 @@ function publicOpponentKnowledge(
   return known.slice(0, state.players[1 - observer].hand.length);
 }
 
-export function observe(s: State, events?: Event[]): Observation {
+export function observe(
+  s: State,
+  events?: Event[],
+  includeBelief: boolean | number = false,
+): Observation {
   const player = s.current,
     p = s.players[player],
     opponent = s.players[1 - player];
+  const opponentHandDistribution =
+    includeBelief !== false
+      ? publicHandDistribution(
+          s,
+          events,
+          player,
+          typeof includeBelief === "number" ? includeBelief : 0,
+        )
+      : [];
   return {
     hand: [...p.hand],
     camels: p.camels,
@@ -69,6 +89,11 @@ export function observe(s: State, events?: Event[]): Observation {
     bonuses: [...p.bonuses],
     opponentGoods: [...opponent.goods],
     knownOpponentHand: publicOpponentKnowledge(s, events, player),
+    opponentHandDistribution,
+    opponentNextSaleCloseProbability: nextSaleCloseProbability(
+      opponentHandDistribution,
+      s,
+    ),
     market: [...s.market],
     tokens: structuredClone(s.tokens),
     bonusCounts: {

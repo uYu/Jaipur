@@ -39,6 +39,7 @@ template <class T> void shuffle(std::vector<T>& values, Rng& rng) {
 }
 
 struct Observation {
+  struct HandWorld { std::array<int, GOODS> hand{}; int weight = 0; };
   std::array<int, GOODS> hand{};
   int hand_count = 0;
   int camels = 0;
@@ -56,6 +57,7 @@ struct Observation {
   int deck_count = 0;
   int opponent_hand_count = 0;
   int turn = 0;
+  std::vector<HandWorld> hand_worlds;
 };
 
 struct Player {
@@ -180,13 +182,31 @@ double herd_value(int camels) {
          std::min(std::max(camels - 4, 0), 3) * .3;
 }
 
-State determinize(const Observation& observation, Rng& rng) {
+State determinize(const Observation& observation, Rng& rng,
+                  double hand_quantile = -1) {
+  std::array<int, GOODS> opponent_hand = observation.known;
+  if (!observation.hand_worlds.empty()) {
+    uint64_t total_weight = 0;
+    for (const auto& world : observation.hand_worlds) total_weight += world.weight;
+    if (total_weight) {
+      const uint32_t draw = rng.next();
+      const uint64_t target = hand_quantile < 0
+          ? (uint64_t(draw) * total_weight) >> 32
+          : std::min(total_weight - 1,
+                     uint64_t(hand_quantile * total_weight));
+      uint64_t cumulative = 0;
+      for (const auto& world : observation.hand_worlds) {
+        cumulative += world.weight;
+        if (target < cumulative) { opponent_hand = world.hand; break; }
+      }
+    }
+  }
   std::vector<int> unknown_goods;
   std::array<int, 7> market_counts{};
   for (int card : observation.market) ++market_counts[card];
   for (int good = 0; good < GOODS; ++good) {
     const int known = observation.hand[good] + market_counts[good] +
-                      observation.discarded[good] + observation.known[good];
+                      observation.discarded[good] + opponent_hand[good];
     for (int i = known; i < CARD_COUNTS[good]; ++i)
       unknown_goods.push_back(good);
   }
@@ -200,8 +220,8 @@ State determinize(const Observation& observation, Rng& rng) {
   state.players[0].bonuses =
       std::accumulate(observation.bonuses.begin(), observation.bonuses.end(), 0);
   state.players[0].bonus_count = observation.bonuses.size();
-  state.players[1].hand = observation.known;
-  int known_count = sum(observation.known.data(), GOODS);
+  state.players[1].hand = opponent_hand;
+  int known_count = sum(opponent_hand.data(), GOODS);
   const int unknown_opponent = observation.opponent_hand_count - known_count;
   int cursor = 0;
   for (; cursor < unknown_opponent; ++cursor)
@@ -290,6 +310,25 @@ bool parse_observation(const int32_t* input, int length, Observation& out) {
   out.deck_count = read();
   out.opponent_hand_count = read();
   out.turn = read();
+  if (cursor < length) {
+    const int worlds = read();
+    if (worlds < 0 || worlds > 1000 || cursor + worlds * 7 != length) return false;
+    for (int i = 0; i < worlds; ++i) {
+      Observation::HandWorld world;
+      for (int& count : world.hand) count = read();
+      world.weight = read();
+      if (world.weight < 0 || sum(world.hand.data(), GOODS) != out.opponent_hand_count ||
+          std::any_of(world.hand.begin(), world.hand.end(), [](int count) { return count < 0; }))
+        return false;
+      for (int good = 0; good < GOODS; ++good) {
+        const int market = std::count(out.market.begin(), out.market.end(), good);
+        if (world.hand[good] < out.known[good] ||
+            world.hand[good] + out.hand[good] + out.discarded[good] + market > CARD_COUNTS[good])
+          return false;
+      }
+      out.hand_worlds.push_back(world);
+    }
+  }
   return cursor == length;
 }
 

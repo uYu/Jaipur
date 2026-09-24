@@ -1,0 +1,7 @@
+{
+  "bestCheckpoint": "analysis/dmc-selfplay-2026-09-24/model-006.pt",
+  "bestDevScore": -4,
+  "latestCheckpoint": "analysis/dmc-selfplay-2026-09-24/model-012.pt",
+  "criterion": "paired dev match results; ties keep earlier checkpoint",
+  "promoted": false
+}

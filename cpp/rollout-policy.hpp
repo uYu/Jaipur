@@ -74,13 +74,15 @@ double policy_value(const State& s, const PolicyWeights& weights) {
 }
 
 Action policy_action(const State& s, Rng& rng, const PolicyWeights& weights,
-                     int exploration_per_thousand) {
+                     int exploration_per_thousand,
+                     const std::chrono::steady_clock::time_point* deadline = nullptr) {
   if (rng.index(1000)<exploration_per_thousand) return rollout_action(s,rng);
   const auto actions=atomic_actions(s);
   Action best=actions.front();
   double value=-std::numeric_limits<double>::infinity();
   int ties=0;
   for(const auto& action:actions) {
+    if (deadline && std::chrono::steady_clock::now() >= *deadline) break;
     State next=s;
     apply_action(next,action);
     const double v=(s.current==0?1:-1)*policy_value(next,weights);

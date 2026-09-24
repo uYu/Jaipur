@@ -2,11 +2,34 @@
 // Search edges are complete turns. A self-play model supplies a decaying prior
 // and rollout policy; backed-up values are always actual terminal outcomes.
 struct SearchStats {
+  long long simulations = 0;
   int terminal = 0;
   int truncated = 0;
   int max_depth = 0;
   long long rollout_turns = 0;
+  int tactical_finishes = 0;
 };
+
+// Exact only within the current sampled world. This is not a public-information
+// win certificate: hidden bonus values and hands still vary between worlds.
+bool finish_winning_sale(State& state) {
+  if (state.terminal || std::count(state.token_count.begin(), state.token_count.end(), 0) < 2)
+    return false;
+  const int actor = state.current;
+  for (int good=0; good<GOODS; ++good) {
+    if (!state.token_count[good]) continue;
+    const int first=std::max(good<3?2:1, state.token_count[good]);
+    for (int count=first; count<=state.players[actor].hand[good]; ++count) {
+      Action action; action.kind=ActionKind::Sell; action.good=good; action.count=count;
+      State end=state; apply_action(end,action);
+      if (end.terminal && (actor==0?end.value:-end.value)>0) {
+        state=end;
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 void atomic_payments(const State& state, int good, int left, Action& action,
                      std::vector<Action>& out) {
@@ -137,6 +160,7 @@ Action rollout_action(const State& state, Rng& rng) {
 
 #include "rollout-policy.hpp"
 #include "neural-policy.hpp"
+#include "belief-policy.hpp"
 #include "rollout-weights.hpp"
 
 struct RolloutResult {
@@ -145,13 +169,22 @@ struct RolloutResult {
 };
 
 RolloutResult rollout(State& state, Rng& rng, SearchStats& stats,
-                      bool learned = false, bool neural = false) {
+                      bool learned = false, bool neural = false,
+                      const std::chrono::steady_clock::time_point* deadline = nullptr,
+                      bool terminal_tactics = false) {
   // Exchanges can cycle indefinitely. A cutoff is recorded separately and
   // contributes neutral value, never a fabricated terminal win or hand score.
   for (int turn = 0; turn < 256 && !state.terminal; ++turn) {
-    apply_action(state, neural ? neural_action(state, rng, 100) :
-                        learned ? policy_action(state, rng, TRAINED_POLICY, 100)
-                                : rollout_action(state, rng));
+    if (deadline && std::chrono::steady_clock::now() >= *deadline) break;
+    if (terminal_tactics && finish_winning_sale(state)) {
+      ++stats.tactical_finishes;
+      break;
+    }
+    const auto action = neural ? neural_action(state, rng, 100, deadline) :
+                        learned ? policy_action(state, rng, TRAINED_POLICY, 100, deadline)
+                                : rollout_action(state, rng);
+    if (deadline && std::chrono::steady_clock::now() >= *deadline) break;
+    apply_action(state, action);
     ++stats.rollout_turns;
   }
   if (state.terminal) {
@@ -169,12 +202,84 @@ struct UctEdge {
   double margin_total = 0;
   int child = -1;
   double prior = 0;
+  int family = -1;
+};
+// Action factorization inspired by DeltaDou's main move / kicker split.
+// Jaipur exchanges share a goal (goods taken) and differ in payment. Sales
+// share a good and differ in quantity. Every concrete legal action is retained.
+bool same_action_family(const Action& a, const Action& b) {
+  if (a.kind != b.kind) return false;
+  if (a.kind == ActionKind::Exchange) return a.take == b.take;
+  if (a.kind == ActionKind::Camels) return true;
+  return a.good == b.good;
+}
+struct ActionFamily {
+  std::vector<int> members;
+  int visits = 0;
+  double total = 0, prior = 0, member_prior_sum = 0;
 };
 struct UctNode {
   int visits = 0;
   bool initialized = false;
   std::vector<UctEdge> edges;
+  std::vector<ActionFamily> families;
 };
+
+void initialize_families(UctNode& node) {
+  for (int i=0; i<int(node.edges.size()); ++i) {
+    auto& edge=node.edges[i];
+    int f=0;
+    for (; f<int(node.families.size()); ++f)
+      if (same_action_family(edge.action, node.edges[node.families[f].members[0]].action)) break;
+    if (f==int(node.families.size())) node.families.push_back({});
+    edge.family=f;
+    auto& family=node.families[f];
+    family.members.push_back(i);
+    // A goal does not gain exploration mass just by having more payment variants.
+    family.prior=std::max(family.prior, edge.prior);
+    family.member_prior_sum+=edge.prior;
+  }
+  double total=0;
+  for (auto& family:node.families) {
+    total+=family.prior;
+    std::stable_sort(family.members.begin(),family.members.end(),[&](int a,int b) {
+      return node.edges[a].prior > node.edges[b].prior;
+    });
+  }
+  for (auto& family:node.families)
+    family.prior=total>0?family.prior/total:1.0/node.families.size();
+}
+
+int family_width(const UctNode& node, const ActionFamily& family) {
+  if (node.edges[family.members[0]].action.kind!=ActionKind::Exchange)
+    return family.members.size(); // Never hide a sale quantity or immediate end.
+  return std::min(int(family.members.size()),1+int(std::sqrt(family.visits)));
+}
+
+int select_family_edge(const UctNode& node, int actor, double exploration) {
+  int selected_family=-1;
+  double best=-std::numeric_limits<double>::infinity();
+  const double sign=actor==0?1:-1;
+  for (int f=0; f<int(node.families.size()); ++f) {
+    const auto& family=node.families[f];
+    const double score=sign*family.total/std::max(1,family.visits) +
+        exploration*family.prior*std::sqrt(node.visits+1.0)/(family.visits+1);
+    if(score>best) {best=score;selected_family=f;}
+  }
+  if(selected_family<0) return -1;
+  const auto& family=node.families[selected_family];
+  best=-std::numeric_limits<double>::infinity();
+  int selected=-1;
+  for(int j=0;j<family_width(node,family);++j) {
+    const int i=family.members[j];
+    const auto& edge=node.edges[i];
+    const double prior=family.member_prior_sum>0?edge.prior/family.member_prior_sum:1.0/family.members.size();
+    const double score=sign*edge.total/std::max(1,edge.visits) +
+        exploration*prior*std::sqrt(family.visits+1.0)/(edge.visits+1);
+    if(score>best) {best=score;selected=i;}
+  }
+  return selected;
+}
 
 struct SearchOptions {
   double exploration = std::sqrt(2.0);
@@ -187,20 +292,33 @@ struct SearchOptions {
   bool neural_prior = false;
   bool neural_rollout = false;
   bool neural_root_only = false;
+  bool stratified_hands = false;
+  double close_risk_weight = 0;
+  bool belief_prior = false;
+  bool record_root_policy = false;
+  bool terminal_tactics = false;
+  bool record_root_stats = false;
+  bool factor_actions = false;
+  const std::vector<std::pair<Action, double>>* root_policy = nullptr;
+  double root_policy_mix = .5;
 };
 
 std::vector<UctEdge> terminal_tree(const State& root, int iterations,
                                   Rng& rng, SearchStats& stats,
                                   const SearchOptions& options = {}) {
   const auto started=std::chrono::steady_clock::now();
+  const auto deadline = started + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+      std::chrono::duration<double, std::milli>(options.time_limit_ms));
+  const auto* bounded = options.time_limit_ms > 0 ? &deadline : nullptr;
   std::vector<UctNode> nodes(1);
   nodes.reserve(std::min(iterations, 8192) + 1);
   for (int iteration = 0; iteration < iterations; ++iteration) {
-    if(iteration && iteration%16==0 && options.time_limit_ms>0 &&
+    if(iteration && options.time_limit_ms>0 &&
        std::chrono::duration<double,std::milli>(
          std::chrono::steady_clock::now()-started).count()>=options.time_limit_ms)
       break;
     State state = root;
+    ++stats.simulations;
     int node = 0, depth = 0;
     std::vector<std::pair<int, int>> path;
     while (!state.terminal) {
@@ -229,6 +347,15 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
           for(auto& edge:nodes[node].edges) edge.prior/=total;
         }
         nodes[node].initialized = true;
+        if (node == 0 && options.root_policy) {
+          for (auto& edge : nodes[node].edges)
+            for (const auto& item : *options.root_policy)
+              if (item.first == edge.action) {
+                edge.prior = (1-options.root_policy_mix) * edge.prior + options.root_policy_mix * item.second;
+                break;
+              }
+        }
+        if (options.factor_actions) initialize_families(nodes[node]);
       }
       int selected = -1;
       double best = -std::numeric_limits<double>::infinity();
@@ -236,7 +363,7 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
           ? std::min(int(nodes[node].edges.size()),
                      2 + int(std::sqrt(nodes[node].visits + 1.0)))
           : int(nodes[node].edges.size());
-      for (int i = 0; i < width; ++i) {
+      for (int i = 0; !options.factor_actions && i < width; ++i) {
         const auto& edge = nodes[node].edges[i];
         if (!edge.visits && !options.learned_prior && !options.neural_prior) {
           selected = i; break;
@@ -249,12 +376,20 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
             options.exploration * exploration;
         if (ucb > best) { best = ucb; selected = i; }
       }
+      if (options.factor_actions)
+        selected=select_family_edge(nodes[node],state.current,options.exploration);
       if (selected < 0) break;
       const auto action = nodes[node].edges[selected].action;
       const bool untried = nodes[node].edges[selected].visits == 0;
       apply_action(state, action);
       path.push_back({node, selected});
       ++depth;
+      // A winning reply proves this edge loses in this world; spending visits
+      // to rediscover it or randomly declining it in rollout biases the edge.
+      if (options.terminal_tactics && finish_winning_sale(state)) {
+        ++stats.tactical_finishes;
+        break;
+      }
       if (untried) break;
       int child = nodes[node].edges[selected].child;
       if (child < 0) {
@@ -267,13 +402,18 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
     }
     stats.max_depth = std::max(stats.max_depth, depth);
     const auto result = rollout(state, rng, stats, options.learned_rollout,
-                                options.neural_rollout);
+                                options.neural_rollout, bounded, options.terminal_tactics);
     for (const auto& [parent, index] : path) {
       ++nodes[parent].visits;
       auto& edge = nodes[parent].edges[index];
       ++edge.visits;
       edge.total += result.outcome;
       edge.margin_total += result.margin;
+      if (options.factor_actions) {
+        auto& family=nodes[parent].families[edge.family];
+        ++family.visits;
+        family.total+=result.outcome;
+      }
     }
   }
   return std::move(nodes[0].edges);
@@ -285,18 +425,48 @@ struct SearchDecision {
   int exchange_actions = 0;
   double selected_support = 0;
   SearchStats stats;
+  std::vector<std::pair<Action, double>> root_policy;
+  // Per-tree-normalized visit mass and conditional mean, for diagnosis only.
+  std::vector<std::pair<Action, std::array<double, 2>>> root_stats;
 };
 
 SearchDecision choose(const Observation& observation, uint32_t seed,
                       int iterations, const SearchOptions& options = {}) {
+  const auto decision_started = std::chrono::steady_clock::now();
   Rng sampling{seed}, search{seed ^ 0x9e3779b9u};
-  struct Vote { Action action; double visits=0, total=0, margin_total=0; };
+  struct Vote { Action action; double visits=0, total=0, margin_total=0, close_loss=0; };
   std::vector<Vote> aggregate;
   SearchStats stats;
+  std::vector<std::pair<Action, double>> root_policy;
+#ifdef JAIPUR_BELIEF_WEIGHTS_HEADER
+  if (options.belief_prior && !observation.hand_worlds.empty()) {
+    Rng legal_rng{seed};
+    const auto actions = atomic_actions(determinize(observation, legal_rng));
+    const auto features = belief_features(observation);
+    double maximum = -std::numeric_limits<double>::infinity();
+    for (const auto& action : actions) {
+      const double logit = belief_policy_logit(features, action);
+      root_policy.push_back({action, logit});
+      maximum = std::max(maximum, logit);
+    }
+    double total = 0;
+    for (auto& item : root_policy) total += item.second = std::exp(item.second - maximum);
+    for (auto& item : root_policy) item.second /= total;
+  }
+#endif
+  const double preparation_ms = std::chrono::duration<double, std::milli>(
+      std::chrono::steady_clock::now() - decision_started).count();
+  Rng strata{seed ^ 0x85ebca6bu};
+  const double offset = double(strata.next()) / 4294967296.0;
   for (int tree = 0; tree < options.trees; ++tree) {
-    const State root = determinize(observation, sampling);
+    const double quantile = options.stratified_hands &&
+                            !observation.hand_worlds.empty()
+        ? (tree + offset) / options.trees : -1;
+    const State root = determinize(observation, sampling, quantile);
     auto per_tree=options;
-    per_tree.time_limit_ms=options.time_limit_ms/options.trees;
+    if (!root_policy.empty()) per_tree.root_policy = &root_policy;
+    per_tree.time_limit_ms=options.time_limit_ms > 0
+        ? std::max(.01, options.time_limit_ms - preparation_ms) / options.trees : 0;
     const auto edges = terminal_tree(root, iterations, search, stats, per_tree);
     double total_visits=0;
     for(const auto& edge:edges) total_visits+=edge.visits;
@@ -314,6 +484,38 @@ SearchDecision choose(const Observation& observation, uint32_t seed,
       }
     }
   }
+  if (options.close_risk_weight > 0 && !aggregate.empty() &&
+      !observation.hand_worlds.empty() &&
+      std::count(observation.token_count.begin(),
+                 observation.token_count.end(), 0) >= 2) {
+    constexpr int risk_samples = 32;
+    Rng risk_rng{seed ^ 0xc2b2ae35u};
+    for (int sample = 0; sample < risk_samples; ++sample) {
+      State world = determinize(observation, risk_rng,
+                                (sample + .5) / risk_samples);
+      for (auto& vote : aggregate) {
+        State after = world;
+        apply_action(after, vote.action);
+        if (after.terminal) continue;
+        double worst = 0;
+        for (int good = 0; good < GOODS; ++good) {
+          const int first = std::max(good < 3 ? 2 : 1,
+                                     after.token_count[good]);
+          for (int count = first; count <= after.players[after.current].hand[good]; ++count) {
+            Action reply;
+            reply.kind = ActionKind::Sell;
+            reply.good = good;
+            reply.count = count;
+            State ended = after;
+            apply_action(ended, reply);
+            if (ended.terminal)
+              worst = std::max(worst, (1.0 - ended.value) / 2.0);
+          }
+        }
+        vote.close_loss += worst / risk_samples;
+      }
+    }
+  }
   // Pure win/loss search cannot rank moves once every sampled continuation
   // loses. In that case alone, prefer the smaller final point deficit.
   const bool all_lost = !aggregate.empty() && std::all_of(
@@ -322,19 +524,32 @@ SearchDecision choose(const Observation& observation, uint32_t seed,
                std::abs(vote.total + vote.visits) < 1e-9;
       });
   const auto best = std::max_element(aggregate.begin(), aggregate.end(),
-      [all_lost](const Vote& a, const Vote& b) {
+      [all_lost, &options](const Vote& a, const Vote& b) {
         if (all_lost) {
           const double a_margin = a.margin_total / a.visits;
           const double b_margin = b.margin_total / b.visits;
           if (a_margin != b_margin) return a_margin < b_margin;
         }
-        if (a.visits != b.visits) return a.visits < b.visits;
+        const double a_score = a.visits / options.trees -
+            options.close_risk_weight * a.close_loss;
+        const double b_score = b.visits / options.trees -
+            options.close_risk_weight * b.close_loss;
+        if (a_score != b_score) return a_score < b_score;
         return a.total / std::max(1e-12, a.visits) <
                b.total / std::max(1e-12, b.visits);
       });
   if (best == aggregate.end()) return {};
   int exchanges = 0;
   for (const auto& edge : aggregate) exchanges += edge.action.kind == ActionKind::Exchange;
-  return {best->action, int(aggregate.size()), exchanges,
-          best->visits / options.trees, stats};
+  std::vector<std::pair<Action, double>> targets;
+  if (options.record_root_policy)
+    for (const auto& vote : aggregate)
+      targets.push_back({vote.action, vote.visits / options.trees});
+  SearchDecision result{best->action, int(aggregate.size()), exchanges,
+          best->visits / options.trees, stats, std::move(targets)};
+  if (options.record_root_stats)
+    for (const auto& vote : aggregate)
+      result.root_stats.push_back({vote.action, {vote.visits/options.trees,
+          vote.visits>0?vote.total/vote.visits:0}});
+  return result;
 }

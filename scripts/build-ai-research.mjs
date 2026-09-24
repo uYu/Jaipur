@@ -15,17 +15,34 @@ if (process.platform === "darwin") {
   }).trim();
   flags.push("-isystem", join(sdk, "usr/include/c++/v1"));
 }
-function compile(source, name) {
+function compile(source, name, extraFlags = []) {
   execFileSync(
     process.env.CXX ?? "c++",
-    [...flags, source, "-o", join(dir, name)],
+    [...flags, ...extraFlags, source, "-o", join(dir, name)],
     { cwd: root, stdio: "inherit" },
   );
 }
 compile("scripts/ai-research.cpp", "search");
+if (process.env.JAIPUR_BELIEF_WEIGHTS_HEADER) {
+  compile("scripts/ai-research.cpp", "search-belief", [
+    `-DJAIPUR_BELIEF_WEIGHTS_HEADER="${process.env.JAIPUR_BELIEF_WEIGHTS_HEADER}"`,
+  ]);
+  compile("scripts/verify-belief.cpp", "verify-belief", [
+    `-DJAIPUR_BELIEF_WEIGHTS_HEADER="${process.env.JAIPUR_BELIEF_WEIGHTS_HEADER}"`,
+  ]);
+}
+if (process.env.JAIPUR_CANDIDATE_NN_HEADER) {
+  compile("scripts/ai-research.cpp", "search-observable", [
+    `-DJAIPUR_NN_WEIGHTS_HEADER="${process.env.JAIPUR_CANDIDATE_NN_HEADER}"`,
+  ]);
+  compile("scripts/verify-nn.cpp", "verify-nn-observable", [
+    `-DJAIPUR_NN_WEIGHTS_HEADER="${process.env.JAIPUR_CANDIDATE_NN_HEADER}"`,
+  ]);
+}
 compile("scripts/train-rollout.cpp", "train");
 compile("scripts/generate-nn-data.cpp", "generate-nn-data");
 compile("scripts/verify-nn.cpp", "verify-nn");
+compile("scripts/observation-features.cpp", "observation-features");
 
 // Pin the original pre-refactor AI. Only add a wall-clock stop, normalize root
 // visits by work actually performed, and replace its one-shot CLI with a pipe.

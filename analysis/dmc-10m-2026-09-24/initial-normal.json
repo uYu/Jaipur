@@ -1,0 +1,20 @@
+{
+  "checkpoint": "analysis/dmc-10m-2026-09-24/model-012.pt",
+  "opponent": "normal",
+  "start": 3300000000,
+  "pairs": 64,
+  "wins": [
+    40,
+    88
+  ],
+  "roundWins": [
+    117,
+    204
+  ],
+  "truncated": 0,
+  "meanWallMs": [
+    1.143213715647716,
+    1.0481937568918656
+  ],
+  "promotion": false
+}

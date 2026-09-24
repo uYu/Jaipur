@@ -1,0 +1,60 @@
+{"seed":7701,"seat":0,"winner":"guidedBehavior","scores":[[52,94],[63,64]]}
+{"seed":7701,"seat":1,"winner":"guidedBehavior","scores":[[79,71],[81,52]]}
+{"seed":7702,"seat":0,"winner":"guidedBehavior","scores":[[53,71],[52,80]]}
+{"seed":7702,"seat":1,"winner":"guidedBehavior","scores":[[73,58],[74,68]]}
+{
+  "candidate": "dmc",
+  "baseline": "guidedBehavior",
+  "start": 7701,
+  "pairs": 2,
+  "budget": 2000,
+  "wins": [
+    0,
+    4
+  ],
+  "meanMs": [
+    0.5733108735653305,
+    1887.982814534884
+  ],
+  "meanWallMs": [
+    1.5157825747137381,
+    1889.1992492383702
+  ],
+  "meanObserveMs": [
+    0.939852275862997,
+    0.8820143197668298
+  ],
+  "maxObserveMs": [
+    1.9005420000175945,
+    1.803542000008747
+  ],
+  "maxMs": [
+    1.8016659999993863,
+    2012.93
+  ],
+  "maxWallMs": [
+    3.21875,
+    2014.0596249999944
+  ],
+  "slowDecisions": [],
+  "sales": [
+    {
+      "1": 13,
+      "2": 23,
+      "3": 8,
+      "4": 7,
+      "5": 3
+    },
+    {
+      "1": 13,
+      "2": 18,
+      "3": 18,
+      "4": 3,
+      "5": 4
+    }
+  ],
+  "terminals": [
+    0,
+    27082648
+  ]
+}

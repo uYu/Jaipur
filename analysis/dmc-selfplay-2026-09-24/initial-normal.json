@@ -1,0 +1,20 @@
+{
+  "checkpoint": "analysis/dmc-selfplay-2026-09-24/model-000.pt",
+  "opponent": "normal",
+  "start": 3100000000,
+  "pairs": 16,
+  "wins": [
+    0,
+    32
+  ],
+  "roundWins": [
+    0,
+    64
+  ],
+  "truncated": 0,
+  "meanWallMs": [
+    1.2627851867749422,
+    1.1157792025685895
+  ],
+  "promotion": false
+}

@@ -1,0 +1,59 @@
+{
+  "verified": true,
+  "trainingMatches": 82688,
+  "trainingSamples": 10009435,
+  "uniqueTrainingSeeds": 82688,
+  "noTrainTestSeedOverlap": true,
+  "results": [
+    {
+      "file": "heldout-normal.games.jsonl",
+      "matches": 128,
+      "pairedSeeds": 64,
+      "wins": [
+        101,
+        27
+      ],
+      "legalActionsReplayed": 13574
+    },
+    {
+      "file": "initial-normal.games.jsonl",
+      "matches": 128,
+      "pairedSeeds": 64,
+      "wins": [
+        40,
+        88
+      ],
+      "legalActionsReplayed": 13210
+    },
+    {
+      "file": "versus-initial.games.jsonl",
+      "matches": 64,
+      "pairedSeeds": 32,
+      "wins": [
+        62,
+        2
+      ],
+      "legalActionsReplayed": 6544
+    },
+    {
+      "file": "versus-guided-1s-games.jsonl",
+      "matches": 4,
+      "pairedSeeds": 2,
+      "wins": [
+        0,
+        4
+      ],
+      "legalActionsReplayed": 325
+    },
+    {
+      "file": "versus-guided-2s-games.jsonl",
+      "matches": 4,
+      "pairedSeeds": 2,
+      "wins": [
+        0,
+        4
+      ],
+      "legalActionsReplayed": 346
+    }
+  ]
+}

@@ -30,6 +30,24 @@ void check_actions(const State& s, Rng& rng) {
   assert(std::isfinite(neural_value(s)));
   assert(std::abs(neural_value(s))<=1);
   const auto actions = atomic_actions(s);
+  UctNode grouped;
+  for (const auto& action:actions) grouped.edges.push_back({action});
+  initialize_families(grouped);
+  std::vector<int> represented(actions.size(),0);
+  double family_prior_sum=0;
+  for (auto& family:grouped.families) {
+    family_prior_sum+=family.prior;
+    for(int i:family.members) {
+      ++represented[i];
+      assert(same_action_family(actions[i],actions[family.members[0]]));
+    }
+    if(actions[family.members[0]].kind==ActionKind::Sell)
+      assert(family_width(grouped,family)==int(family.members.size()));
+    family.visits=family.members.size()*family.members.size();
+    assert(family_width(grouped,family)==int(family.members.size()));
+  }
+  assert(std::abs(family_prior_sum-1)<1e-12);
+  for(int count:represented) assert(count==1);
   const auto reference = observation_actions(observation_of(s));
   assert(!actions.empty());
   assert(actions.size() == reference.size());
@@ -65,6 +83,83 @@ void check_actions(const State& s, Rng& rng) {
 }
 
 int main() {
+  UctNode factor_test;
+  Action exchange_a; exchange_a.kind=ActionKind::Exchange; exchange_a.take[0]=2; exchange_a.camels=2;
+  Action exchange_b=exchange_a; exchange_b.camels=1; exchange_b.give[1]=1;
+  Action sale; sale.kind=ActionKind::Sell; sale.good=4; sale.count=5;
+  factor_test.edges={{exchange_a,0,0,0,-1,.2},{exchange_b,0,0,0,-1,.1},{sale,0,0,0,-1,.3}};
+  initialize_families(factor_test);
+  assert(factor_test.families.size()==2);
+  assert(std::abs(factor_test.families[0].prior-.4)<1e-12);
+  assert(family_width(factor_test,factor_test.families[0])==1);
+  assert(select_family_edge(factor_test,0,1.4)==2);
+  // Exact terminal replies must include herd and tiebreaks, for either player.
+  State tactical;
+  tactical.token_count.fill(1);
+  tactical.token_count[0]=tactical.token_count[1]=0;
+  tactical.tokens[5][0]=1;
+  tactical.players[0].hand[5]=1;
+  tactical.players[0].hand_count=1;
+  tactical.players[0].goods=10;
+  tactical.players[1].goods=16;
+  tactical.players[0].camels=5;
+  tactical.players[1].camels=4;
+  tactical.players[0].bonus_count=2;
+  tactical.players[1].bonus_count=1;
+  State winning=tactical;
+  assert(finish_winning_sale(winning) && winning.value==1);
+  State mirrored=tactical;
+  std::swap(mirrored.players[0],mirrored.players[1]);
+  mirrored.current=1;
+  assert(finish_winning_sale(mirrored) && mirrored.value==-1);
+  State losing=tactical;
+  losing.players[0].camels=4;
+  assert(!finish_winning_sale(losing) && !losing.terminal);
+  assert(losing.players[0].hand[5]==1);
+  Rng tactical_rng{42}; SearchStats tactical_stats;
+  State forced=tactical;
+  const auto forced_result=rollout(forced,tactical_rng,tactical_stats,false,false,nullptr,true);
+  assert(forced_result.outcome==1 && tactical_stats.tactical_finishes==1);
+  State reply_test=tactical;
+  reply_test.market[3]=5;
+  reply_test.deck_count=1;
+  reply_test.deck[0]=3;
+  reply_test.players[1].hand[5]=1;
+  reply_test.players[1].hand_count=1;
+  SearchOptions reply_options;
+  reply_options.learned_prior=false;
+  reply_options.learned_rollout=false;
+  reply_options.terminal_tactics=true;
+  SearchStats reply_stats;
+  const auto reply_edges=terminal_tree(reply_test,32,tactical_rng,reply_stats,reply_options);
+  bool checked_take=false, checked_sale=false;
+  for(const auto& edge:reply_edges) {
+    if(edge.action.kind==ActionKind::Take) {
+      assert(edge.visits>0 && edge.total==-edge.visits);
+      checked_take=true;
+    }
+    if(edge.action.kind==ActionKind::Sell) {
+      assert(edge.visits>0 && edge.total==edge.visits);
+      checked_sale=true;
+    }
+  }
+  assert(checked_take && checked_sale);
+  // Equal public beliefs must encode identically regardless of world order
+  // or integer weight scale; preserve a rare but possible closing sale.
+  Observation belief;
+  belief.opponent_hand_count = 3;
+  belief.token_count = {3, 4, 0, 0, 5, 5};
+  belief.hand_worlds = {{{3, 0, 0, 0, 0, 0}, 1},
+                        {{0, 3, 0, 0, 0, 0}, 3}};
+  const auto bx = belief_features(belief);
+  assert(std::abs(bx[93] - .25f) < 1e-6);
+  assert(std::abs(bx[101] - .75f) < 1e-6);
+  assert(std::abs(bx[138] - .25f) < 1e-6);
+  std::reverse(belief.hand_worlds.begin(), belief.hand_worlds.end());
+  for (auto& world : belief.hand_worlds) world.weight *= 17;
+  const auto reordered = belief_features(belief);
+  for (int i = 0; i < BELIEF_STATE_FEATURES; ++i)
+    assert(std::abs(bx[i] - reordered[i]) < 1e-6);
   Rng rng{42};
   int positions = 0;
   for (int game = 0; game < 20; ++game) {
@@ -123,6 +218,28 @@ int main() {
       [](const auto& a, const auto& b) { return a.visits < b.visits; });
   assert(best->action.kind == ActionKind::Sell);
   assert(stats.terminal == 1000 && stats.truncated == 0);
+  assert(stats.simulations == 1000);
+  // External public-observation DMC prior must match actions despite shuffling.
+  // Mixing at zero preserves baseline visits; mixing at one installs it exactly.
+  std::vector<std::pair<Action,double>> root_prior;
+  const auto root_actions=atomic_actions(s);
+  const double normalizer=root_actions.size()*(root_actions.size()+1)/2.0;
+  for(size_t i=0;i<root_actions.size();++i)
+    root_prior.push_back({root_actions[i],(i+1)/normalizer});
+  SearchOptions base_options,prior_options;
+  prior_options.root_policy=&root_prior;
+  for(double mix:{0.0,1.0}) {
+    prior_options.root_policy_mix=mix;
+    Rng a_rng{887}, b_rng{887}; SearchStats a_stats,b_stats;
+    const auto base=terminal_tree(s,32,a_rng,a_stats,base_options);
+    const auto candidate=terminal_tree(s,32,b_rng,b_stats,prior_options);
+    for(size_t i=0;i<base.size();++i) {
+      assert(base[i].action==candidate[i].action);
+      if(mix==0) {assert(base[i].visits==candidate[i].visits);assert(base[i].prior==candidate[i].prior);}
+      else for(const auto& item:root_prior) if(item.first==candidate[i].action)
+        assert(std::abs(item.second-candidate[i].prior)<1e-12);
+    }
+  }
   // In this late round the opponent's last leather is publicly known. Every
   // move loses to its immediate sale, but cashing out gold loses by less than
   // exchanging for cards that will never be sold.

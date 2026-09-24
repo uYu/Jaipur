@@ -1,5 +1,9 @@
 // Included inside namespace jaipur after rollout-policy.hpp.
+#ifdef JAIPUR_NN_WEIGHTS_HEADER
+#include JAIPUR_NN_WEIGHTS_HEADER
+#else
 #include "nn-weights.hpp"
+#endif
 
 constexpr int NN_FEATURES = POLICY_FEATURES + 20;
 
@@ -78,13 +82,15 @@ double neural_value(const State& s) {
   return neural_forward(neural_features(s));
 }
 
-Action neural_action(const State& s, Rng& rng, int exploration_per_thousand) {
+Action neural_action(const State& s, Rng& rng, int exploration_per_thousand,
+                     const std::chrono::steady_clock::time_point* deadline = nullptr) {
   if (rng.index(1000) < exploration_per_thousand) return rollout_action(s, rng);
   const auto actions = atomic_actions(s);
   Action best = actions.front();
   double value = -std::numeric_limits<double>::infinity();
   int ties = 0;
   for (const auto& action : actions) {
+    if (deadline && std::chrono::steady_clock::now() >= *deadline) break;
     State next = s;
     apply_action(next, action);
     const double candidate = (s.current == 0 ? 1 : -1) * neural_value(next);

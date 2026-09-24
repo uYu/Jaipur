@@ -1,0 +1,7 @@
+{
+  "bestCheckpoint": "analysis/dmc-10m-2026-09-24/model-612.pt",
+  "bestDevScore": 38,
+  "latestCheckpoint": "analysis/dmc-10m-2026-09-24/model-658.pt",
+  "criterion": "paired dev match results; ties keep earlier checkpoint",
+  "promoted": false
+}

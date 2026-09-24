@@ -1,0 +1,77 @@
+{"seed":9101,"seat":0,"winner":"dmcMcts","scores":[[69,68],[79,84],[76,65]]}
+{"seed":9101,"seat":1,"winner":"dmcMcts","scores":[[70,70],[74,75]]}
+{"seed":9102,"seat":0,"winner":"dmcMcts","scores":[[76,72],[65,63]]}
+{"seed":9102,"seat":1,"winner":"guidedBehavior","scores":[[69,69],[76,60]]}
+{"seed":9103,"seat":0,"winner":"dmcMcts","scores":[[54,71],[81,71],[74,74]]}
+{"seed":9103,"seat":1,"winner":"dmcMcts","scores":[[60,77],[64,51],[70,71]]}
+{"seed":9104,"seat":0,"winner":"guidedBehavior","scores":[[77,67],[57,80],[59,72]]}
+{"seed":9104,"seat":1,"winner":"dmcMcts","scores":[[70,79],[63,68]]}
+{"seed":9105,"seat":0,"winner":"guidedBehavior","scores":[[74,76],[65,82]]}
+{"seed":9105,"seat":1,"winner":"dmcMcts","scores":[[69,84],[61,85]]}
+{"seed":9106,"seat":0,"winner":"guidedBehavior","scores":[[67,83],[81,60],[69,86]]}
+{"seed":9106,"seat":1,"winner":"dmcMcts","scores":[[70,76],[77,69],[56,78]]}
+{"seed":9107,"seat":0,"winner":"dmcMcts","scores":[[75,74],[72,74],[77,50]]}
+{"seed":9107,"seat":1,"winner":"guidedBehavior","scores":[[77,71],[71,72],[94,60]]}
+{"seed":9108,"seat":0,"winner":"dmcMcts","scores":[[83,61],[75,66]]}
+{"seed":9108,"seat":1,"winner":"guidedBehavior","scores":[[63,61],[72,68]]}
+{
+  "candidate": "dmcMcts",
+  "baseline": "guidedBehavior",
+  "start": 9101,
+  "pairs": 8,
+  "budget": 50,
+  "comparison": "equal-search-count",
+  "fixedIterationsPerTree": 256,
+  "simulationsPerDecision": 2048,
+  "searchCountVerifiedEveryDecision": true,
+  "timeLimitMs": null,
+  "wins": [
+    10,
+    6
+  ],
+  "meanMs": [
+    84.63538478730894,
+    82.18548461358316
+  ],
+  "meanWallMs": [
+    85.75190010340758,
+    83.54885592154572
+  ],
+  "meanObserveMs": [
+    1.1130121844889864,
+    1.1218093829038511
+  ],
+  "maxObserveMs": [
+    6.555874999998196,
+    8.005959000001894
+  ],
+  "maxMs": [
+    388.4399169999997,
+    316.357
+  ],
+  "maxWallMs": [
+    389.6684159999995,
+    318.6247089999997
+  ],
+  "slowDecisions": [],
+  "sales": [
+    {
+      "1": 58,
+      "2": 104,
+      "3": 60,
+      "4": 36,
+      "5": 13
+    },
+    {
+      "1": 48,
+      "2": 93,
+      "3": 72,
+      "4": 31,
+      "5": 16
+    }
+  ],
+  "terminals": [
+    1742848,
+    1748992
+  ]
+}

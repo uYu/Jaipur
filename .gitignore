@@ -2,3 +2,20 @@ node_modules/
 dist/
 *.tsbuildinfo
 .DS_Store
+**/swanlab/
+.env
+.env.*
+!.env.example
+
+# Keep compact DMC results and the selected/final checkpoints; leave bulk traces local.
+analysis/dmc-selfplay-2026-09-24/batch-*.npz
+analysis/dmc-selfplay-2026-09-24/model-*.pt
+!analysis/dmc-selfplay-2026-09-24/model-006.pt
+!analysis/dmc-selfplay-2026-09-24/model-012.pt
+analysis/dmc-selfplay-2026-09-24/selfplay-games.jsonl
+analysis/dmc-10m-2026-09-24/batch-*.npz
+analysis/dmc-10m-2026-09-24/model-*.pt
+!analysis/dmc-10m-2026-09-24/model-612.pt
+!analysis/dmc-10m-2026-09-24/model-658.pt
+analysis/dmc-10m-2026-09-24/selfplay-games.jsonl
+analysis/dmc-10m-2026-09-24/console.log

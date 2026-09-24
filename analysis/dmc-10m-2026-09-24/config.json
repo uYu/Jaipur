@@ -1,0 +1,26 @@
+{
+  "iterations": 2000,
+  "gamesPerIteration": 128,
+  "targetSamples": 10000000,
+  "evalEvery": 50,
+  "devPairs": 32,
+  "lanes": 16,
+  "maxTurns": 700,
+  "trainSeed": 1000000,
+  "devSeed": 3000000000,
+  "target": "completed full-match actor-perspective return; gamma=1",
+  "initialization": "resume checkpoint",
+  "resumeCheckpoint": "analysis/dmc-selfplay-2026-09-24/model-012.pt",
+  "encoder": "public observation + hand posterior + public seals; no hidden truth or seed",
+  "architecture": [
+    170,
+    128,
+    128,
+    1
+  ],
+  "optimizer": "RMSprop lr=0.0001 alpha=.99 eps=0.00001",
+  "epochsPerBatch": 4,
+  "exploration": "uniform legal-action epsilon-greedy, epsilon=.2 while policy version <2, then .1",
+  "actorUpdate": "synchronous after each completed batch; shared model for both symmetric seats",
+  "checkpointSelection": "paired development arena wins, not MSE"
+}

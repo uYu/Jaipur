@@ -9,7 +9,7 @@ import {
 } from "../src/game/engine.ts";
 import { COUNTS, makeDeck, sum } from "../src/game/data.ts";
 import { GOODS } from "../src/game/types.ts";
-import type { Card, Event, State } from "../src/game/types.ts";
+import type { Card, Event, Good, State } from "../src/game/types.ts";
 import { chooseAction, observe } from "../src/game/ai.ts";
 import {
   chooseOriginalWasmAction,
@@ -240,6 +240,32 @@ test("AI remembers only opponent cards revealed by public actions", () => {
   s = applyAction(s, opponentAction);
   assert.deepEqual(observe(s, events).knownOpponentHand, [revealed]);
   assert.deepEqual(observe(s).knownOpponentHand, []);
+  const distribution = observe(s, events, true).opponentHandDistribution!;
+  assert.deepEqual(
+    observe(s, [...events], true).opponentHandDistribution,
+    distribution,
+  );
+  assert.ok(distribution.length > 0);
+  assert.ok(
+    Math.abs(
+      distribution.reduce((sum, world) => sum + world.probability, 0) - 1,
+    ) < 1e-10,
+  );
+  assert.ok(
+    distribution.every(
+      (world) => world.hand[GOODS.indexOf(revealed as Good)] >= 1,
+    ),
+  );
+  const altered = structuredClone(s);
+  altered.players[1 - s.current].hand = altered.players[1 - s.current].hand.map(
+    () => "diamond",
+  );
+  altered.players[1 - s.current].camels = 99;
+  altered.deck.reverse();
+  assert.deepEqual(
+    observe(altered, events, true).opponentHandDistribution,
+    distribution,
+  );
 });
 test("replay-validated saves reject tampering and malformed events", () => {
   const s = newGame(3);
