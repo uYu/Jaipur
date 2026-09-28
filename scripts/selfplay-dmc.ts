@@ -14,6 +14,7 @@ import type { State, Event } from "../src/game/types.ts";
 import { dmcClient } from "./dmc-client.ts";
 import { swanlabTracker } from "./dmc-swanlab.ts";
 import { finalDmcEvaluation } from "./dmc-final-eval.ts";
+import { parallelDouzeroBatch } from "./douzero-parallel.ts";
 
 const directory = process.argv[2] ?? "analysis/dmc-selfplay-2026-09-24";
 const douzero = process.env.DMC_ARCHITECTURE === "douzero";
@@ -24,6 +25,8 @@ const iterations = Number(process.argv[3] ?? 12),
 const targetSamples = Number(process.env.DMC_TARGET_SAMPLES ?? 0),
   evalEvery = Number(process.env.DMC_EVAL_EVERY ?? 3),
   checkpointEvery = Number(process.env.DMC_CHECKPOINT_EVERY ?? 50),
+  actors = Number(process.env.DMC_ACTORS ?? 1),
+  actorLanes = Number(process.env.DMC_ACTOR_LANES ?? 8),
   devPairs = Number(process.env.DMC_DEV_PAIRS ?? 4),
   devSeed = Number(process.env.DMC_DEV_SEED ?? 3_000_000_000);
 const saveBatches = process.env.DMC_SAVE_BATCHES === "1";
@@ -32,6 +35,8 @@ for (const [name, value] of Object.entries({
   gamesPerIteration,
   evalEvery,
   checkpointEvery,
+  actors,
+  actorLanes,
   devPairs,
   devSeed,
 }))
@@ -144,8 +149,10 @@ writeFileSync(
       saveBatches: douzero ? saveBatches : true,
       evalEvery,
       checkpointEvery: douzero ? checkpointEvery : 1,
+      actors: douzero ? actors : 1,
+      lanesPerActor: douzero && actors > 1 ? actorLanes : lanes,
       devPairs,
-      lanes,
+      lanes: douzero && actors > 1 ? actors * actorLanes : lanes,
       maxTurns,
       trainSeed,
       devSeed,
@@ -197,12 +204,25 @@ try {
       x: number[][] = [],
       history: number[][][] = [],
       y: number[] = [];
-    let launched = 0,
-      completed = 0,
+    let completed = 0,
       truncated = 0,
       totalTurns = 0;
-    const active: Episode[] = [];
     const epsilon = initial.version + iteration < 2 ? 0.2 : 0.1;
+    if (douzero && actors > 1) {
+      const batch = await parallelDouzeroBatch({
+        client, directory, iteration, version: initial.version + iteration,
+        epsilon, games: gamesPerIteration, actors, lanesPerActor: actorLanes,
+        maxTurns, trainSeed, cumulativeSamples, targetSamples,
+      });
+      x.push(...batch.x);
+      history.push(...batch.history);
+      y.push(...batch.y);
+      completed = batch.completed;
+      truncated = batch.truncated;
+      totalTurns = batch.totalTurns;
+    } else {
+    let launched = 0;
+    const active: Episode[] = [];
     while (completed + truncated < gamesPerIteration) {
       while (active.length < lanes && launched < gamesPerIteration) {
         const id =
@@ -291,6 +311,7 @@ try {
           targetSamples,
         }),
       );
+    }
     }
     if (!x.length)
       throw Error("No complete episodes; refusing fabricated labels");

@@ -39,3 +39,5 @@ analysis/information-ppo-4096-2026-09-24/comparison/console.log
 analysis/information-ppo-4096-2026-09-24/diagnosis/console.log
 analysis/information-ppo-4096-2026-09-24/diagnosis/model-*/model.json
 training-runs/
+output/.swanlab-venv/
+output/jaipur-douzero-*/

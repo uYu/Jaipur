@@ -24,6 +24,8 @@ npm ci
 
 从零训练可直接运行仓库根目录的 `train.sh`：默认 CUDA、1000 万样本、每 128 场更新一次、每 50 轮评估和保存一次检查点，写入新的 `output/jaipur-douzero-10m-fresh` 目录。脚本不传 `--resume`；若该目录已有 `config.json`，会拒绝覆盖。设置 `SWANLAB_API_KEY` 并安装 `swanlab==0.10.1` 后，训练开始时会自动在线记录，无需另开回填进程。可以用 `JAIPUR_DOUZERO_OUTPUT` 改输出目录。
 
+`--actors N --actor-lanes M` 使用 N 个 CPU worker 并行推进比赛，再由主进程合并行动评分请求；默认 `N=1` 保持原来的串行流程。在本机的一轮 128 场对照中，串行版 18,600 个样本耗时 14.8 秒，4 个 worker、每个 16 条轨道的并行版 18,064 个样本耗时 12.2 秒，样本吞吐约提高 18%；这只是单轮吞吐测试，不代表棋力提高。Mac 训练可设置 `JAIPUR_DOUZERO_DEVICE=cpu JAIPUR_DOUZERO_ACTORS=4 JAIPUR_DOUZERO_ACTOR_LANES=16`。
+
 ```sh
 python -m pip install swanlab==0.10.1
 printf 'SwanLab API Key: '
