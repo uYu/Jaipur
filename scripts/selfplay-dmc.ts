@@ -25,6 +25,8 @@ const iterations = Number(process.argv[3] ?? 12),
 const targetSamples = Number(process.env.DMC_TARGET_SAMPLES ?? 0),
   evalEvery = Number(process.env.DMC_EVAL_EVERY ?? 3),
   checkpointEvery = Number(process.env.DMC_CHECKPOINT_EVERY ?? 50),
+  exploration = Number(process.env.DMC_EXPLORATION ?? (douzero ? 0.01 : 0.1)),
+  epochsPerBatch = Number(process.env.DMC_EPOCHS_PER_BATCH ?? (douzero ? 1 : 4)),
   actors = Number(process.env.DMC_ACTORS ?? 1),
   actorLanes = Number(process.env.DMC_ACTOR_LANES ?? 8),
   devPairs = Number(process.env.DMC_DEV_PAIRS ?? 4),
@@ -35,6 +37,7 @@ for (const [name, value] of Object.entries({
   gamesPerIteration,
   evalEvery,
   checkpointEvery,
+  epochsPerBatch,
   actors,
   actorLanes,
   devPairs,
@@ -49,6 +52,8 @@ if (
   throw Error("Invalid development seed range");
 if (!Number.isSafeInteger(targetSamples) || targetSamples < 0)
   throw Error("Invalid DMC_TARGET_SAMPLES");
+if (!Number.isFinite(exploration) || exploration < 0 || exploration > 1)
+  throw Error("Invalid DMC_EXPLORATION");
 const maxTurns = 700,
   lanes = 16,
   trainSeed = 1_000_000;
@@ -167,9 +172,9 @@ writeFileSync(
         ? "LSTM(26,128) + MLP(298,512,512,512,512,512,1)"
         : [170, 128, 128, 1],
       optimizer: "RMSprop lr=0.0001 alpha=.99 eps=0.00001",
-      epochsPerBatch: 4,
+      epochsPerBatch,
       exploration:
-        "uniform legal-action epsilon-greedy, epsilon=.2 while policy version <2, then .1",
+        `uniform legal-action epsilon-greedy, epsilon=.2 while policy version <2, then ${exploration}`,
       actorUpdate:
         "synchronous after each completed batch; shared model for both symmetric seats",
       checkpointSelection: "paired development arena wins, not MSE",
@@ -207,7 +212,7 @@ try {
     let completed = 0,
       truncated = 0,
       totalTurns = 0;
-    const epsilon = initial.version + iteration < 2 ? 0.2 : 0.1;
+    const epsilon = initial.version + iteration < 2 ? 0.2 : exploration;
     if (douzero && actors > 1) {
       const batch = await parallelDouzeroBatch({
         client, directory, iteration, version: initial.version + iteration,
@@ -315,8 +320,17 @@ try {
     }
     if (!x.length)
       throw Error("No complete episodes; refusing fabricated labels");
+    const actionCounts = { take: 0, camels: 0, sell: 0, exchange: 0 };
+    if (douzero) {
+      for (const row of x) {
+        const kind = row.slice(146, 150).findIndex((value) => value === 1);
+        const name = (["take", "camels", "sell", "exchange"] as const)[kind];
+        if (!name) throw Error("Bad DMC action kind in training batch");
+        actionCounts[name]++;
+      }
+    }
     const learned = await client.call({
-      op: "learn", x, y, epochs: 4,
+      op: "learn", x, y, epochs: epochsPerBatch,
       ...(douzero ? { history, save_batch: saveBatches } : {}),
     });
     cumulativeSamples += learned.samples;
@@ -372,6 +386,7 @@ try {
       ...(checkpoint ? { checkpoint } : {}),
       cumulativeSamples,
       cumulativeMatches,
+      ...(douzero ? { actionCounts } : {}),
       arena: result,
       elapsedSeconds: (performance.now() - started) / 1000,
     });

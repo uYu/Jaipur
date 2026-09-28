@@ -24,6 +24,8 @@ npm ci
 
 从零训练可直接运行仓库根目录的 `train.sh`：默认 CUDA、1000 万样本、每 128 场更新一次、每 50 轮评估和保存一次检查点，写入新的 `output/jaipur-douzero-10m-fresh` 目录。脚本不传 `--resume`；若该目录已有 `config.json`，会拒绝覆盖。设置 `SWANLAB_API_KEY` 并安装 `swanlab==0.10.1` 后，训练开始时会自动在线记录，无需另开回填进程。可以用 `JAIPUR_DOUZERO_OUTPUT` 改输出目录。
 
+新训练默认探索率 `0.01`、每批样本训练 `1` 遍。可用 `--exploration`、`--epochs-per-batch` 或 `train.sh` 的 `JAIPUR_DOUZERO_EXPLORATION`、`JAIPUR_DOUZERO_EPOCHS_PER_BATCH` 调整。已启动的进程仍使用启动时参数；每轮的实际值记录在 `config.json` 和 `training.jsonl`。SwanLab 还会记录拿牌、骆驼、出售、换牌四类行动的占比。
+
 `--actors N --actor-lanes M` 使用 N 个 CPU worker 并行推进比赛，再由主进程合并行动评分请求；默认 `N=1` 保持原来的串行流程。在本机的一轮 128 场对照中，串行版 18,600 个样本耗时 14.8 秒，4 个 worker、每个 16 条轨道的并行版 18,064 个样本耗时 12.2 秒，样本吞吐约提高 18%；这只是单轮吞吐测试，不代表棋力提高。Mac 训练可设置 `JAIPUR_DOUZERO_DEVICE=cpu JAIPUR_DOUZERO_ACTORS=4 JAIPUR_DOUZERO_ACTOR_LANES=16`。
 
 ```sh
@@ -80,6 +82,8 @@ CUDA_VISIBLE_DEVICES=0 ./scripts/launch-douzero.sh \
 ```
 
 `--target-samples` 在续训目录重新计数；旧检查点的版本号用于区分新旧对局种子。`progress.json` 报告当前批次进度，`training.jsonl` 保存每次更新和开发对局，`completion.json` 表示达到目标，`selfplay-games.jsonl` 保存可重放的完整比赛。默认不保存重复的训练张量；需要逐批审计时加 `--save-batches`，会明显增加磁盘占用。新版默认每 50 轮保存一次编号检查点；开发集成绩刷新、训练结束时也会保存。`selection.json` 的 `latestCheckpoint` 指向最近一次**已保存**的模型，中断时最多损失最近 49 轮的权重更新。已在运行的旧进程仍按启动时的代码保存。
+
+一次本机对照从相同的第 400 轮检查点续训：原设置（探索率 `0.1`、每批 4 遍）第 500 轮在独立 200 局中胜普通 AI `22/200`；改为 `0.01`、每批 1 遍后，第 420 轮在两组互不重叠的独立种子中分别为 `133/200` 和 `135/200`。这是该检查点的实测改善，不能直接当作从零训练的预期胜率。训练 MSE 并非棋力指标，应优先比较独立配对对局。
 
 已启动但未启用 SwanLab 的训练，可在服务器另开终端安装 `swanlab==0.10.1`，通过环境变量提供 API Key，然后运行 `python scripts/dmc-swanlab.py 输出目录 --follow`。该命令先上传 `training.jsonl` 的已有记录，再跟随新记录，直到出现 `completion.json`；只上传汇总指标和配置，不上传完整对局或模型文件。运行地址写入输出目录的 `swanlab-run.json`。
 

@@ -14,6 +14,8 @@ Options:
   --max-updates N             Safety cap on model updates (default: 2000)
   --eval-every N              Development evaluation interval (default: 50)
   --checkpoint-every N        Save a resume checkpoint every N updates (default: 50)
+  --exploration RATE          Epsilon-greedy probability after warmup (default: 0.01)
+  --epochs-per-batch N        Learner passes over each self-play batch (default: 1)
   --actors N                  Parallel CPU self-play workers (default: 1)
   --actor-lanes N             Concurrent games per worker (default: 8)
   --dev-pairs N               Paired development seeds (default: 32)
@@ -35,6 +37,8 @@ games_per_update="128"
 max_updates="2000"
 eval_every="50"
 checkpoint_every="50"
+exploration="0.01"
+epochs_per_batch="1"
 actors="1"
 actor_lanes="8"
 dev_pairs="32"
@@ -43,7 +47,7 @@ save_batches="0"
 smoke="0"
 while (($#)); do
   case "$1" in
-    --output|--device|--python|--target-samples|--games-per-update|--max-updates|--eval-every|--checkpoint-every|--actors|--actor-lanes|--dev-pairs|--resume)
+    --output|--device|--python|--target-samples|--games-per-update|--max-updates|--eval-every|--checkpoint-every|--exploration|--epochs-per-batch|--actors|--actor-lanes|--dev-pairs|--resume)
       (($# >= 2)) || { echo "Missing value for $1" >&2; exit 2; }
       case "$1" in
         --output) output=$2 ;;
@@ -54,6 +58,8 @@ while (($#)); do
         --max-updates) max_updates=$2 ;;
         --eval-every) eval_every=$2 ;;
         --checkpoint-every) checkpoint_every=$2 ;;
+        --exploration) exploration=$2 ;;
+        --epochs-per-batch) epochs_per_batch=$2 ;;
         --actors) actors=$2 ;;
         --actor-lanes) actor_lanes=$2 ;;
         --dev-pairs) dev_pairs=$2 ;;
@@ -81,9 +87,10 @@ if [[ "$smoke" == "1" ]]; then
   checkpoint_every="1"
   dev_pairs="1"
 fi
-for value in "$target_samples" "$games_per_update" "$max_updates" "$eval_every" "$checkpoint_every" "$actors" "$actor_lanes" "$dev_pairs"; do
+for value in "$target_samples" "$games_per_update" "$max_updates" "$eval_every" "$checkpoint_every" "$epochs_per_batch" "$actors" "$actor_lanes" "$dev_pairs"; do
   [[ "$value" =~ ^[1-9][0-9]*$ ]] || { echo "Counts must be positive integers" >&2; exit 2; }
 done
+[[ "$exploration" =~ ^(0(\.[0-9]+)?|1(\.0+)?)$ ]] || { echo "--exploration must be in [0, 1]" >&2; exit 2; }
 ((games_per_update < 10000)) || { echo "--games-per-update must be below 10000" >&2; exit 2; }
 [[ ! -e "$output/config.json" ]] || { echo "Output already has config.json; use a fresh directory" >&2; exit 2; }
 [[ -z "$resume" || -f "$resume" ]] || { echo "Resume checkpoint not found: $resume" >&2; exit 2; }
@@ -116,6 +123,7 @@ echo "Starting DouZero-style self-play: target=$target_samples samples, output=$
 exec env DMC_ARCHITECTURE=douzero DMC_DEVICE="$device" \
   DMC_TARGET_SAMPLES="$target_samples" DMC_EVAL_EVERY="$eval_every" \
   DMC_CHECKPOINT_EVERY="$checkpoint_every" \
+  DMC_EXPLORATION="$exploration" DMC_EPOCHS_PER_BATCH="$epochs_per_batch" \
   DMC_ACTORS="$actors" DMC_ACTOR_LANES="$actor_lanes" \
   DMC_DEV_PAIRS="$dev_pairs" DMC_SAVE_BATCHES="$save_batches" \
   DMC_FINAL_EVAL=0 JAIPUR_PYTHON="$python_bin" \

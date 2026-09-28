@@ -68,6 +68,9 @@ class Tracker:
         metrics.update({'selfplay/cumulative_matches': self.games,
                         'train/cumulative_samples': self.samples,
                         'time/cumulative_iteration_seconds': self.seconds})
+        if 'actionCounts' in row and row.get('samples'):
+            for action, count in row['actionCounts'].items():
+                metrics[f'selfplay/action_{action}_rate'] = count / row['samples']
         if 'arena' in row and row['arena'] is not None:
             arena = row['arena']
             wins, losses = arena['wins']
