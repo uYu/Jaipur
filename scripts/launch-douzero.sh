@@ -13,6 +13,7 @@ Options:
   --games-per-update N        Completed matches per model update (default: 128)
   --max-updates N             Safety cap on model updates (default: 2000)
   --eval-every N              Development evaluation interval (default: 50)
+  --checkpoint-every N        Save a resume checkpoint every N updates (default: 50)
   --dev-pairs N               Paired development seeds (default: 32)
   --resume CHECKPOINT         Resume model, optimizer, and RNG from checkpoint
   --save-batches              Save compressed training batches (uses more disk)
@@ -31,13 +32,14 @@ target_samples="10000000"
 games_per_update="128"
 max_updates="2000"
 eval_every="50"
+checkpoint_every="50"
 dev_pairs="32"
 resume=""
 save_batches="0"
 smoke="0"
 while (($#)); do
   case "$1" in
-    --output|--device|--python|--target-samples|--games-per-update|--max-updates|--eval-every|--dev-pairs|--resume)
+    --output|--device|--python|--target-samples|--games-per-update|--max-updates|--eval-every|--checkpoint-every|--dev-pairs|--resume)
       (($# >= 2)) || { echo "Missing value for $1" >&2; exit 2; }
       case "$1" in
         --output) output=$2 ;;
@@ -47,6 +49,7 @@ while (($#)); do
         --games-per-update) games_per_update=$2 ;;
         --max-updates) max_updates=$2 ;;
         --eval-every) eval_every=$2 ;;
+        --checkpoint-every) checkpoint_every=$2 ;;
         --dev-pairs) dev_pairs=$2 ;;
         --resume) resume=$2 ;;
       esac
@@ -69,9 +72,10 @@ if [[ "$smoke" == "1" ]]; then
   games_per_update="16"
   max_updates="1"
   eval_every="1"
+  checkpoint_every="1"
   dev_pairs="1"
 fi
-for value in "$target_samples" "$games_per_update" "$max_updates" "$eval_every" "$dev_pairs"; do
+for value in "$target_samples" "$games_per_update" "$max_updates" "$eval_every" "$checkpoint_every" "$dev_pairs"; do
   [[ "$value" =~ ^[1-9][0-9]*$ ]] || { echo "Counts must be positive integers" >&2; exit 2; }
 done
 ((games_per_update < 10000)) || { echo "--games-per-update must be below 10000" >&2; exit 2; }
@@ -105,6 +109,7 @@ if [[ -n "$resume" ]]; then args+=("$resume"); fi
 echo "Starting DouZero-style self-play: target=$target_samples samples, output=$output"
 exec env DMC_ARCHITECTURE=douzero DMC_DEVICE="$device" \
   DMC_TARGET_SAMPLES="$target_samples" DMC_EVAL_EVERY="$eval_every" \
+  DMC_CHECKPOINT_EVERY="$checkpoint_every" \
   DMC_DEV_PAIRS="$dev_pairs" DMC_SAVE_BATCHES="$save_batches" \
   DMC_FINAL_EVAL=0 JAIPUR_PYTHON="$python_bin" \
   node --experimental-strip-types scripts/selfplay-dmc.ts "${args[@]}"

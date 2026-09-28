@@ -60,8 +60,8 @@ def sync_actor():
 sync_actor()
 
 
-def save(latest=False):
-    path = args.directory / ("model-latest.pt" if latest else f"model-{version:03d}.pt")
+def save():
+    path = args.directory / f"model-{version:03d}.pt"
     temporary = path.with_name(f".{path.name}.tmp")
     torch.save({
         "architecture": "jaipur-douzero-history-v1",
@@ -145,7 +145,7 @@ for line in sys.stdin:
             model.eval()
             sync_actor()
             result = {"version": version, "samples": len(y),
-                      "mse": float(np.mean(losses)), "checkpoint": save(latest=True)}
+                      "mse": float(np.mean(losses))}
         elif op == "save":
             result = {"version": version, "checkpoint": save()}
         else:

@@ -41,14 +41,14 @@ npm ci
 ./scripts/launch-douzero.sh --device cpu --python .venv/bin/python \
   --output /data/jaipur-douzero-10m-cpu \
   --target-samples 10000000 --games-per-update 128 \
-  --max-updates 2000 --eval-every 50 --dev-pairs 32
+  --max-updates 2000 --eval-every 50 --checkpoint-every 50 --dev-pairs 32
 
 # CUDA GPU
 CUDA_VISIBLE_DEVICES=0 ./scripts/launch-douzero.sh \
   --device cuda --python .venv/bin/python \
   --output /data/jaipur-douzero-10m-gpu \
   --target-samples 10000000 --games-per-update 128 \
-  --max-updates 2000 --eval-every 50 --dev-pairs 32
+  --max-updates 2000 --eval-every 50 --checkpoint-every 50 --dev-pairs 32
 ```
 
 `--device auto` 会优先选择 CUDA，其次 MPS，最后 CPU。GPU 服务器想确认**确实用了 GPU 训练**，建议显式指定 `--device cuda`，并检查启动日志的 `device: "cuda"`、`actorDevice: "cpu"`。
@@ -60,12 +60,14 @@ CUDA_VISIBLE_DEVICES=0 ./scripts/launch-douzero.sh \
 ```sh
 ./scripts/launch-douzero.sh --device cuda --python .venv/bin/python \
   --output /data/jaipur-douzero-continued \
-  --resume /data/jaipur-douzero-10m-gpu/model-latest.pt \
+  --resume /data/jaipur-douzero-10m-gpu/model-050.pt \
   --target-samples 10000000 --games-per-update 128 \
-  --max-updates 2000 --eval-every 50 --dev-pairs 32
+  --max-updates 2000 --eval-every 50 --checkpoint-every 50 --dev-pairs 32
 ```
 
-`--target-samples` 在续训目录重新计数；旧检查点的版本号用于区分新旧对局种子。`progress.json` 报告当前批次进度，`training.jsonl` 保存每次更新和开发对局，`completion.json` 表示达到目标，`selfplay-games.jsonl` 保存可重放的完整比赛。默认不保存重复的训练张量；需要逐批审计时加 `--save-batches`，会明显增加磁盘占用。新版每次更新原子覆盖 `model-latest.pt`，仅在开发集成绩刷新时另存编号检查点；旧版训练进程仍会每轮生成编号检查点。
+`--target-samples` 在续训目录重新计数；旧检查点的版本号用于区分新旧对局种子。`progress.json` 报告当前批次进度，`training.jsonl` 保存每次更新和开发对局，`completion.json` 表示达到目标，`selfplay-games.jsonl` 保存可重放的完整比赛。默认不保存重复的训练张量；需要逐批审计时加 `--save-batches`，会明显增加磁盘占用。新版默认每 50 轮保存一次编号检查点；开发集成绩刷新、训练结束时也会保存。`selection.json` 的 `latestCheckpoint` 指向最近一次**已保存**的模型，中断时最多损失最近 49 轮的权重更新。已在运行的旧进程仍按启动时的代码保存。
+
+已启动但未启用 SwanLab 的训练，可在服务器另开终端安装 `swanlab==0.10.1`，通过环境变量提供 API Key，然后运行 `python scripts/dmc-swanlab.py 输出目录 --follow`。该命令先上传 `training.jsonl` 的已有记录，再跟随新记录，直到出现 `completion.json`；只上传汇总指标和配置，不上传完整对局或模型文件。运行地址写入输出目录的 `swanlab-run.json`。
 
 开发集固定用于选检查点，**不能当最终胜率**。大量训练完成后应使用新的配对种子、交换先后手，与普通 AI、旧 DMC 和困难搜索 AI 分别做完整对局评估；未通过评估前不要替换网页 AI。
 

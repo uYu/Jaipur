@@ -23,6 +23,7 @@ const iterations = Number(process.argv[3] ?? 12),
   gamesPerIteration = Number(process.argv[4] ?? 128);
 const targetSamples = Number(process.env.DMC_TARGET_SAMPLES ?? 0),
   evalEvery = Number(process.env.DMC_EVAL_EVERY ?? 3),
+  checkpointEvery = Number(process.env.DMC_CHECKPOINT_EVERY ?? 50),
   devPairs = Number(process.env.DMC_DEV_PAIRS ?? 4),
   devSeed = Number(process.env.DMC_DEV_SEED ?? 3_000_000_000);
 const saveBatches = process.env.DMC_SAVE_BATCHES === "1";
@@ -30,6 +31,7 @@ for (const [name, value] of Object.entries({
   iterations,
   gamesPerIteration,
   evalEvery,
+  checkpointEvery,
   devPairs,
   devSeed,
 }))
@@ -141,6 +143,7 @@ writeFileSync(
       device: douzero ? process.env.DMC_DEVICE ?? "auto" : "cpu",
       saveBatches: douzero ? saveBatches : true,
       evalEvery,
+      checkpointEvery: douzero ? checkpointEvery : 1,
       devPairs,
       lanes,
       maxTurns,
@@ -186,6 +189,7 @@ try {
   let best =
     initialArena.wins[0] - initialArena.wins[1] - initialArena.truncated;
   let bestCheckpoint = initial.checkpoint;
+  let latestCheckpoint = initial.checkpoint;
   let cumulativeSamples = 0,
     cumulativeMatches = 0;
   for (let iteration = 0; iteration < iterations; iteration++) {
@@ -303,22 +307,33 @@ try {
       iteration + 1 === iterations ||
       reachedTarget;
     const result = evaluate ? await arena() : undefined;
+    let improved = false;
     if (result) {
       const score = result.wins[0] - result.wins[1] - result.truncated;
       if (score > best) {
         best = score;
-        bestCheckpoint = douzero
-          ? (await client.call({ op: "save" })).checkpoint
-          : learned.checkpoint;
+        improved = true;
       }
     }
+    let checkpoint: string | undefined;
+    if (douzero) {
+      if (learned.version % checkpointEvery === 0 ||
+          iteration + 1 === iterations || reachedTarget || improved) {
+        checkpoint = (await client.call({ op: "save" })).checkpoint;
+        latestCheckpoint = checkpoint!;
+      }
+    } else {
+      checkpoint = learned.checkpoint;
+      latestCheckpoint = checkpoint!;
+    }
+    if (improved) bestCheckpoint = latestCheckpoint;
     writeFileSync(
       join(directory, "selection.json"),
       JSON.stringify(
         {
           bestCheckpoint,
           bestDevScore: best,
-          latestCheckpoint: learned.checkpoint,
+          latestCheckpoint,
           criterion: "paired dev match results; ties keep earlier checkpoint",
           promoted: false,
         },
@@ -333,6 +348,7 @@ try {
       truncated,
       totalTurns,
       ...learned,
+      ...(checkpoint ? { checkpoint } : {}),
       cumulativeSamples,
       cumulativeMatches,
       arena: result,

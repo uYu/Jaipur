@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import time
 
 
 class Tracker:
@@ -121,17 +122,30 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('directory')
     parser.add_argument('--backfill', action='store_true')
+    parser.add_argument('--follow', action='store_true',
+                        help='Backfill training.jsonl, then stream new rows until completion.json exists')
     args = parser.parse_args()
+    if args.backfill and args.follow:
+        parser.error('--backfill and --follow are mutually exclusive')
     tracker = None
     failed = False
     try:
         with contextlib.redirect_stdout(sys.stderr):
             tracker = Tracker(args.directory)
         print(json.dumps({'ready': True, **tracker.info}), flush=True)
-        if args.backfill:
+        if args.backfill or args.follow:
+            directory = Path(args.directory)
+            with (directory / 'training.jsonl').open() as source:
+                while True:
+                    line = source.readline()
+                    if line:
+                        with contextlib.redirect_stdout(sys.stderr):
+                            tracker.record(json.loads(line))
+                        continue
+                    if not args.follow or (directory / 'completion.json').exists():
+                        break
+                    time.sleep(2)
             with contextlib.redirect_stdout(sys.stderr):
-                for line in (Path(args.directory) / 'training.jsonl').read_text().splitlines():
-                    tracker.record(json.loads(line))
                 tracker.evaluations()
         else:
             for line in sys.stdin:
