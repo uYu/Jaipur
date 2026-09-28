@@ -1,8 +1,14 @@
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
-export function dmcClient(directory: string, checkpoint?: string) {
-  const args = ["scripts/dmc-learner.py", "--directory", directory];
+export function dmcClient(
+  directory: string,
+  checkpoint?: string,
+  learner = "scripts/dmc-learner.py",
+  extraArgs: string[] = [],
+) {
+  const args = [learner, "--directory", directory];
   if (checkpoint) args.push("--checkpoint", checkpoint);
+  args.push(...extraArgs);
   const worker = spawn(process.env.JAIPUR_PYTHON ?? "python3", args, {
     stdio: ["pipe", "pipe", "inherit"],
   });

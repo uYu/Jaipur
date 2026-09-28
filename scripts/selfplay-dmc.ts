@@ -8,18 +8,24 @@ import {
 } from "../src/game/engine.ts";
 import { observe, chooseAction } from "../src/game/ai.ts";
 import { dmcActions, dmcState, dmcAction } from "../src/game/dmc.ts";
+import { dmcHistory } from "../src/game/dmc-history.ts";
+import type { DmcPublicMove } from "../src/game/dmc-history.ts";
 import type { State, Event } from "../src/game/types.ts";
 import { dmcClient } from "./dmc-client.ts";
 import { swanlabTracker } from "./dmc-swanlab.ts";
 import { finalDmcEvaluation } from "./dmc-final-eval.ts";
 
 const directory = process.argv[2] ?? "analysis/dmc-selfplay-2026-09-24";
+const douzero = process.env.DMC_ARCHITECTURE === "douzero";
+if (process.env.DMC_ARCHITECTURE && !["douzero", "mlp"].includes(process.env.DMC_ARCHITECTURE))
+  throw Error("DMC_ARCHITECTURE must be douzero or mlp");
 const iterations = Number(process.argv[3] ?? 12),
   gamesPerIteration = Number(process.argv[4] ?? 128);
 const targetSamples = Number(process.env.DMC_TARGET_SAMPLES ?? 0),
   evalEvery = Number(process.env.DMC_EVAL_EVERY ?? 3),
   devPairs = Number(process.env.DMC_DEV_PAIRS ?? 4),
   devSeed = Number(process.env.DMC_DEV_SEED ?? 3_000_000_000);
+const saveBatches = process.env.DMC_SAVE_BATCHES === "1";
 for (const [name, value] of Object.entries({
   iterations,
   gamesPerIteration,
@@ -44,7 +50,9 @@ if (existsSync(join(directory, "config.json")))
     "Use a fresh output directory; optional fifth argument resumes a checkpoint",
   );
 mkdirSync(directory, { recursive: true });
-const client = dmcClient(directory, process.argv[5]);
+const client = dmcClient(directory, process.argv[5],
+  douzero ? "scripts/douzero-learner.py" : "scripts/dmc-learner.py",
+  douzero ? ["--device", process.env.DMC_DEVICE ?? "auto"] : []);
 let tracker: ReturnType<typeof swanlabTracker> | undefined;
 const log = async (x: object) => {
   const s = JSON.stringify(x);
@@ -60,7 +68,8 @@ const context = (s: State) => ({
 type Episode = {
   state: State;
   events: Event[];
-  samples: { x: number[]; actor: number }[];
+  moves: DmcPublicMove[];
+  samples: { x: number[]; history?: number[][]; actor: number }[];
   turns: number;
   id: number;
 };
@@ -68,14 +77,17 @@ function prepare(e: Episode) {
   if (e.state.phase === "roundEnd") {
     e.state = nextRound(e.state);
     e.events.push({ type: "next" });
+    e.moves = [];
   }
   const o = observe(e.state, e.events, 0.75),
     actions = dmcActions(o);
   return {
     actions,
+    observation: o,
     row: {
       state: dmcState(o, context(e.state)),
       actions: actions.map((a) => dmcAction(o, a)),
+      history: douzero ? dmcHistory(e.moves, e.state.current) : undefined,
     },
   };
 }
@@ -87,6 +99,7 @@ async function arena() {
       const e: Episode = {
         state: newGame(seed),
         events: [],
+        moves: [],
         samples: [],
         turns: 0,
         id: seed,
@@ -102,6 +115,8 @@ async function arena() {
             : chooseAction(observe(e.state, e.events, 0.75), "normal");
         const error = actionError(e.state, a);
         if (error) throw Error(error);
+        if (douzero)
+          e.moves.push({ actor: e.state.current, action: dmcAction(p.observation, a) });
         e.state = applyAction(e.state, a);
         e.events.push(a);
       }
@@ -123,6 +138,8 @@ writeFileSync(
       iterations,
       gamesPerIteration,
       targetSamples,
+      device: douzero ? process.env.DMC_DEVICE ?? "auto" : "cpu",
+      saveBatches: douzero ? saveBatches : true,
       evalEvery,
       devPairs,
       lanes,
@@ -136,7 +153,9 @@ writeFileSync(
       resumeCheckpoint: process.argv[5] ?? null,
       encoder:
         "public observation + hand posterior + public seals; no hidden truth or seed",
-      architecture: [170, 128, 128, 1],
+      architecture: douzero
+        ? "LSTM(26,128) + MLP(298,512,512,512,512,512,1)"
+        : [170, 128, 128, 1],
       optimizer: "RMSprop lr=0.0001 alpha=.99 eps=0.00001",
       epochsPerBatch: 4,
       exploration:
@@ -155,9 +174,15 @@ try {
     tracker = swanlabTracker(directory);
     await tracker.ready;
   }
+  const workerInfo = await client.call({ op: "ready" });
   const initial = await client.call({ op: "save" });
   const initialArena = await arena();
-  await log({ iteration: 0, ...initial, arena: initialArena });
+  await log({
+    iteration: 0, ...initial,
+    device: workerInfo.device ?? "cpu",
+    actorDevice: workerInfo.actor_device ?? "cpu",
+    arena: initialArena,
+  });
   let best =
     initialArena.wins[0] - initialArena.wins[1] - initialArena.truncated;
   let bestCheckpoint = initial.checkpoint;
@@ -166,6 +191,7 @@ try {
   for (let iteration = 0; iteration < iterations; iteration++) {
     const started = performance.now(),
       x: number[][] = [],
+      history: number[][][] = [],
       y: number[] = [];
     let launched = 0,
       completed = 0,
@@ -180,6 +206,7 @@ try {
         active.push({
           state: newGame(id),
           events: [],
+          moves: [],
           samples: [],
           turns: 0,
           id,
@@ -202,7 +229,10 @@ try {
         e.samples.push({
           actor: e.state.current,
           x: [...p.row.state, ...p.row.actions[index]],
+          history: p.row.history,
         });
+        if (douzero)
+          e.moves.push({ actor: e.state.current, action: p.row.actions[index] });
         e.state = applyAction(e.state, a);
         e.events.push(a);
         e.turns++;
@@ -211,6 +241,7 @@ try {
           const winner = e.state.seals[0] > e.state.seals[1] ? 0 : 1;
           for (const sample of e.samples) {
             x.push(sample.x);
+            if (douzero && sample.history) history.push(sample.history);
             y.push(sample.actor === winner ? 1 : -1);
           }
           appendFileSync(
@@ -259,7 +290,10 @@ try {
     }
     if (!x.length)
       throw Error("No complete episodes; refusing fabricated labels");
-    const learned = await client.call({ op: "learn", x, y, epochs: 4 });
+    const learned = await client.call({
+      op: "learn", x, y, epochs: 4,
+      ...(douzero ? { history, save_batch: saveBatches } : {}),
+    });
     cumulativeSamples += learned.samples;
     cumulativeMatches += completed;
     const reachedTarget =

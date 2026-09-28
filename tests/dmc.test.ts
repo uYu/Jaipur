@@ -16,6 +16,7 @@ import {
   DMC_ACTION,
 } from "../src/game/dmc.ts";
 import { random } from "../src/game/data.ts";
+import { dmcHistory, DMC_HISTORY_LENGTH } from "../src/game/dmc-history.ts";
 import type { Event, Good } from "../src/game/types.ts";
 
 test("DMC actions cover exactly the independent engine legal set, without equivalent-card duplicates", () => {
@@ -118,4 +119,22 @@ test("public knowledge cache invalidates when an event history branches", () => 
     observe(state, events, 0.75).knownOpponentHand,
     observe(state, events.slice(), 0.75).knownOpponentHand,
   );
+});
+
+test("DouZero history uses public actions and current-player perspective", () => {
+  const action = Array(DMC_ACTION).fill(0);
+  action[2] = 1;
+  const moves = Array.from({ length: DMC_HISTORY_LENGTH + 1 }, (_, i) => ({
+    actor: i % 2,
+    action: [...action],
+  }));
+  const self = dmcHistory(moves, 0);
+  const other = dmcHistory(moves, 1);
+  assert.equal(self.length, DMC_HISTORY_LENGTH);
+  assert.deepEqual(self.map((row) => row.slice(2)), other.map((row) => row.slice(2)));
+  for (let i = 0; i < DMC_HISTORY_LENGTH; i++) {
+    assert.deepEqual(self[i].slice(0, 2), other[i].slice(0, 2).reverse());
+    assert.equal(self[i][0], (i + 1) % 2 === 0 ? 1 : 0);
+  }
+  assert.ok(dmcHistory([], 0).every((row) => row.every((value) => value === 0)));
 });
