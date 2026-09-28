@@ -21,7 +21,7 @@ if [ -n "${SWANLAB_API_KEY:-}" ]; then
     echo "SwanLab API key is set, but this Python cannot import swanlab" >&2
     exit 2
   }
-  export SWANLAB_PROJECT="${SWANLAB_PROJECT:-jaipur-douzero}"
+  export JAIPUR_SWANLAB_PROJECT="${JAIPUR_SWANLAB_PROJECT:-jaipur-douzero}"
 else
   echo "SWANLAB_API_KEY is unset; only local training logs will be written" >&2
 fi

@@ -81,6 +81,8 @@ CUDA_VISIBLE_DEVICES=0 ./scripts/launch-douzero.sh \
 
 已启动但未启用 SwanLab 的训练，可在服务器另开终端安装 `swanlab==0.10.1`，通过环境变量提供 API Key，然后运行 `python scripts/dmc-swanlab.py 输出目录 --follow`。该命令先上传 `training.jsonl` 的已有记录，再跟随新记录，直到出现 `completion.json`；只上传汇总指标和配置，不上传完整对局或模型文件。运行地址写入输出目录的 `swanlab-run.json`。
 
+项目名通过 `JAIPUR_SWANLAB_PROJECT` 设置；不要在进程环境里直接设置 `SWANLAB_PROJECT`，因为新版 SwanLab SDK 把它解析为内部结构化配置。训练脚本会默认使用 `jaipur-douzero`。
+
 开发集固定用于选检查点，**不能当最终胜率**。大量训练完成后应使用新的配对种子、交换先后手，与普通 AI、旧 DMC 和困难搜索 AI 分别做完整对局评估；未通过评估前不要替换网页 AI。
 
 本机 CPU 冒烟及从其检查点续训均已通过；本机没有 CUDA GPU，因此 CUDA 前向和训练须在 GPU 服务器的 `--smoke` 命令上确认。

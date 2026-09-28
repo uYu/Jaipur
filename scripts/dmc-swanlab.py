@@ -14,6 +14,12 @@ import time
 
 class Tracker:
     def __init__(self, directory):
+        # SwanLab's SDK also reads SWANLAB_PROJECT as a structured setting.
+        # Consume our legacy scalar option before the SDK initializes settings.
+        legacy_project = os.environ.pop('SWANLAB_PROJECT', None)
+        project = os.environ.pop('JAIPUR_SWANLAB_PROJECT', None) or legacy_project or 'jaipur-dmc'
+        legacy_name = os.environ.pop('SWANLAB_EXPERIMENT_NAME', None)
+        experiment_name = os.environ.pop('JAIPUR_SWANLAB_EXPERIMENT_NAME', None) or legacy_name
         import swanlab
         self.sdk = swanlab
         self.directory = Path(directory)
@@ -29,8 +35,8 @@ class Tracker:
                 raise ValueError('SWANLAB_API_KEY is required for cloud tracking')
             swanlab.login(api_key=key, save=False)
         self.run = swanlab.init(
-            project=os.environ.get('SWANLAB_PROJECT', 'jaipur-dmc'),
-            name=os.environ.get('SWANLAB_EXPERIMENT_NAME', self.directory.name),
+            project=project,
+            name=experiment_name or self.directory.name,
             public=False,
             config=json.loads((self.directory / 'config.json').read_text()),
             description='DouZero-inspired DMC; complete match returns; public observations only. Model selection uses paired development matches, not training MSE.',
@@ -43,7 +49,7 @@ class Tracker:
                 terminal={'proxy_type': 'none'},
             ),
         )
-        self.info = {'project': os.environ.get('SWANLAB_PROJECT', 'jaipur-dmc'),
+        self.info = {'project': project,
                      'url': self.run.url if mode == 'online' else None, 'mode': mode}
         (self.directory / 'swanlab-run.json').write_text(json.dumps(self.info, indent=2) + '\n')
 
