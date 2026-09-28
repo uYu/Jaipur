@@ -22,6 +22,18 @@ npm ci
 
 ## 启动命令
 
+从零训练可直接运行仓库根目录的 `train.sh`：默认 CUDA、1000 万样本、每 128 场更新一次、每 50 轮评估和保存一次检查点，写入新的 `output/jaipur-douzero-10m-fresh` 目录。脚本不传 `--resume`；若该目录已有 `config.json`，会拒绝覆盖。设置 `SWANLAB_API_KEY` 并安装 `swanlab==0.10.1` 后，训练开始时会自动在线记录，无需另开回填进程。可以用 `JAIPUR_DOUZERO_OUTPUT` 改输出目录。
+
+```sh
+python -m pip install swanlab==0.10.1
+printf 'SwanLab API Key: '
+read -rs SWANLAB_API_KEY
+printf '\n'
+export SWANLAB_API_KEY
+nohup sh train.sh > train.log 2>&1 &
+unset SWANLAB_API_KEY
+```
+
 先各跑一轮完整流水线。`--smoke` 会覆盖训练规模为 16 场、1 次更新、1 对开发种子；输出目录必须是新目录。
 
 ```sh
