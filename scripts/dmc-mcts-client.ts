@@ -12,10 +12,16 @@ export function dmcMctsClient(
   binary: string,
   mix: number,
   fixedIterations = 0,
+  architecture: "mlp" | "douzero" = "mlp",
 ) {
-  const checkpoint = process.env.JAIPUR_DMC_CHECKPOINT;
-  if (!checkpoint) throw Error("Set JAIPUR_DMC_CHECKPOINT");
-  const network = dmcClient(join(tmpdir(), "jaipur-dmc-hybrid"), checkpoint);
+  const checkpoint = architecture === "douzero"
+    ? process.env.JAIPUR_DOUZERO_CHECKPOINT
+    : process.env.JAIPUR_DMC_CHECKPOINT;
+  if (!checkpoint) throw Error(`Set ${architecture === "douzero" ? "JAIPUR_DOUZERO_CHECKPOINT" : "JAIPUR_DMC_CHECKPOINT"}`);
+  const network = architecture === "douzero"
+    ? dmcClient(join(tmpdir(), "jaipur-douzero-hybrid"), checkpoint,
+                "scripts/douzero-learner.py", ["--device", "cpu"])
+    : dmcClient(join(tmpdir(), "jaipur-dmc-hybrid"), checkpoint);
   const native = spawn(
     binary,
     ["search-dmc", "1.4142135623730951", "0", "8", "1", "0", "1"],
@@ -42,13 +48,17 @@ export function dmcMctsClient(
   });
   return {
     ready: network.call({ op: "ready" }),
-    async choose(o: Observation, remainingMs: number, context: MatchContext) {
+    async choose(o: Observation, remainingMs: number, context: MatchContext,
+                 history?: number[][]) {
+      if (architecture === "douzero" && !history)
+        throw Error("DouZero root prior requires public move history");
       const start = performance.now();
       const actions = dmcActions(o),
         features = actions.map((a) => dmcAction(o, a));
       const result = await network.call({
         op: "score",
-        rows: [{ state: dmcState(o, context), actions: features }],
+        rows: [{ state: dmcState(o, context), actions: features,
+                 ...(architecture === "douzero" ? { history } : {}) }],
       });
       const scores: number[] = result.scores;
       if (

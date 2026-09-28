@@ -17,8 +17,11 @@ import { dmcActions, dmcState, dmcAction } from "../src/game/dmc.ts";
 import type { MatchContext } from "../src/game/dmc.ts";
 import { dmcClient } from "./dmc-client.ts";
 import { dmcMctsClient } from "./dmc-mcts-client.ts";
+import { dmcHistory } from "../src/game/dmc-history.ts";
+import type { DmcPublicMove } from "../src/game/dmc-history.ts";
 
 const [candidate = "guided", baseline = "old"] = process.argv.slice(2);
+const useDouzeroHistory = candidate === "douzeroMcts" || baseline === "douzeroMcts";
 const start = Number(process.argv[4] ?? 101);
 const pairs = Number(process.argv[5] ?? 5);
 const budget = Number(process.argv[6] ?? 50);
@@ -28,7 +31,7 @@ if (!Number.isSafeInteger(fixedIterations) || fixedIterations < 0)
 if (
   fixedIterations &&
   ![candidate, baseline].every((p) =>
-    ["guidedBehavior", "dmcMcts", "dmcMctsPure"].includes(p),
+    ["guidedBehavior", "dmcMcts", "dmcMctsPure", "douzeroMcts"].includes(p),
   )
 )
   throw Error(
@@ -292,11 +295,13 @@ const profiles: Record<string, [string, string[]]> = {
   ],
 };
 function client(profile: string) {
-  if (profile === "dmcMcts" || profile === "dmcMctsPure")
+  if (profile === "dmcMcts" || profile === "dmcMctsPure" ||
+      profile === "douzeroMcts")
     return dmcMctsClient(
       search,
-      profile === "dmcMcts" ? 0.5 : 1,
+      profile === "dmcMctsPure" ? 1 : 0.5,
       fixedIterations,
+      profile === "douzeroMcts" ? "douzero" : "mlp",
     );
   if (profile === "dmc") {
     const checkpoint = process.env.JAIPUR_DMC_CHECKPOINT;
@@ -419,6 +424,7 @@ try {
       let s = newGame(seed),
         turns = 0;
       const events: Event[] = [];
+      let historyMoves: DmcPublicMove[] = [];
       if (verbose)
         console.error(
           `[开局] 种子 ${seed}，候选座位 ${seat}；已完成胜场 ${wins[0]}:${wins[1]}`,
@@ -427,6 +433,7 @@ try {
         if (s.phase === "roundEnd") {
           events.push({ type: "next" });
           s = nextRound(s);
+          historyMoves = [];
           continue;
         }
         const side = s.current === seat ? 0 : 1;
@@ -437,6 +444,7 @@ try {
             : profile === "guidedBehavior" ||
                 profile === "dmc" ||
                 profile.startsWith("dmcMcts") ||
+                profile === "douzeroMcts" ||
                 profile === "factored" ||
                 profile === "tactical" ||
                 profile === "guidedStratified" ||
@@ -450,7 +458,7 @@ try {
         const observeMs = performance.now() - decisionStart;
         observeTimes[side] += observeMs;
         maxObserveTimes[side] = Math.max(maxObserveTimes[side], observeMs);
-        const r = await clients[side].choose(
+        const r = await (clients[side].choose as any)(
           observation,
           budget - observeMs - 5,
           {
@@ -458,6 +466,7 @@ try {
             opponentSeals: s.seals[1 - s.current],
             round: s.round,
           },
+          useDouzeroHistory ? dmcHistory(historyMoves, s.current) : undefined,
         );
         const wallMs = performance.now() - decisionStart;
         wallTimes[side] += wallMs;
@@ -491,6 +500,8 @@ try {
         terminals[side] += r.terminal ?? 0;
         if (r.action.type === "sell")
           sales[side][r.action.count] = (sales[side][r.action.count] ?? 0) + 1;
+        if (useDouzeroHistory)
+          historyMoves.push({ actor: s.current, action: dmcAction(observation, r.action) });
         s = applyAction(s, r.action);
         events.push(r.action);
         if (verbose && (turns % 10 === 0 || s.phase !== "playing")) {

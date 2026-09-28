@@ -91,4 +91,19 @@ CUDA_VISIBLE_DEVICES=0 ./scripts/launch-douzero.sh \
 
 开发集固定用于选检查点，**不能当最终胜率**。大量训练完成后应使用新的配对种子、交换先后手，与普通 AI、旧 DMC 和困难搜索 AI 分别做完整对局评估；未通过评估前不要替换网页 AI。
 
+## 与困难搜索 AI 对比
+
+`scripts/evaluate-douzero-native.ts` 评估纯 DouZero 模型对原生 `guidedBehavior`；它与网页困难档同用 8 棵树、每步约 1 秒搜索。`scripts/benchmark-native.ts` 的 `douzeroMcts` 则把 DouZero Q 分数变成**根节点先验**，与原 MCTS 先验各占 50%；内部 rollout 和回报没有改用模型。可通过固定每棵树的模拟次数，让融合版与原版每步搜索量相同：
+
+```sh
+node scripts/build-ai-research.mjs
+JAIPUR_PYTHON=.venv/bin/python \
+JAIPUR_DOUZERO_CHECKPOINT=output/jaipur-douzero-10m-scratch-stable-v2-20260928/model-715.pt \
+JAIPUR_BENCH_ITERATIONS=1024 \
+node --experimental-strip-types scripts/benchmark-native.ts \
+  douzeroMcts guidedBehavior 3900004100 4 50
+```
+
+2026-09-28 的小样本对照在 4 个新种子上交换先后手，共 8 场、852 次合法行动；双方每步均为 8,192 次模拟，融合版与原版 **4:4**，完整决策平均 **335/330 ms**。逐局记录已独立重放核验。该样本不足以证明融合版更强，且固定模拟次数不等于网页的 1 秒时间预算。
+
 本机 CPU 冒烟及从其检查点续训均已通过；本机没有 CUDA GPU，因此 CUDA 前向和训练须在 GPU 服务器的 `--smoke` 命令上确认。
