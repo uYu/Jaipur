@@ -60,12 +60,12 @@ CUDA_VISIBLE_DEVICES=0 ./scripts/launch-douzero.sh \
 ```sh
 ./scripts/launch-douzero.sh --device cuda --python .venv/bin/python \
   --output /data/jaipur-douzero-continued \
-  --resume /data/jaipur-douzero-10m-gpu/model-123.pt \
+  --resume /data/jaipur-douzero-10m-gpu/model-latest.pt \
   --target-samples 10000000 --games-per-update 128 \
   --max-updates 2000 --eval-every 50 --dev-pairs 32
 ```
 
-`--target-samples` 在续训目录重新计数；旧检查点的版本号用于区分新旧对局种子。`progress.json` 报告当前批次进度，`training.jsonl` 保存每次更新和开发对局，`completion.json` 表示达到目标，`selfplay-games.jsonl` 保存可重放的完整比赛。默认不保存重复的训练张量；需要逐批审计时加 `--save-batches`，会明显增加磁盘占用。每次更新仍保存模型检查点，大规模运行应预留数 GB 空间。
+`--target-samples` 在续训目录重新计数；旧检查点的版本号用于区分新旧对局种子。`progress.json` 报告当前批次进度，`training.jsonl` 保存每次更新和开发对局，`completion.json` 表示达到目标，`selfplay-games.jsonl` 保存可重放的完整比赛。默认不保存重复的训练张量；需要逐批审计时加 `--save-batches`，会明显增加磁盘占用。新版每次更新原子覆盖 `model-latest.pt`，仅在开发集成绩刷新时另存编号检查点；旧版训练进程仍会每轮生成编号检查点。
 
 开发集固定用于选检查点，**不能当最终胜率**。大量训练完成后应使用新的配对种子、交换先后手，与普通 AI、旧 DMC 和困难搜索 AI 分别做完整对局评估；未通过评估前不要替换网页 AI。
 

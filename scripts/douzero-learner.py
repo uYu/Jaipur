@@ -1,6 +1,7 @@
 """On-policy self-play learner for the DouZero-shaped Jaipur Q-network."""
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -59,8 +60,9 @@ def sync_actor():
 sync_actor()
 
 
-def save():
-    path = args.directory / f"model-{version:03d}.pt"
+def save(latest=False):
+    path = args.directory / ("model-latest.pt" if latest else f"model-{version:03d}.pt")
+    temporary = path.with_name(f".{path.name}.tmp")
     torch.save({
         "architecture": "jaipur-douzero-history-v1",
         "model": model.state_dict(), "optimizer": optimizer.state_dict(),
@@ -70,7 +72,8 @@ def save():
         "state_features": 146, "action_features": 24,
         "history_length": 16, "history_features": 26,
         "target": "completed_match_actor_return",
-    }, path)
+    }, temporary)
+    os.replace(temporary, path)
     return str(path)
 
 
@@ -142,7 +145,7 @@ for line in sys.stdin:
             model.eval()
             sync_actor()
             result = {"version": version, "samples": len(y),
-                      "mse": float(np.mean(losses)), "checkpoint": save()}
+                      "mse": float(np.mean(losses)), "checkpoint": save(latest=True)}
         elif op == "save":
             result = {"version": version, "checkpoint": save()}
         else:

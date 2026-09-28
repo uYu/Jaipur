@@ -307,7 +307,9 @@ try {
       const score = result.wins[0] - result.wins[1] - result.truncated;
       if (score > best) {
         best = score;
-        bestCheckpoint = learned.checkpoint;
+        bestCheckpoint = douzero
+          ? (await client.call({ op: "save" })).checkpoint
+          : learned.checkpoint;
       }
     }
     writeFileSync(
