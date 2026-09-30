@@ -26,35 +26,37 @@ def generation_metrics(directory, row):
     heldout = [item for item in row['selfplay'] if item['output'] == validation]
     if len(heldout) != 1:
         raise ValueError(f'Generation {generation} has no unique validation shard')
-    meta = json.loads((directory / row['candidate'] / 'metadata.json').read_text())
+    meta = row.get('training') or json.loads(
+        (directory / row['candidate'] / 'metadata.json').read_text())
     ce, bce, top_mass = meta['validation_cross_entropy_value_bce_top_visit_mass']
     metrics = {
-        'train/generation': generation,
         'train/positions': meta['train_positions'],
-        'train/validation_positions': meta['validation_positions'],
         'train/best_epoch': meta['best_epoch'],
+        'validation/loss': meta.get('validation_loss', ce + meta['value_weight'] * bce),
         'validation/policy_cross_entropy': ce,
         'validation/value_bce': bce,
         'validation/top_action_visit_mass': top_mass,
-        'selfplay/train_games': sum(item['completed'] for item in train),
-        'selfplay/validation_games': heldout[0]['completed'],
         'selfplay/train_positions': sum(item['positions'] for item in train),
         'selfplay/validation_positions': heldout[0]['positions'],
-        'selfplay/truncated': sum(item['truncated'] for item in row['selfplay']),
-        'selection/actor_generation': model_generation(row['actor']),
-        'selection/learner_init_generation': model_generation(
-            row.get('learnerInit', row['actor'])),
-        'selection/learner_generation': model_generation(row['candidate']),
         'selection/champion_generation': model_generation(row['champion']),
-        'gate/evaluated': int(row.get('gate') is not None),
-        'gate/promoted': int(row['promoted']),
     }
+    if meta.get('training_batch_policy_ce_value_bce'):
+        train_ce, train_bce = meta['training_batch_policy_ce_value_bce']
+        metrics.update({
+            'train/loss': meta['training_batch_loss'],
+            'train/policy_cross_entropy': train_ce,
+            'train/value_bce': train_bce,
+        })
+    truncated = sum(item['truncated'] for item in row['selfplay'])
+    if truncated:
+        metrics['selfplay/truncated'] = truncated
     for name, seconds in row.get('timings', {}).items():
         metrics[f'time/{name}'] = seconds
     if row.get('gate'):
         gate = row['gate']
         matches = gate['candidateWins'] + gate['baselineWins']
         metrics.update({
+            'gate/promoted': int(row['promoted']),
             'gate/candidate_wins': gate['candidateWins'],
             'gate/champion_wins': gate['baselineWins'],
             'gate/candidate_win_rate': gate['candidateWins'] / matches,

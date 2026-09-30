@@ -19,7 +19,7 @@ python3 scripts/ablate-belief-size.py \
 
 这批数据此前由不接神经先验的 MCTS 生成，规模筛选不会重新生成。`results.json` 给出策略交叉熵、胜负 BCE、搜索首选行动吻合率、训练耗时和纯网络速度。当前搜索只使用策略头，因此检查点按策略验证损失挑选，价值 BCE 仅作为诊断。离线结果只能选较合理的容量，不能直接代表自我对局后的棋力；正式训练中仍按计划定期对原 MCTS 测胜率。策略和价值各是一层隐藏层的 MLP，总参数量为 `312 × hidden + 2`。
 
-2026-09-30 的七档实测与选择依据见 `analysis/belief-zero-scale-2026-09-30/README.md`。1024 是**离线策略指标**和成本的当前折中；随后对无模型先验 MCTS 的 80 场复核为 38:42，没有显示实战提升。正式长训尚未启动。
+2026-09-30 的七档实测与选择依据见 `analysis/belief-zero-scale-2026-09-30/README.md`。1024 是**离线策略指标**和成本的当前折中；随后对无模型先验 MCTS 的 80 场复核为 38:42，没有显示实战提升。
 
 ## 正式训练命令
 
@@ -29,18 +29,18 @@ python3 scripts/run-belief-zero.py \
   --hidden 1024 --generations 1000 \
   --games-per-generation 128 --validation-games 16 \
   --simulations-per-tree 128 --workers 4 \
-  --epochs 15 --replay-generations 5 \
+  --epochs 15 --replay-generations 5 --checkpoint-every 50 \
   --gate-every 10 --gate-pairs 100 --gate-threshold 0.55 \
   --arena-every 10 --arena-pairs 50
 ```
 
 这组正式参数训练 1000 代；第 10、20、…、1000 代做升版比赛和原 MCTS 对照，共各 100 次。原 MCTS 每次用 50 组种子交换先后手，**共 100 场**；升版比赛维持每次 100 组配对种子，共 200 场。脚本的 `--arena-every` 默认仍为 100，以上正式命令显式覆盖为 10。
 
-Python 环境须装 `torch`、`numpy`；Node.js 至少 22.13，并需本机 C++ 编译器。`--workers` 控制并行自我对局进程。每步搜索次数是 `8 × --simulations-per-tree`，候选升版和原 MCTS 对照逐步校验次数一致。`run.json` 的 `learner` 是每代继续更新的模型，`champion` 是自我对局使用的最佳模型；未到升版轮时 `gate` 为 `null`，即使一次升版未通过，下一代也从最新 `learner` 继续训练。输出包含每代模型、训练/验证对局、定期比赛记录及可恢复的 `run.json`；二进制只在模型参加自我对局或评测时编译。中断后用相同参数重跑命令；也可以只增大 `--generations` 延长训练。已完成的代不会重训，中断的代会重新生成。请为正式训练使用新的输出目录，不要把先导试验目录作为起点。
+Python 环境须装 `torch`、`numpy`；Node.js 至少 22.13，并需本机 C++ 编译器。`--workers` 控制并行自我对局进程。每步搜索次数是 `8 × --simulations-per-tree`，候选升版和原 MCTS 对照逐步校验次数一致。`run.json` 的 `learner` 是每代继续更新的模型，`champion` 是自我对局使用的最佳模型；未到升版轮时 `gate` 为 `null`，即使一次升版未通过，下一代也从最新 `learner` 继续训练。每代训练先临时写出模型，成功写入 `run.json` 后，只保留初始模型、当前 `learner`、当前 `champion` 和每 50 代的检查点；其余旧模型和二进制删除。合并后的训练数据会清理，原始训练对局只保留下一代回放所需的窗口，验证对局只保留汇总统计。长期运行的主要增长项因此变为每 50 代一个检查点及小体积日志；`run.json` 中保留训练指标、比赛结果与恢复信息。中断后用相同参数重跑命令；也可以只增大 `--generations` 延长训练。已完成的代不会重训，中断的代会重新生成。请为正式训练使用新的输出目录，不要把先导试验目录作为起点。
 
 若极少数比赛连续换牌超过 700 手，该比赛会丢弃并计入 `selfplay.truncated`；单批超过约 5%（或全批没有完成比赛）则失败，避免把不完整对局当作胜负训练样本。训练/验证种子及升版/原 MCTS 评测种子使用互不重叠的区间。
 
-旧模型对照的经验表明，离线损失下降不保证胜率提升；升版只看交换先后手的对局门槛，原 MCTS 对照作为独立进度指标。上述正式长训目前尚未启动。
+旧模型对照的经验表明，离线损失下降不保证胜率提升；升版只看交换先后手的对局门槛，原 MCTS 对照作为独立进度指标。
 
 本机两代完整计时见 `analysis/belief-zero-timing-2026-09-30/README.md`。每代的 `timings` 字段记录实际发生的采样、准备、训练、编译、比赛及总耗时；非升版轮不会出现升版比赛计时。正式规模的耗时估计来自小配置外推，应以正式运行的实际 `timings` 更新。
 
@@ -59,7 +59,7 @@ nohup .venv/bin/python scripts/run-belief-zero.py \
   --hidden 1024 --generations 1000 \
   --games-per-generation 128 --validation-games 16 \
   --simulations-per-tree 128 --workers 4 \
-  --epochs 15 --replay-generations 5 \
+  --epochs 15 --replay-generations 5 --checkpoint-every 50 \
   --gate-every 10 --gate-pairs 100 --gate-threshold 0.55 \
   --arena-every 10 --arena-pairs 50 \
   > output/jaipur-zero-from-scratch/train.log 2>&1 < /dev/null &
@@ -69,7 +69,7 @@ nohup .venv/bin/python scripts/track-belief-zero-swanlab.py \
   > output/jaipur-zero-from-scratch/swanlab.log 2>&1 < /dev/null &
 ```
 
-跟踪器先补传 `run.json` 中已完成的代，再随训练上传新代的采样数、验证损失、升版胜率、原 MCTS 胜率和阶段耗时。两个进程相互独立；跟踪器故障不会打断训练。SwanLab 运行地址和最后已上传代保存在 `output/jaipur-zero-from-scratch/swanlab-run.json`。跟踪器可用相同命令重启并从已上传代继续；正式训练完成 1000 代后自行退出。查看运行状态：
+跟踪器先补传 `run.json` 中已完成的代，再随训练上传新代的 `train/loss`、`validation/loss`、策略交叉熵、价值 BCE、采样量、升版胜率、原 MCTS 胜率和阶段耗时。`train/loss` 是被选中 epoch 的训练批次更新前平均值，`validation/loss` 是所选检查点的策略交叉熵加权价值 BCE；检查点仍按策略交叉熵选择。旧版本已训练轮次可补算 `validation/loss`，但旧日志没有训练批次损失，所以 `train/loss` 从更新代码后的首轮开始。两个进程相互独立；跟踪器故障不会打断训练。SwanLab 运行地址和最后已上传代保存在 `output/jaipur-zero-from-scratch/swanlab-run.json`。跟踪器可用相同命令重启并从已上传代继续；正式训练完成 1000 代后自行退出。查看运行状态：
 
 ```sh
 tail -f output/jaipur-zero-from-scratch/train.log

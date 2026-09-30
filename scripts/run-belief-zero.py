@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import time
@@ -55,6 +56,7 @@ p.add_argument('--epochs', type=int, default=15)
 p.add_argument('--learning-rate', type=float, default=0.0002)
 p.add_argument('--value-weight', type=float, default=0.5)
 p.add_argument('--replay-generations', type=int, default=5)
+p.add_argument('--checkpoint-every', type=int, default=50)
 p.add_argument('--workers', type=int, default=4)
 p.add_argument('--gate-every', type=int, default=10)
 p.add_argument('--gate-pairs', type=int, default=100)
@@ -65,7 +67,8 @@ p.add_argument('--seed-base', type=int, default=3_960_000_000)
 a = p.parse_args()
 if any(x < 1 for x in (a.hidden, a.generations, a.games_per_generation,
                        a.validation_games, a.simulations_per_tree, a.epochs,
-                       a.replay_generations, a.workers, a.gate_every, a.gate_pairs,
+                       a.replay_generations, a.checkpoint_every, a.workers,
+                       a.gate_every, a.gate_pairs,
                        a.arena_every, a.arena_pairs)) or not 0.5 <= a.gate_threshold <= 1:
     p.error('Counts must be positive and gate-threshold must be in [0.5, 1]')
 if a.games_per_generation > 4000 or a.validation_games > 1000 or max(a.gate_pairs, a.arena_pairs) > 500:
@@ -81,6 +84,7 @@ if manifest_path.exists():
     previous = manifest['settings']
     # Runs created before gate-every evaluated the candidate every generation.
     previous.setdefault('gate_every', 1)
+    previous.setdefault('checkpoint_every', 50)
     if ({k: v for k, v in previous.items() if k != 'generations'} !=
             {k: v for k, v in settings.items() if k != 'generations'} or
             a.generations < previous['generations']):
@@ -90,6 +94,13 @@ if manifest_path.exists():
         save_manifest(manifest_path, manifest)
     manifest.setdefault('learner', manifest['generations'][-1]['candidate']
                         if manifest['generations'] else manifest['champion'])
+    # Persist metrics before deleting old model directories: a SwanLab follower
+    # may need to backfill generations long after their checkpoints are pruned.
+    for row in manifest['generations']:
+        metadata = directory / row['candidate'] / 'metadata.json'
+        if 'training' not in row and metadata.is_file():
+            row['training'] = json.loads(metadata.read_text())
+    save_manifest(manifest_path, manifest)
 else:
     initial = directory / 'model-000'
     command([sys.executable, ROOT / 'scripts/init-belief-policy.py', initial,
@@ -123,6 +134,35 @@ def arena(name, candidate, baseline, seed, pairs):
     wins = game_wins(games, pairs * 2)
     return {'candidateWins': wins, 'baselineWins': pairs * 2 - wins,
             'seedStart': seed, 'pairs': pairs, 'games': str(games)}
+
+
+def prune_completed():
+    completed = manifest['generations']
+    if not completed:
+        return
+    last = completed[-1]['generation']
+    keep_models = {'model-000', manifest['champion'], manifest['learner']}
+    keep_models.update(row['candidate'] for row in completed
+                       if row['generation'] % a.checkpoint_every == 0)
+    next_replay_from = max(1, last - a.replay_generations + 2)
+    def remove_tree(path):
+        if path.exists():
+            shutil.rmtree(path)
+
+    for row in completed:
+        step = row['generation']
+        name = f'model-{step:03d}'
+        if row['candidate'] == name and name not in keep_models and 'training' in row:
+            remove_tree(directory / name)
+            remove_tree(directory / 'bin' / name)
+        remove_tree(directory / 'data' / f'gen-{step:03d}')
+        (directory / 'selfplay' / f'gen-{step:03d}-validation.jsonl').unlink(missing_ok=True)
+        if step < next_replay_from:
+            for path in (directory / 'selfplay').glob(f'gen-{step:03d}-train-*.jsonl'):
+                path.unlink()
+
+
+prune_completed()
 
 
 for generation in range(len(manifest['generations']) + 1, a.generations + 1):
@@ -181,6 +221,7 @@ for generation in range(len(manifest['generations']) + 1, a.generations + 1):
              '--init', directory / learner_init / 'model.pt', '--select-objective', 'policy'],
             directory / 'logs' / f'gen-{generation:03d}-train.log')
     timings['trainSeconds'] = time.monotonic() - stage_started
+    training = json.loads((directory / candidate / 'metadata.json').read_text())
     manifest['learner'] = candidate
     gate = None
     accepted = False
@@ -199,7 +240,7 @@ for generation in range(len(manifest['generations']) + 1, a.generations + 1):
               'candidate': candidate,
               'train': [str(path) for path in train_files],
               'validation': str(validation), 'replayFrom': replay_from,
-              'selfplay': selfplay_summaries,
+              'selfplay': selfplay_summaries, 'training': training,
               'gate': gate, 'promoted': accepted, 'champion': manifest['champion'],
               'learner': manifest['learner']}
     if generation % a.arena_every == 0:
@@ -212,4 +253,5 @@ for generation in range(len(manifest['generations']) + 1, a.generations + 1):
     record['timings'] = timings
     manifest['generations'].append(record)
     save_manifest(manifest_path, manifest)
+    prune_completed()
     print(json.dumps(record), flush=True)

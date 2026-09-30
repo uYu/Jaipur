@@ -96,21 +96,30 @@ def evaluate(groups):
     return (result / count).tolist()
 
 a.directory.mkdir(parents=True, exist_ok=True)
-best = float('inf'); best_epoch = 0
+best = float('inf'); best_epoch = 0; best_train = None
 for epoch in range(a.epochs):
     ids = rng.permutation(len(train))
-    for at in range(0, len(ids), 32): batch(train, ids[at:at+32], True)
+    train_sums = np.zeros(2)
+    for at in range(0, len(ids), 32):
+        selected = ids[at:at+32]
+        ce, bce, _ = batch(train, selected, True)
+        train_sums += np.asarray([ce, bce]) * len(selected)
+    train_metrics = (train_sums / len(ids)).tolist()
     metrics = evaluate(val)
     selection = metrics[0] + (a.value_weight * metrics[1] if a.select_objective == 'combined' else 0)
     if selection < best:
-        best = selection; best_epoch = epoch + 1
+        best = selection; best_epoch = epoch + 1; best_train = train_metrics
         torch.save({'policy': policy.state_dict(), 'value': value.state_dict()}, a.directory / 'model.pt')
     if (epoch+1) % 5 == 0: print(json.dumps({'epoch': epoch+1, 'validation': metrics}), flush=True)
 checkpoint = torch.load(a.directory / 'model.pt', weights_only=True)
 policy.load_state_dict(checkpoint['policy']); value.load_state_dict(checkpoint['value'])
 save_weights_header(a.directory / 'weights.hpp', policy, value)
+validation_metrics = evaluate(val)
 meta = {'train_positions': len(train), 'validation_positions': len(val), 'best_epoch': best_epoch,
-        'validation_cross_entropy_value_bce_top_visit_mass': evaluate(val),
+        'training_batch_policy_ce_value_bce': best_train,
+        'training_batch_loss': best_train[0] + a.value_weight * best_train[1],
+        'validation_loss': validation_metrics[0] + a.value_weight * validation_metrics[1],
+        'validation_cross_entropy_value_bce_top_visit_mass': validation_metrics,
         'train_sha256': hashlib.sha256(a.train.read_bytes()).hexdigest(),
         'validation_sha256': hashlib.sha256(a.validation.read_bytes()).hexdigest(),
         'features': {'state': 142, 'action': 24}, 'hidden': a.hidden,
