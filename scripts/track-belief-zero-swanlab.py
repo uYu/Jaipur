@@ -10,6 +10,84 @@ import os
 from pathlib import Path
 import time
 
+ROUND_CATEGORIES = ('take_goods', 'take_camels', 'trade', 'sell_actions')
+BASELINE_PATH = Path(__file__).resolve().parents[1] / 'data/human-elo1600-action-baseline.json'
+
+
+def round_values(row):
+    """Aggregate completed training matches into one-player, one-round means."""
+    train = [item for item in row['selfplay'] if item['output'] != row['validation']]
+    if not train or any('roundMetrics' not in item for item in train):
+        return None  # Older shards have no scores and may already be pruned.
+    player_rounds = sum(item['roundMetrics']['playerRounds'] for item in train)
+    score_sum = sum(item['roundMetrics']['scoreSum'] for item in train)
+    goods_sold = sum(item['roundMetrics']['goodsSold'] for item in train)
+    counts = {name: sum(item['roundMetrics']['actionCounts'][name] for item in train)
+              for name in ROUND_CATEGORIES}
+    total_actions = sum(counts.values())
+    completed = sum(item['completed'] for item in train)
+    if (player_rounds < 2 * completed or player_rounds > 6 * completed or
+            player_rounds % 2 or total_actions <= 0 or
+            total_actions != sum(item['positions'] for item in train)):
+        raise ValueError(f'Generation {row["generation"]} has inconsistent round metrics')
+    values = {
+        **{f'{name}_per_player_round': counts[name] / player_rounds
+           for name in ROUND_CATEGORIES},
+        **{f'{name}_share': counts[name] / total_actions
+           for name in ROUND_CATEGORIES},
+        'goods_sold_per_player_round': goods_sold / player_rounds,
+        'all_actions_per_player_round': total_actions / player_rounds,
+        'round_score_mean': score_sum / player_rounds,
+    }
+    if counts['sell_actions']:
+        values['goods_per_sale'] = goods_sold / counts['sell_actions']
+    return values
+
+
+def human_references(baseline):
+    return {
+        **{f'{name}_per_player_round': baseline['per_player_round_mean'][name]
+           for name in ROUND_CATEGORIES},
+        **{f'{name}_share': baseline['action_share'][name]
+           for name in ROUND_CATEGORIES},
+        'goods_sold_per_player_round': baseline['per_player_round_mean']['goods_sold'],
+        'goods_per_sale': baseline['goods_per_sale'],
+        'all_actions_per_player_round': baseline['per_player_round_mean']['total'],
+        'round_score_mean': baseline['per_player_round_mean']['score'],
+    }
+
+
+def comparison_charts(swanlab, baseline, generations):
+    """Plot recent AI generations against flat 1600+ human reference lines."""
+    import pyecharts.options as opts
+    points = [(row['generation'], values) for row in generations[-500:]
+              if (values := round_values(row)) is not None]
+    charts = {}
+    for name, reference in human_references(baseline).items():
+        series = [(generation, values[name]) for generation, values in points
+                  if name in values]
+        if not series:
+            continue
+        chart = swanlab.echarts.Line()
+        chart.add_xaxis([str(generation) for generation, _ in series])
+        chart.add_yaxis('AI self-play', [value for _, value in series],
+                        is_symbol_show=False)
+        chart.add_yaxis('Human Elo 1600+', [reference] * len(series),
+                        is_symbol_show=False,
+                        linestyle_opts=opts.LineStyleOpts(type_='dashed', width=2))
+        chart.set_global_opts(
+            title_opts=opts.TitleOpts(title=name.replace('_', ' ')),
+            xaxis_opts=opts.AxisOpts(name='generation'),
+            yaxis_opts=opts.AxisOpts(name=(
+                'proportion' if name.endswith('_share') else
+                'score' if name == 'round_score_mean' else
+                'cards per sale' if name == 'goods_per_sale' else
+                'cards per player-round' if name == 'goods_sold_per_player_round' else
+                'actions per player-round')),
+        )
+        charts[f'human1600_comparison/{name}'] = chart
+    return charts
+
 
 def read_manifest(path):
     return json.loads(path.read_text()) if path.is_file() else None
@@ -47,6 +125,9 @@ def generation_metrics(directory, row):
             'train/policy_cross_entropy': train_ce,
             'train/value_bce': train_bce,
         })
+    values = round_values(row)
+    if values:
+        metrics.update({f'selfplay/{name}': value for name, value in values.items()})
     truncated = sum(item['truncated'] for item in row['selfplay'])
     if truncated:
         metrics['selfplay/truncated'] = truncated
@@ -87,9 +168,13 @@ def main():
                         help='Wait for new generations until the configured target is reached')
     parser.add_argument('--poll-seconds', type=float, default=5)
     parser.add_argument('--mode', choices=('online', 'offline'), default='online')
+    parser.add_argument('--chart-every', type=int, default=10,
+                        help='Update 1600+ human comparison charts every N generations')
     args = parser.parse_args()
     if args.poll_seconds <= 0:
         parser.error('--poll-seconds must be positive')
+    if args.chart_every <= 0:
+        parser.error('--chart-every must be positive')
     directory = args.directory.resolve()
     manifest_path = directory / 'run.json'
     while not manifest_path.is_file():
@@ -97,6 +182,7 @@ def main():
             parser.error(f'No run.json in {directory}')
         time.sleep(args.poll_seconds)
     manifest = read_manifest(manifest_path)
+    baseline = json.loads(BASELINE_PATH.read_text())
     state_path = directory / 'swanlab-run.json'
     state = json.loads(state_path.read_text()) if state_path.is_file() else None
 
@@ -148,6 +234,10 @@ def main():
                 if row['generation'] != expected:
                     raise ValueError(f'Expected generation {expected}, found {row["generation"]}')
                 swanlab.log(generation_metrics(directory, row), step=expected)
+                if round_values(row) and (expected % args.chart_every == 0 or
+                        not any(round_values(previous) for previous in generations[:expected - 1])):
+                    swanlab.log(comparison_charts(swanlab, baseline, generations[:expected]),
+                                step=expected)
                 state['last_generation'] = expected
                 save_state(state_path, state)
                 print(json.dumps({'uploaded_generation': expected}), flush=True)

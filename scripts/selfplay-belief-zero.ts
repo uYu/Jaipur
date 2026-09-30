@@ -5,6 +5,9 @@ import { createInterface } from "node:readline";
 import { actionError, applyAction, newGame, nextRound } from "../src/game/engine.ts";
 import { observe } from "../src/game/ai.ts";
 import { decodeAction, encodeObservation } from "../src/game/ai-wasm.ts";
+import {
+  addRoundMetrics, completedGameRoundMetrics, emptyRoundMetrics,
+} from "./douzero-round-metrics.ts";
 import type { Action, Event } from "../src/game/types.ts";
 
 const [output, binary, startText, gamesText, iterationsText,
@@ -70,6 +73,7 @@ async function search(encoded: Int32Array) {
 writeFileSync(output, "");
 let totalPositions = 0;
 let completed = 0, truncated = 0;
+const roundMetrics = emptyRoundMetrics();
 try {
   for (let seed = start; seed < start + games; seed++) {
     let state = newGame(seed);
@@ -129,6 +133,8 @@ try {
       console.error(JSON.stringify({ seed, truncated: true, decisions }));
       continue;
     }
+    addRoundMetrics(roundMetrics,
+      completedGameRoundMetrics(events, rows, state.results));
     const winner = state.seals[0] > state.seals[1] ? 0 : 1;
     for (const row of rows) {
       row.outcome = Number(row.actor === winner);
@@ -144,6 +150,9 @@ try {
 }
 if (!completed || truncated > Math.max(1, Math.ceil(games * 0.05)))
   throw Error(`Too many incomplete matches: ${completed}/${games} completed`);
+if (Object.values(roundMetrics.actionCounts).reduce((sum, n) => sum + n, 0) !==
+    totalPositions) throw Error("Completed-round actions differ from training positions");
 console.error(JSON.stringify({ output, games, positions: totalPositions,
   completed, truncated,
+  roundMetrics,
   teacherSimulationsPerPosition: iterations * 8 }));

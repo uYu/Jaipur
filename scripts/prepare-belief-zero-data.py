@@ -1,5 +1,6 @@
 """Combine fixed-teacher replay with on-policy match-labelled replay."""
 import argparse
+import gzip
 import json
 from pathlib import Path
 
@@ -10,6 +11,7 @@ p.add_argument('--train', type=Path, nargs='+', required=True)
 p.add_argument('--validation', type=Path, nargs='+', required=True)
 p.add_argument('--new-policy-weight', type=float, default=3.0)
 p.add_argument('--expected-simulations', type=int, default=1024)
+p.add_argument('--gzip', action='store_true', help='Compress prepared JSONL files')
 a = p.parse_args()
 if a.new_policy_weight <= 0 or a.expected_simulations < 1:
     raise ValueError('Invalid policy weight or simulation count')
@@ -55,7 +57,9 @@ for row in validation:
     row['policyWeight'] = 1
 a.directory.mkdir(parents=True, exist_ok=True)
 for name, rows in [('train', base + train), ('validation', validation)]:
-    with (a.directory / f'{name}.jsonl').open('w') as file:
+    suffix = '.jsonl.gz' if a.gzip else '.jsonl'
+    path = a.directory / f'{name}{suffix}'
+    with (gzip.open(path, 'wt') if a.gzip else path.open('w')) as file:
         for row in rows:
             file.write(json.dumps(row, separators=(',', ':')) + '\n')
 summary = {'basePositions': len(base), 'onPolicyTrainPositions': len(train),

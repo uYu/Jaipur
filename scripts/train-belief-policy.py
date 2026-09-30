@@ -1,5 +1,6 @@
 """Train public-belief action preferences against grouped search visit targets."""
 import argparse
+import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -12,6 +13,10 @@ p = argparse.ArgumentParser()
 p.add_argument('train', type=Path)
 p.add_argument('validation', type=Path)
 p.add_argument('directory', type=Path)
+p.add_argument('--train-extra', type=Path, nargs='*', default=[],
+               help='Additional on-policy replay shards; avoids a merged training file')
+p.add_argument('--expected-simulations', type=int,
+               help='Validate search targets in on-policy replay shards')
 p.add_argument('--epochs', type=int, default=40)
 p.add_argument('--hidden', type=int, default=32)
 p.add_argument('--value-weight', type=float, default=0.25)
@@ -25,33 +30,57 @@ torch.manual_seed(240924)
 torch.set_num_threads(4)
 rng = np.random.default_rng(240924)
 
-def read(path):
-    records = [json.loads(line) for line in path.read_text().splitlines()]
+def read(paths):
     groups = []
-    for r in records:
-        state = np.asarray(r['features'], dtype=np.float32)
-        value_state = np.asarray(r.get('valueFeatures', r['features']), dtype=np.float32)
-        actions = np.asarray([x['features'] for x in r['actions']], dtype=np.float32)
-        policy = np.asarray([x['policy'] for x in r['actions']], dtype=np.float32)
-        if state.shape != (142,) or value_state.shape != (142,) or actions.shape[1] != 24 or policy.sum() <= 0:
-            raise ValueError('Invalid feature dimensions or policy mass')
-        if not np.isfinite(state).all() or not np.isfinite(value_state).all() or not np.isfinite(actions).all():
-            raise ValueError('Nonfinite features')
-        if not np.allclose(state[90:138].reshape(6, 8).sum(axis=1), 1, atol=1e-5):
-            raise ValueError('Opponent marginals are not normalized')
-        value_mask = float(r.get('valueMask', 1))
-        policy_weight = float(r.get('policyWeight', 1))
-        if value_mask not in (0, 1) or not np.isfinite(policy_weight) or policy_weight <= 0:
-            raise ValueError('Invalid training weights')
-        x = np.concatenate([np.tile(state, (len(actions), 1)), actions], axis=1)
-        groups.append((torch.from_numpy(x), torch.from_numpy(policy / policy.sum()),
-                       torch.from_numpy(value_state), float(r['outcome']),
-                       value_mask, policy_weight))
-    return records, groups
+    seeds = set()
+    outcomes = {}
+    for path in paths:
+        opener = gzip.open if path.suffix == '.gz' else open
+        with opener(path, 'rt') as source:
+            for line in source:
+                r = json.loads(line)
+                seeds.add(r['seed'])
+                state = np.asarray(r['features'], dtype=np.float32)
+                value_state = np.asarray(r.get('valueFeatures', r['features']), dtype=np.float32)
+                actions = np.asarray([x['features'] for x in r['actions']], dtype=np.float32)
+                policy = np.asarray([x['policy'] for x in r['actions']], dtype=np.float32)
+                if state.shape != (142,) or value_state.shape != (142,) or actions.shape[1] != 24 or policy.sum() <= 0:
+                    raise ValueError('Invalid feature dimensions or policy mass')
+                if not np.isfinite(state).all() or not np.isfinite(value_state).all() or not np.isfinite(actions).all():
+                    raise ValueError('Nonfinite features')
+                if not np.allclose(state[90:138].reshape(6, 8).sum(axis=1), 1, atol=1e-5):
+                    raise ValueError('Opponent marginals are not normalized')
+                value_mask = float(r.get('valueMask', 1))
+                policy_weight = float(r.get('policyWeight', 1))
+                if value_mask not in (0, 1) or not np.isfinite(policy_weight) or policy_weight <= 0:
+                    raise ValueError('Invalid training weights')
+                if a.expected_simulations is not None:
+                    expected_context = [r['round'] / 3, r['seals'][r['actor']] / 2,
+                                        r['seals'][1 - r['actor']] / 2]
+                    if (r['valueFeatures'][-3:] != expected_context or
+                            r['outcome'] not in (0, 1) or
+                            r['teacherSimulations'] != a.expected_simulations or
+                            abs(sum(action['policy'] for action in r['actions']) - 1) > 1e-4):
+                        raise ValueError('Invalid on-policy replay target')
+                    key = (r['seed'], r['actor'])
+                    if key in outcomes and outcomes[key] != r['outcome']:
+                        raise ValueError('One player has inconsistent match outcomes')
+                    outcomes[key] = r['outcome']
+                x = np.concatenate([np.tile(state, (len(actions), 1)), actions], axis=1)
+                groups.append((torch.from_numpy(x), torch.from_numpy(policy / policy.sum()),
+                               torch.from_numpy(value_state), float(r['outcome']),
+                               value_mask, policy_weight))
+    if a.expected_simulations is not None:
+        for seed, actor in outcomes:
+            if ((seed, 1 - actor) in outcomes and
+                    outcomes[seed, actor] + outcomes[seed, 1 - actor] != 1):
+                raise ValueError('Match outcomes do not have opposite labels')
+    return seeds, groups
 
-train_records, train = read(a.train)
-val_records, val = read(a.validation)
-if {r['seed'] for r in train_records} & {r['seed'] for r in val_records}:
+train_paths = [a.train, *a.train_extra]
+train_seeds, train = read(train_paths)
+val_seeds, val = read([a.validation])
+if train_seeds & val_seeds:
     raise ValueError('Train and validation seeds overlap')
 policy, value = networks(a.hidden)
 if a.init:
@@ -115,13 +144,21 @@ checkpoint = torch.load(a.directory / 'model.pt', weights_only=True)
 policy.load_state_dict(checkpoint['policy']); value.load_state_dict(checkpoint['value'])
 save_weights_header(a.directory / 'weights.hpp', policy, value)
 validation_metrics = evaluate(val)
+def sha256_files(paths):
+    digest = hashlib.sha256()
+    for path in paths:
+        with path.open('rb') as source:
+            for chunk in iter(lambda: source.read(1024 * 1024), b''):
+                digest.update(chunk)
+    return digest.hexdigest()
+
 meta = {'train_positions': len(train), 'validation_positions': len(val), 'best_epoch': best_epoch,
         'training_batch_policy_ce_value_bce': best_train,
         'training_batch_loss': best_train[0] + a.value_weight * best_train[1],
         'validation_loss': validation_metrics[0] + a.value_weight * validation_metrics[1],
         'validation_cross_entropy_value_bce_top_visit_mass': validation_metrics,
-        'train_sha256': hashlib.sha256(a.train.read_bytes()).hexdigest(),
-        'validation_sha256': hashlib.sha256(a.validation.read_bytes()).hexdigest(),
+        'train_sha256': sha256_files(train_paths),
+        'validation_sha256': sha256_files([a.validation]),
         'features': {'state': 142, 'action': 24}, 'hidden': a.hidden,
         'value_weight': a.value_weight, 'init_checkpoint': str(a.init) if a.init else None,
         'learning_rate': a.learning_rate, 'select_objective': a.select_objective,

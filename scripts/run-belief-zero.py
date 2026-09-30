@@ -6,6 +6,7 @@ is trained on match outcomes but is not passed a determinized private hand.
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+import gzip
 import json
 import os
 from pathlib import Path
@@ -56,7 +57,8 @@ p.add_argument('--epochs', type=int, default=15)
 p.add_argument('--learning-rate', type=float, default=0.0002)
 p.add_argument('--value-weight', type=float, default=0.5)
 p.add_argument('--replay-generations', type=int, default=5)
-p.add_argument('--checkpoint-every', type=int, default=50)
+p.add_argument('--checkpoint-every', type=int, default=10)
+p.add_argument('--checkpoint-max', type=int, default=10)
 p.add_argument('--workers', type=int, default=4)
 p.add_argument('--gate-every', type=int, default=10)
 p.add_argument('--gate-pairs', type=int, default=100)
@@ -67,7 +69,7 @@ p.add_argument('--seed-base', type=int, default=3_960_000_000)
 a = p.parse_args()
 if any(x < 1 for x in (a.hidden, a.generations, a.games_per_generation,
                        a.validation_games, a.simulations_per_tree, a.epochs,
-                       a.replay_generations, a.checkpoint_every, a.workers,
+                       a.replay_generations, a.checkpoint_every, a.checkpoint_max, a.workers,
                        a.gate_every, a.gate_pairs,
                        a.arena_every, a.arena_pairs)) or not 0.5 <= a.gate_threshold <= 1:
     p.error('Counts must be positive and gate-threshold must be in [0.5, 1]')
@@ -85,12 +87,18 @@ if manifest_path.exists():
     # Runs created before gate-every evaluated the candidate every generation.
     previous.setdefault('gate_every', 1)
     previous.setdefault('checkpoint_every', 50)
-    if ({k: v for k, v in previous.items() if k != 'generations'} !=
-            {k: v for k, v in settings.items() if k != 'generations'} or
+    previous.setdefault('checkpoint_max', 10)
+    mutable_settings = {'generations', 'checkpoint_every', 'checkpoint_max'}
+    if ({k: v for k, v in previous.items() if k not in mutable_settings} !=
+            {k: v for k, v in settings.items() if k not in mutable_settings} or
             a.generations < previous['generations']):
-        p.error('Resume settings differ from run.json (only generations may increase)')
-    if a.generations > previous['generations']:
+        p.error('Resume settings differ from run.json (only generations and checkpoint retention may change)')
+    if (a.generations > previous['generations'] or
+            a.checkpoint_every != previous['checkpoint_every'] or
+            a.checkpoint_max != previous['checkpoint_max']):
         manifest['settings']['generations'] = a.generations
+        manifest['settings']['checkpoint_every'] = a.checkpoint_every
+        manifest['settings']['checkpoint_max'] = a.checkpoint_max
         save_manifest(manifest_path, manifest)
     manifest.setdefault('learner', manifest['generations'][-1]['candidate']
                         if manifest['generations'] else manifest['champion'])
@@ -142,8 +150,9 @@ def prune_completed():
         return
     last = completed[-1]['generation']
     keep_models = {'model-000', manifest['champion'], manifest['learner']}
-    keep_models.update(row['candidate'] for row in completed
-                       if row['generation'] % a.checkpoint_every == 0)
+    checkpoints = [row['candidate'] for row in completed
+                   if row['generation'] % a.checkpoint_every == 0]
+    keep_models.update(checkpoints[-a.checkpoint_max:])
     next_replay_from = max(1, last - a.replay_generations + 2)
     def remove_tree(path):
         if path.exists():
@@ -156,9 +165,10 @@ def prune_completed():
             remove_tree(directory / name)
             remove_tree(directory / 'bin' / name)
         remove_tree(directory / 'data' / f'gen-{step:03d}')
-        (directory / 'selfplay' / f'gen-{step:03d}-validation.jsonl').unlink(missing_ok=True)
+        for path in (directory / 'selfplay').glob(f'gen-{step:03d}-validation.jsonl*'):
+            path.unlink()
         if step < next_replay_from:
-            for path in (directory / 'selfplay').glob(f'gen-{step:03d}-train-*.jsonl'):
+            for path in (directory / 'selfplay').glob(f'gen-{step:03d}-train-*.jsonl*'):
                 path.unlink()
 
 
@@ -182,11 +192,12 @@ for generation in range(len(manifest['generations']) + 1, a.generations + 1):
     for shard in range(shard_count):
         count = size + (shard < extra)
         output = directory / 'selfplay' / f'gen-{generation:03d}-train-{shard:02d}.jsonl'
-        train_files.append(output)
+        train_files.append(Path(f'{output}.gz'))
         tasks.append((output, seed + offset, count))
         offset += count
-    validation = directory / 'selfplay' / f'gen-{generation:03d}-validation.jsonl'
-    tasks.append((validation, seed + 5000, a.validation_games))
+    validation_raw = directory / 'selfplay' / f'gen-{generation:03d}-validation.jsonl'
+    validation = Path(f'{validation_raw}.gz')
+    tasks.append((validation_raw, seed + 5000, a.validation_games))
 
     def generate(task):
         output, start, games = task
@@ -195,7 +206,13 @@ for generation in range(len(manifest['generations']) + 1, a.generations + 1):
         command([NODE, '--experimental-strip-types', ROOT / 'scripts/selfplay-belief-zero.ts',
                  output, actor_binary, start, games, a.simulations_per_tree,
                  1, 1], log)
-        return json.loads(log.read_text().splitlines()[-1])
+        summary = json.loads(log.read_text().splitlines()[-1])
+        compressed = Path(f'{output}.gz')
+        with output.open('rb') as source, gzip.open(compressed, 'wb', compresslevel=1) as target:
+            shutil.copyfileobj(source, target, length=1024 * 1024)
+        output.unlink()
+        summary['output'] = str(compressed)
+        return summary
 
     stage_started = time.monotonic()
     with ThreadPoolExecutor(max_workers=min(a.workers, len(tasks))) as pool:
@@ -203,22 +220,16 @@ for generation in range(len(manifest['generations']) + 1, a.generations + 1):
     timings['selfplaySeconds'] = time.monotonic() - stage_started
     replay_from = max(1, generation - a.replay_generations + 1)
     replay = sorted(path for step in range(replay_from, generation + 1)
-                    for path in (directory / 'selfplay').glob(f'gen-{step:03d}-train-*.jsonl'))
-    prepared = directory / 'data' / f'gen-{generation:03d}'
-    stage_started = time.monotonic()
-    command([sys.executable, ROOT / 'scripts/prepare-belief-zero-data.py', prepared,
-             '--train', *replay, '--validation', validation,
-             '--new-policy-weight', 1, '--expected-simulations',
-             8 * a.simulations_per_tree],
-            directory / 'logs' / f'gen-{generation:03d}-prepare.log')
-    timings['prepareSeconds'] = time.monotonic() - stage_started
+                    for path in (directory / 'selfplay').glob(f'gen-{step:03d}-train-*.jsonl*'))
     candidate = f'model-{generation:03d}'
     stage_started = time.monotonic()
     command([sys.executable, ROOT / 'scripts/train-belief-policy.py',
-             prepared / 'train.jsonl', prepared / 'validation.jsonl',
+             replay[0], validation,
              directory / candidate, '--hidden', a.hidden, '--epochs', a.epochs,
              '--learning-rate', a.learning_rate, '--value-weight', a.value_weight,
-             '--init', directory / learner_init / 'model.pt', '--select-objective', 'policy'],
+             '--init', directory / learner_init / 'model.pt', '--select-objective', 'policy',
+             '--train-extra', *replay[1:], '--expected-simulations',
+             8 * a.simulations_per_tree],
             directory / 'logs' / f'gen-{generation:03d}-train.log')
     timings['trainSeconds'] = time.monotonic() - stage_started
     training = json.loads((directory / candidate / 'metadata.json').read_text())
