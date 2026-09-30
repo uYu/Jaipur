@@ -5,10 +5,11 @@ import { dmcActions, dmcState, dmcAction } from "../src/game/dmc.ts";
 import { dmcHistory } from "../src/game/dmc-history.ts";
 import type { DmcPublicMove } from "../src/game/dmc-history.ts";
 import type { State, Event } from "../src/game/types.ts";
+import { completedGameRoundMetrics } from "./douzero-round-metrics.ts";
 
 const port = parentPort;
 if (!port) throw Error("DouZero actor requires a parent thread");
-const { seedStart, gameCount, lanes, maxTurns, iteration, version, epsilon } =
+const { seedStart, gameCount, lanes, maxTurns, iteration, version, epsilon, fullSaleOnly } =
   workerData as {
     seedStart: number;
     gameCount: number;
@@ -17,6 +18,7 @@ const { seedStart, gameCount, lanes, maxTurns, iteration, version, epsilon } =
     iteration: number;
     version: number;
     epsilon: number;
+    fullSaleOnly: boolean;
   };
 
 type Sample = { x: number[]; history: number[][]; actor: number };
@@ -58,7 +60,7 @@ function prepare(e: Episode) {
     e.moves = [];
   }
   const observation = observe(e.state, e.events, 0.75);
-  const actions = dmcActions(observation);
+  const actions = dmcActions(observation, fullSaleOnly);
   return {
     actions,
     row: {
@@ -114,6 +116,8 @@ async function main() {
           samples: e.samples,
           winner,
           turns: e.turns,
+          rounds: e.state.results.length,
+          roundMetrics: completedGameRoundMetrics(e.events, e.samples, e.state.results),
           launched,
           totalTurns,
         });

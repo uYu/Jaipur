@@ -11,6 +11,9 @@ from pathlib import Path
 import sys
 import time
 
+ROUND_CATEGORIES = ('take_goods', 'take_camels', 'trade', 'sell_actions')
+BASELINE_PATH = Path(__file__).resolve().parents[1] / 'data/human-elo1600-action-baseline.json'
+
 
 class Tracker:
     def __init__(self, directory):
@@ -26,6 +29,9 @@ class Tracker:
         self.games = self.samples = self.seconds = 0
         self.best = float('-inf')
         self.best_version = 0
+        self.baseline = json.loads(BASELINE_PATH.read_text())
+        self.comparison_series = {}
+        self.chart_every = max(1, json.loads((self.directory / 'config.json').read_text()).get('evalEvery', 50))
         mode = os.environ.get('SWANLAB_MODE', 'online')
         if mode == 'cloud':
             mode = 'online'
@@ -34,11 +40,14 @@ class Tracker:
             if not key:
                 raise ValueError('SWANLAB_API_KEY is required for cloud tracking')
             swanlab.login(api_key=key, save=False)
+        config = json.loads((self.directory / 'config.json').read_text())
+        self.hierarchical = config.get('actionSpace', '').startswith(
+            'full-set sales; choose kind')
         self.run = swanlab.init(
             project=project,
             name=experiment_name or self.directory.name,
             public=False,
-            config=json.loads((self.directory / 'config.json').read_text()),
+            config=config,
             description='DouZero-inspired DMC; complete match returns; public observations only. Model selection uses paired development matches, not training MSE.',
             mode=mode,
             log_dir=str(self.directory / 'swanlab'),
@@ -56,12 +65,23 @@ class Tracker:
     def record(self, row):
         step = row['iteration']
         metrics = {'train/version': row['version']}
-        for source, target in [('mse', 'train/mse'), ('epsilon', 'train/epsilon'),
-                               ('samples', 'train/batch_samples'), ('completed', 'selfplay/completed'),
-                               ('truncated', 'selfplay/truncated'), ('totalTurns', 'selfplay/turns'),
+        for source, target in [('epsilon', 'train/epsilon'),
+                               ('samples', 'train/batch_samples'),
                                ('elapsedSeconds', 'time/iteration_seconds')]:
             if source in row:
                 metrics[target] = row[source]
+        if 'mse' in row:
+            metrics['train/loss' if self.hierarchical else 'train/mse'] = row['mse']
+        for source, target in [('loss', 'train/loss'),
+                               ('kindMse', 'train/kind_mse'),
+                               ('targetMse', 'train/exchange_target_mse'),
+                               ('actionMse', 'train/action_mse')]:
+            if row.get(source) is not None:
+                metrics[target] = row[source]
+        # Completed matches provide both the action samples and the number of
+        # finished rounds; truncated matches contribute to neither quantity.
+        if row.get('rounds') and 'samples' in row:
+            metrics['selfplay/avg_round_turns'] = row['samples'] / row['rounds']
         self.games += row.get('completed', 0)
         self.samples += row.get('samples', 0)
         self.seconds += row.get('elapsedSeconds', 0)
@@ -71,6 +91,31 @@ class Tracker:
         if 'actionCounts' in row and row.get('samples'):
             for action, count in row['actionCounts'].items():
                 metrics[f'selfplay/action_{action}_rate'] = count / row['samples']
+        round_metrics = row.get('roundMetrics')
+        if round_metrics:
+            player_rounds = round_metrics['playerRounds']
+            counts = round_metrics['actionCounts']
+            total_actions = sum(counts[name] for name in ROUND_CATEGORIES)
+            if (player_rounds != 2 * row['rounds'] or
+                    total_actions != row['samples'] or player_rounds <= 0):
+                raise ValueError('Completed-round statistics disagree with training batch')
+            values = {
+                **{f'{name}_per_player_round': counts[name] / player_rounds
+                   for name in ROUND_CATEGORIES},
+                **{f'{name}_share': counts[name] / total_actions
+                   for name in ROUND_CATEGORIES},
+                'goods_sold_per_player_round': round_metrics['goodsSold'] / player_rounds,
+                'all_actions_per_player_round': total_actions / player_rounds,
+                'round_score_mean': round_metrics['scoreSum'] / player_rounds,
+            }
+            if counts['sell_actions']:
+                values['goods_per_sale'] = round_metrics['goodsSold'] / counts['sell_actions']
+            for name, value in values.items():
+                metrics[f'selfplay/{name}'] = value
+                series = self.comparison_series.setdefault(name, [])
+                series.append((step, value))
+                if len(series) > 500:
+                    del series[:-500]
         if 'arena' in row and row['arena'] is not None:
             arena = row['arena']
             wins, losses = arena['wins']
@@ -84,6 +129,46 @@ class Tracker:
         metrics['selection/best_version'] = self.best_version
         metrics['selection/promoted'] = 0
         self.sdk.log(metrics, step=step)
+        if round_metrics and step > 0 and step % self.chart_every == 0:
+            self.comparison_charts(step)
+
+    def comparison_charts(self, step):
+        """Two series in each chart make the expert reference a horizontal line."""
+        import pyecharts.options as opts
+        charts = {}
+        references = {
+            **{f'{name}_per_player_round': self.baseline['per_player_round_mean'][name]
+               for name in ROUND_CATEGORIES},
+            **{f'{name}_share': self.baseline['action_share'][name]
+               for name in ROUND_CATEGORIES},
+            'goods_sold_per_player_round': self.baseline['per_player_round_mean']['goods_sold'],
+            'goods_per_sale': self.baseline['goods_per_sale'],
+            'all_actions_per_player_round': self.baseline['per_player_round_mean']['total'],
+            'round_score_mean': self.baseline['per_player_round_mean']['score'],
+        }
+        for name, reference in references.items():
+            if name not in self.comparison_series:
+                continue
+            points = self.comparison_series[name]
+            chart = self.sdk.echarts.Line()
+            chart.add_xaxis([str(iteration) for iteration, _ in points])
+            chart.add_yaxis('AI self-play', [value for _, value in points],
+                            is_symbol_show=False)
+            chart.add_yaxis('Human Elo 1600+', [reference] * len(points),
+                            is_symbol_show=False,
+                            linestyle_opts=opts.LineStyleOpts(type_='dashed', width=2))
+            chart.set_global_opts(
+                title_opts=opts.TitleOpts(title=name.replace('_', ' ')),
+                xaxis_opts=opts.AxisOpts(name='iteration'),
+                yaxis_opts=opts.AxisOpts(name=(
+                    'proportion' if name.endswith('_share') else
+                    'score' if name == 'round_score_mean' else
+                    'cards per sale' if name == 'goods_per_sale' else
+                    'cards per player-round' if name == 'goods_sold_per_player_round' else
+                    'actions per player-round')),
+            )
+            charts[f'human1600_comparison/{name}'] = chart
+        self.sdk.log(charts, step=step)
 
     def evaluations(self):
         metrics = {}

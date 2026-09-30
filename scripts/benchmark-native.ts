@@ -21,7 +21,8 @@ import { dmcHistory } from "../src/game/dmc-history.ts";
 import type { DmcPublicMove } from "../src/game/dmc-history.ts";
 
 const [candidate = "guided", baseline = "old"] = process.argv.slice(2);
-const useDouzeroHistory = candidate === "douzeroMcts" || baseline === "douzeroMcts";
+const useDouzeroHistory = [candidate, baseline].some((p) =>
+  p === "douzeroMcts" || p === "douzeroMctsFullSale");
 const start = Number(process.argv[4] ?? 101);
 const pairs = Number(process.argv[5] ?? 5);
 const budget = Number(process.argv[6] ?? 50);
@@ -31,7 +32,9 @@ if (!Number.isSafeInteger(fixedIterations) || fixedIterations < 0)
 if (
   fixedIterations &&
   ![candidate, baseline].every((p) =>
-    ["guidedBehavior", "dmcMcts", "dmcMctsPure", "douzeroMcts"].includes(p),
+    ["guidedBehavior", "guidedFullSale", "beliefRoot", "beliefRootAlt", "beliefRootFull", "beliefRootAltFull", "beliefOff",
+      "dmcMcts", "dmcMctsPure",
+      "douzeroMcts", "douzeroMctsFullSale"].includes(p),
   )
 )
   throw Error(
@@ -116,6 +119,28 @@ const profiles: Record<string, [string, string[]]> = {
       "1",
     ],
   ],
+  beliefRootFull: [
+    join(dir, "search-belief"),
+    ["search-budgeted", "1.4142135623730951", "0", "8", "1",
+      String(budget), "1", "0", "0", "0", "0", "0", "1",
+      "0", "0", "0", "1"],
+  ],
+  beliefOff: [
+    join(dir, "search-belief"),
+    ["search-budgeted", "1.4142135623730951", "0", "8", "1",
+      String(budget), "1", "0", "0", "0", "0", "0", "0"],
+  ],
+  beliefRootAlt: [
+    process.env.JAIPUR_ALT_BELIEF_BIN ?? "",
+    ["search-budgeted", "1.4142135623730951", "0", "8", "1",
+      String(budget), "1", "0", "0", "0", "0", "0", "1"],
+  ],
+  beliefRootAltFull: [
+    process.env.JAIPUR_ALT_BELIEF_BIN ?? "",
+    ["search-budgeted", "1.4142135623730951", "0", "8", "1",
+      String(budget), "1", "0", "0", "0", "0", "0", "1",
+      "0", "0", "0", "1"],
+  ],
   learned: [
     search,
     ["search", "1.4142135623730951", "0", "8", "1", String(budget)],
@@ -146,6 +171,11 @@ const profiles: Record<string, [string, string[]]> = {
       String(budget),
       "1",
     ],
+  ],
+  guidedFullSale: [
+    search,
+    ["search-budgeted", "1.4142135623730951", "0", "8", "1",
+      String(budget), "1", ...Array(8).fill("0"), "1"],
   ],
   guidedStratified: [
     search,
@@ -295,13 +325,17 @@ const profiles: Record<string, [string, string[]]> = {
   ],
 };
 function client(profile: string) {
+  if ((profile === "beliefRootAlt" || profile === "beliefRootAltFull") &&
+      !process.env.JAIPUR_ALT_BELIEF_BIN)
+    throw Error("Set JAIPUR_ALT_BELIEF_BIN for beliefRootAlt");
   if (profile === "dmcMcts" || profile === "dmcMctsPure" ||
-      profile === "douzeroMcts")
+      profile === "douzeroMcts" || profile === "douzeroMctsFullSale")
     return dmcMctsClient(
       search,
       profile === "dmcMctsPure" ? 1 : 0.5,
       fixedIterations,
-      profile === "douzeroMcts" ? "douzero" : "mlp",
+      profile.startsWith("douzeroMcts") ? "douzero" : "mlp",
+      profile === "douzeroMctsFullSale",
     );
   if (profile === "dmc") {
     const checkpoint = process.env.JAIPUR_DMC_CHECKPOINT;
@@ -445,11 +479,17 @@ try {
                 profile === "dmc" ||
                 profile.startsWith("dmcMcts") ||
                 profile === "douzeroMcts" ||
+                profile === "douzeroMctsFullSale" ||
+                profile === "guidedFullSale" ||
                 profile === "factored" ||
                 profile === "tactical" ||
                 profile === "guidedStratified" ||
                 profile === "guidedCloseRisk" ||
                 profile === "beliefRoot" ||
+                profile === "beliefRootFull" ||
+                profile === "beliefRootAlt" ||
+                profile === "beliefRootAltFull" ||
+                profile === "beliefOff" ||
                 profile.startsWith("observable")
               ? 0.75
               : true;

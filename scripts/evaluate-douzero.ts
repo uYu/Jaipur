@@ -32,6 +32,9 @@ const wins = [0, 0];
 try {
   const ready = await call({ op: "ready" });
   if (ready.error) throw Error(ready.error);
+  const hierarchical = ready.architecture === "jaipur-hierarchical-history-v1";
+  const fullSaleOnly = hierarchical || ready.full_sale_only ||
+    process.env.JAIPUR_FULL_SALE_ONLY === "1";
   for (let seed = start; seed < start + pairs; seed++)
     for (let seat = 0; seat < 2; seat++) {
       let state = newGame(seed);
@@ -47,7 +50,7 @@ try {
         const o = observe(state, events, 0.75);
         let action;
         if (state.current === seat) {
-          const actions = dmcActions(o);
+          const actions = dmcActions(o, fullSaleOnly);
           const answer = await call({
             op: "act",
             rows: [{

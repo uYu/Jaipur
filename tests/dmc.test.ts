@@ -32,6 +32,17 @@ test("DMC actions cover exactly the independent engine legal set, without equiva
       }
       const o = observe(s, events, true),
         actions = dmcActions(o);
+      const fullSaleActions = dmcActions(o, true);
+      assert.ok(fullSaleActions.length > 0);
+      for (const action of fullSaleActions) {
+        assert.equal(actionError(s, action), null);
+        if (action.type === "sell")
+          assert.equal(action.count, o.hand.filter((g) => g === action.good).length);
+      }
+      assert.deepEqual(
+        fullSaleActions.filter((a) => a.type !== "sell"),
+        actions.filter((a) => a.type !== "sell"),
+      );
       const keys = actions.map((a) => JSON.stringify(dmcAction(o, a)));
       assert.equal(new Set(keys).size, keys.length);
       assert.deepEqual(

@@ -92,15 +92,20 @@ export function dmcAction(o: Observation, a: Action): number[] {
 
 // Enumerate count vectors instead of physical-card subsets. Equivalent cards
 // have one canonical action; no legal sale amount or exchange is pruned.
-export function dmcActions(o: Observation): Action[] {
+export function dmcActions(o: Observation, fullSaleOnly = false): Action[] {
   const hand = counts(o.hand),
     market = counts(o.market),
     out: Action[] = [];
   for (let g = 0; g < 6; g++) {
     if (o.hand.length < 7 && market[g])
       out.push({ type: "take", index: o.market.indexOf(GOODS[g]) });
-    for (let n = g < 3 ? 2 : 1; n <= hand[g]; n++)
-      out.push({ type: "sell", good: GOODS[g], count: n });
+    if (fullSaleOnly) {
+      if (hand[g] >= (g < 3 ? 2 : 1))
+        out.push({ type: "sell", good: GOODS[g], count: hand[g] });
+    } else {
+      for (let n = g < 3 ? 2 : 1; n <= hand[g]; n++)
+        out.push({ type: "sell", good: GOODS[g], count: n });
+    }
   }
   if (o.market.includes("camel")) out.push({ type: "camels" });
   const take = Array<number>(6).fill(0),

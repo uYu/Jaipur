@@ -299,6 +299,7 @@ struct SearchOptions {
   bool terminal_tactics = false;
   bool record_root_stats = false;
   bool factor_actions = false;
+  bool full_sale_root = false;
   const std::vector<std::pair<Action, double>>* root_policy = nullptr;
   double root_policy_mix = .5;
 };
@@ -324,6 +325,12 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
     while (!state.terminal) {
       if (!nodes[node].initialized) {
         auto actions = atomic_actions(state);
+        if (node == 0 && options.full_sale_root)
+          actions.erase(std::remove_if(actions.begin(), actions.end(),
+              [&](const Action& action) {
+                return action.kind == ActionKind::Sell &&
+                    action.count != state.players[state.current].hand[action.good];
+              }), actions.end());
         shuffle(actions, rng);
         for (const auto& a : actions) nodes[node].edges.push_back({a});
         const bool use_neural_prior = options.neural_prior &&

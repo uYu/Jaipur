@@ -139,6 +139,9 @@ int main(int argc,char** argv) {
   if(argc>13) options.belief_prior=std::stoi(argv[13]);
   if(argc>14) options.terminal_tactics=std::stoi(argv[14]);
   if(argc>15) options.factor_actions=std::stoi(argv[15]);
+  if(argc>16) options.full_sale_root=std::stoi(argv[16]);
+  if(argc>17) options.root_policy_mix=std::stod(argv[17]);
+  if(options.root_policy_mix<0 || options.root_policy_mix>1) return 4;
 #ifndef JAIPUR_BELIEF_WEIGHTS_HEADER
   if(options.belief_prior) { std::cerr << "Belief weights not compiled\n"; return 3; }
 #endif
@@ -175,7 +178,13 @@ int main(int argc,char** argv) {
       }
       if(std::abs(mass-1)>1e-5) return 4;
       Rng legal_rng{123};
-      const auto legal=atomic_actions(determinize(o,legal_rng));
+      auto legal=atomic_actions(determinize(o,legal_rng));
+      if(options.full_sale_root)
+        legal.erase(std::remove_if(legal.begin(),legal.end(),
+            [&](const Action& action) {
+              return action.kind==ActionKind::Sell &&
+                  action.count!=o.hand[action.good];
+            }),legal.end());
       if(legal.size()!=external_prior.size()) return 4;
       for(const auto& action:legal) {
         int matches=0;
@@ -208,9 +217,11 @@ int main(int argc,char** argv) {
         const auto af=belief_action_features(item.first);
         std::cout << (i?",":"") << "{\"features\":[";
         for(int j=0;j<BELIEF_ACTION_FEATURES;j++) std::cout << (j?",":"") << af[j];
-        std::cout << "],\"policy\":" << item.second << "}";
+        std::cout << "],\"policy\":" << item.second << ",\"action\":";
+        print_action(item.first);
+        std::cout << "}";
       }
-      std::cout << "]}" << std::endl;
+      std::cout << "],\"simulations\":" << decision.stats.simulations << "}" << std::endl;
       continue;
     }
     const double ms=std::chrono::duration<double,std::milli>(

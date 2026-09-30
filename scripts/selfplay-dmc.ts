@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync, appendFileSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, appendFileSync, existsSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import {
   newGame,
@@ -15,11 +15,16 @@ import { dmcClient } from "./dmc-client.ts";
 import { swanlabTracker } from "./dmc-swanlab.ts";
 import { finalDmcEvaluation } from "./dmc-final-eval.ts";
 import { parallelDouzeroBatch } from "./douzero-parallel.ts";
+import {
+  addRoundMetrics, completedGameRoundMetrics, emptyRoundMetrics, ROUND_ACTIONS,
+} from "./douzero-round-metrics.ts";
 
 const directory = process.argv[2] ?? "analysis/dmc-selfplay-2026-09-24";
-const douzero = process.env.DMC_ARCHITECTURE === "douzero";
-if (process.env.DMC_ARCHITECTURE && !["douzero", "mlp"].includes(process.env.DMC_ARCHITECTURE))
-  throw Error("DMC_ARCHITECTURE must be douzero or mlp");
+const hierarchical = process.env.DMC_ARCHITECTURE === "hierarchical";
+const douzero = process.env.DMC_ARCHITECTURE === "douzero" || hierarchical;
+const fullSaleOnly = hierarchical || process.env.DMC_FULL_SALE_ONLY === "1";
+if (process.env.DMC_ARCHITECTURE && !["douzero", "hierarchical", "mlp"].includes(process.env.DMC_ARCHITECTURE))
+  throw Error("DMC_ARCHITECTURE must be douzero, hierarchical, or mlp");
 const iterations = Number(process.argv[3] ?? 12),
   gamesPerIteration = Number(process.argv[4] ?? 128);
 const targetSamples = Number(process.env.DMC_TARGET_SAMPLES ?? 0),
@@ -28,23 +33,27 @@ const targetSamples = Number(process.env.DMC_TARGET_SAMPLES ?? 0),
   exploration = Number(process.env.DMC_EXPLORATION ?? (douzero ? 0.01 : 0.1)),
   epochsPerBatch = Number(process.env.DMC_EPOCHS_PER_BATCH ?? (douzero ? 1 : 4)),
   actors = Number(process.env.DMC_ACTORS ?? 1),
+  scorers = Number(process.env.DMC_SCORERS ?? 1),
   actorLanes = Number(process.env.DMC_ACTOR_LANES ?? 8),
   devPairs = Number(process.env.DMC_DEV_PAIRS ?? 4),
   devSeed = Number(process.env.DMC_DEV_SEED ?? 3_000_000_000);
 const saveBatches = process.env.DMC_SAVE_BATCHES === "1";
 for (const [name, value] of Object.entries({
-  iterations,
   gamesPerIteration,
   evalEvery,
   checkpointEvery,
   epochsPerBatch,
   actors,
+  scorers,
   actorLanes,
   devPairs,
   devSeed,
 }))
   if (!Number.isSafeInteger(value) || value <= 0)
     throw Error(`Invalid ${name}`);
+if (!Number.isSafeInteger(iterations) || iterations < 0 ||
+    (iterations === 0 && targetSamples !== 0))
+  throw Error("Invalid iterations");
 if (
   !Number.isSafeInteger(devSeed + devPairs - 1) ||
   devSeed + devPairs - 1 > 0xffff_ffff
@@ -52,6 +61,10 @@ if (
   throw Error("Invalid development seed range");
 if (!Number.isSafeInteger(targetSamples) || targetSamples < 0)
   throw Error("Invalid DMC_TARGET_SAMPLES");
+if (scorers > actors || (!douzero && scorers !== 1))
+  throw Error("DMC_SCORERS must be 1..DMC_ACTORS for DouZero training");
+if (scorers > 1 && process.env.DMC_ACTOR_DEVICE && process.env.DMC_ACTOR_DEVICE !== "cpu")
+  throw Error("GPU actor requires a single scorer");
 if (!Number.isFinite(exploration) || exploration < 0 || exploration > 1)
   throw Error("Invalid DMC_EXPLORATION");
 const maxTurns = 700,
@@ -64,7 +77,10 @@ if (existsSync(join(directory, "config.json")))
 mkdirSync(directory, { recursive: true });
 const client = dmcClient(directory, process.argv[5],
   douzero ? "scripts/douzero-learner.py" : "scripts/dmc-learner.py",
-  douzero ? ["--device", process.env.DMC_DEVICE ?? "auto"] : []);
+  douzero ? ["--device", process.env.DMC_DEVICE ?? "auto",
+             "--actor-device", process.env.DMC_ACTOR_DEVICE ?? "cpu",
+             "--architecture", hierarchical ? "hierarchical" : "flat",
+             ...(fullSaleOnly ? ["--full-sale-only"] : [])] : []);
 let tracker: ReturnType<typeof swanlabTracker> | undefined;
 const log = async (x: object) => {
   const s = JSON.stringify(x);
@@ -92,7 +108,7 @@ function prepare(e: Episode) {
     e.moves = [];
   }
   const o = observe(e.state, e.events, 0.75),
-    actions = dmcActions(o);
+    actions = dmcActions(o, fullSaleOnly);
   return {
     actions,
     observation: o,
@@ -148,13 +164,16 @@ writeFileSync(
   JSON.stringify(
     {
       iterations,
+      unlimited: iterations === 0,
       gamesPerIteration,
       targetSamples,
       device: douzero ? process.env.DMC_DEVICE ?? "auto" : "cpu",
+      actorDevice: douzero ? process.env.DMC_ACTOR_DEVICE ?? "cpu" : "cpu",
       saveBatches: douzero ? saveBatches : true,
       evalEvery,
       checkpointEvery: douzero ? checkpointEvery : 1,
       actors: douzero ? actors : 1,
+      scorers: douzero ? scorers : 1,
       lanesPerActor: douzero && actors > 1 ? actorLanes : lanes,
       devPairs,
       lanes: douzero && actors > 1 ? actors * actorLanes : lanes,
@@ -169,12 +188,20 @@ writeFileSync(
       encoder:
         "public observation + hand posterior + public seals; no hidden truth or seed",
       architecture: douzero
-        ? "LSTM(26,128) + MLP(298,512,512,512,512,512,1)"
+        ? hierarchical
+          ? "LSTM(26,128) + shared context + action-kind, exchange-target, concrete-action heads"
+          : "LSTM(26,128) + MLP(298,512,512,512,512,512,1)"
         : [170, 128, 128, 1],
+      actionSpace: hierarchical
+        ? "full-set sales; choose kind, then exchange target, then payment/concrete action"
+        : fullSaleOnly ? "full-set sales; flat action-value selection"
+        : "all legal sale amounts and exchanges",
       optimizer: "RMSprop lr=0.0001 alpha=.99 eps=0.00001",
       epochsPerBatch,
       exploration:
-        `uniform legal-action epsilon-greedy, epsilon=.2 while policy version <2, then ${exploration}`,
+        hierarchical
+          ? `hierarchical epsilon-greedy: uniform kind, target, action when exploring; epsilon=.2 while policy version <2, then ${exploration}`
+          : `uniform legal-action epsilon-greedy, epsilon=.2 while policy version <2, then ${exploration}`,
       actorUpdate:
         "synchronous after each completed batch; shared model for both symmetric seats",
       checkpointSelection: "paired development arena wins, not MSE",
@@ -184,6 +211,7 @@ writeFileSync(
   ) + "\n",
 );
 let succeeded = false;
+const scoreClients: ReturnType<typeof dmcClient>[] = [client];
 try {
   if (process.env.SWANLAB_API_KEY || process.env.SWANLAB_MODE) {
     tracker = swanlabTracker(directory);
@@ -198,33 +226,47 @@ try {
     actorDevice: workerInfo.actor_device ?? "cpu",
     arena: initialArena,
   });
+  if (douzero && actors > 1) {
+    for (let index = 1; index < scorers; index++)
+      scoreClients.push(dmcClient(directory, initial.checkpoint,
+        "scripts/douzero-learner.py",
+        ["--device", "cpu", "--architecture", hierarchical ? "hierarchical" : "flat",
+         ...(fullSaleOnly ? ["--full-sale-only"] : []),
+         "--scorer-only", "--seed", String(20260928 + index)]));
+    await Promise.all(scoreClients.slice(1).map((scorer) => scorer.call({ op: "ready" })));
+  }
   let best =
     initialArena.wins[0] - initialArena.wins[1] - initialArena.truncated;
   let bestCheckpoint = initial.checkpoint;
   let latestCheckpoint = initial.checkpoint;
   let cumulativeSamples = 0,
     cumulativeMatches = 0;
-  for (let iteration = 0; iteration < iterations; iteration++) {
+  for (let iteration = 0; iterations === 0 || iteration < iterations; iteration++) {
     const started = performance.now(),
       x: number[][] = [],
       history: number[][][] = [],
       y: number[] = [];
     let completed = 0,
+      rounds = 0,
       truncated = 0,
       totalTurns = 0;
+    const roundMetrics = emptyRoundMetrics();
     const epsilon = initial.version + iteration < 2 ? 0.2 : exploration;
     if (douzero && actors > 1) {
       const batch = await parallelDouzeroBatch({
-        client, directory, iteration, version: initial.version + iteration,
+        client, scoreClients, directory, iteration, version: initial.version + iteration,
         epsilon, games: gamesPerIteration, actors, lanesPerActor: actorLanes,
+        fullSaleOnly,
         maxTurns, trainSeed, cumulativeSamples, targetSamples,
       });
       x.push(...batch.x);
       history.push(...batch.history);
       y.push(...batch.y);
       completed = batch.completed;
+      rounds = batch.rounds;
       truncated = batch.truncated;
       totalTurns = batch.totalTurns;
+      addRoundMetrics(roundMetrics, batch.roundMetrics);
     } else {
     let launched = 0;
     const active: Episode[] = [];
@@ -286,6 +328,9 @@ try {
             }) + "\n",
           );
           completed++;
+          rounds += e.state.results.length;
+          addRoundMetrics(roundMetrics,
+            completedGameRoundMetrics(e.events, e.samples, e.state.results));
           active.splice(i, 1);
         } else if (e.turns >= maxTurns) {
           // Jaipur exchanges can cycle: do not fabricate a draw or terminal label.
@@ -320,19 +365,31 @@ try {
     }
     if (!x.length)
       throw Error("No complete episodes; refusing fabricated labels");
-    const actionCounts = { take: 0, camels: 0, sell: 0, exchange: 0 };
-    if (douzero) {
-      for (const row of x) {
-        const kind = row.slice(146, 150).findIndex((value) => value === 1);
-        const name = (["take", "camels", "sell", "exchange"] as const)[kind];
-        if (!name) throw Error("Bad DMC action kind in training batch");
-        actionCounts[name]++;
-      }
-    }
+    const detailed = roundMetrics.actionCounts;
+    const actionCounts = {
+      take: detailed.take_goods,
+      camels: detailed.take_camels,
+      sell: detailed.sell_actions,
+      exchange: detailed.trade,
+    };
+    if (roundMetrics.playerRounds !== rounds * 2 ||
+        ROUND_ACTIONS.reduce((sum, key) => sum + detailed[key], 0) !== x.length)
+      throw Error("Completed round metrics disagree with training samples");
     const learned = await client.call({
       op: "learn", x, y, epochs: epochsPerBatch,
       ...(douzero ? { history, save_batch: saveBatches } : {}),
     });
+    if (scoreClients.length > 1) {
+      const snapshot = await client.call({ op: "export_actor" });
+      try {
+        const versions = await Promise.all(scoreClients.slice(1).map((scorer) =>
+          scorer.call({ op: "load_actor", path: snapshot.path })));
+        if (versions.some((loaded) => loaded.version !== learned.version))
+          throw Error("Actor scorer model version mismatch");
+      } finally {
+        unlinkSync(snapshot.path);
+      }
+    }
     cumulativeSamples += learned.samples;
     cumulativeMatches += completed;
     const reachedTarget =
@@ -380,6 +437,7 @@ try {
       iteration: iteration + 1,
       epsilon,
       completed,
+      rounds,
       truncated,
       totalTurns,
       ...learned,
@@ -387,6 +445,7 @@ try {
       cumulativeSamples,
       cumulativeMatches,
       ...(douzero ? { actionCounts } : {}),
+      roundMetrics,
       arena: result,
       elapsedSeconds: (performance.now() - started) / 1000,
     });
@@ -431,6 +490,6 @@ try {
   }
   succeeded = true;
 } finally {
-  client.close();
+  for (const scorer of scoreClients) scorer.close();
   await tracker?.close(!succeeded);
 }

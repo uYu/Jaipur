@@ -1,0 +1,22 @@
+{
+  "source": "output/jaipur-human-elo-actions-20260929/summary.json",
+  "scope": "Original-variant completed player-rounds in the SHA-256 train split; inferred Elo >=1600, >=10 training games, >=5 opponents",
+  "players": 9,
+  "player_rounds": 1278,
+  "per_player_round_mean": {
+    "take_goods": 6.57433489827856,
+    "take_camels": 3.016431924882629,
+    "trade": 3.900625978090767,
+    "sell_actions": 6.194053208137715,
+    "goods_sold": 15.498435054773083,
+    "total": 19.685446009389672,
+    "score": 73.76760563380282
+  },
+  "goods_per_sale": 2.5021475492673066,
+  "action_share": {
+    "take_goods": 0.33396931393592494,
+    "take_camels": 0.15323157643691868,
+    "trade": 0.1981477064949519,
+    "sell_actions": 0.31465140313220447
+  }
+}

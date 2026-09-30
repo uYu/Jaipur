@@ -50,8 +50,10 @@ const modelCall = rpc(python), searchCall = rpc(search);
 const wins = [0, 0], decisions = [0, 0], elapsed = [0, 0];
 try {
   const ready = await modelCall(JSON.stringify({ op: "ready" }));
-  if (ready.architecture !== "jaipur-douzero-history-v1")
+  if (!["jaipur-douzero-history-v1", "jaipur-hierarchical-history-v1"].includes(ready.architecture))
     throw Error("Expected a DouZero history checkpoint");
+  const hierarchical = ready.architecture === "jaipur-hierarchical-history-v1";
+  const fullSaleOnly = hierarchical || ready.full_sale_only;
   for (let seed = start; seed < start + pairs; seed++)
     for (let seat = 0; seat < 2; seat++) {
       let state = newGame(seed);
@@ -69,7 +71,7 @@ try {
         const started = performance.now();
         let action;
         if (side === 0) {
-          const actions = dmcActions(observation);
+          const actions = dmcActions(observation, fullSaleOnly);
           const answer = await modelCall(JSON.stringify({
             op: "act", rows: [{
               history: dmcHistory(moves, state.current),
