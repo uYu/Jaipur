@@ -167,12 +167,16 @@ def main():
     parser.add_argument('--follow', action='store_true',
                         help='Wait for new generations until the configured target is reached')
     parser.add_argument('--poll-seconds', type=float, default=5)
+    parser.add_argument('--heartbeat-seconds', type=float, default=300,
+                        help='Upload a heartbeat while waiting for a generation (default: 5 minutes)')
     parser.add_argument('--mode', choices=('online', 'offline'), default='online')
     parser.add_argument('--chart-every', type=int, default=10,
                         help='Update 1600+ human comparison charts every N generations')
     args = parser.parse_args()
     if args.poll_seconds <= 0:
         parser.error('--poll-seconds must be positive')
+    if args.heartbeat_seconds <= 0:
+        parser.error('--heartbeat-seconds must be positive')
     if args.chart_every <= 0:
         parser.error('--chart-every must be positive')
     directory = args.directory.resolve()
@@ -224,6 +228,12 @@ def main():
     save_state(state_path, state)
     print(json.dumps({'url': state['url'], 'last_generation': state['last_generation']}), flush=True)
     try:
+        last_upload = time.monotonic()
+        if args.follow:
+            # SwanLab marks a run interrupted after 30 minutes without uploads.
+            # This metric has its own automatic step, independent of generations.
+            swanlab.log({'monitor/heartbeat_unix': time.time()})
+            last_upload = time.monotonic()
         while True:
             manifest = read_manifest(manifest_path)
             generations = manifest['generations']
@@ -241,12 +251,16 @@ def main():
                 state['last_generation'] = expected
                 save_state(state_path, state)
                 print(json.dumps({'uploaded_generation': expected}), flush=True)
+                last_upload = time.monotonic()
             if len(generations) >= manifest['settings']['generations']:
                 state['status'] = 'complete'
                 break
             if not args.follow:
                 state['status'] = 'paused'
                 break
+            if time.monotonic() - last_upload >= args.heartbeat_seconds:
+                swanlab.log({'monitor/heartbeat_unix': time.time()})
+                last_upload = time.monotonic()
             time.sleep(args.poll_seconds)
     except Exception:
         state['status'] = 'crashed'

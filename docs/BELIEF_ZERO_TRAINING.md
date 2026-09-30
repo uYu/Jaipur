@@ -80,6 +80,8 @@ nohup .venv/bin/python scripts/track-belief-zero-swanlab.py \
 
 新版自我对局还会记录每位玩家每个已完成小局的拿货、拿骆驼、换牌、卖牌、卖出张数、每次卖牌张数、总行动数和小局得分；四类行动同时记录比例。`human1600_comparison/*` 折线图将这些指标与 1600+ 人类玩家的训练集均值画在同一张图上，参考值为水平虚线。默认每 10 代更新一次图，也可用跟踪器参数 `--chart-every N` 修改。旧版自我对局若没有保存小局汇总，无法补算已清理对局的得分，图表从新版采样的首代开始。
 
+升版和原 MCTS 对照可能使两代上传间隔超过 30 分钟。跟踪器在 `--follow` 模式下每 5 分钟上传一次 `monitor/heartbeat_unix`，避免 SwanLab 把仍在运行的实验误判为中断；可用 `--heartbeat-seconds N` 调整。若旧版跟踪器对应的云端运行已被标为中断，停止**跟踪器进程**并用原命令重启即可按 `swanlab-run.json` 中的 ID 恢复同一实验，训练主进程不需重启。
+
 ```sh
 tail -f output/jaipur-zero-from-scratch/train.log
 cat output/jaipur-zero-from-scratch/swanlab-run.json
