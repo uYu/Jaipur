@@ -116,7 +116,7 @@ def arena(name, candidate, baseline, seed, pairs):
                JAIPUR_ALT_BELIEF_BIN=str(baseline) if baseline else '',
                JAIPUR_BENCH_ITERATIONS=str(a.simulations_per_tree),
                JAIPUR_BENCH_LOG=str(games))
-    baseline_profile = 'beliefRootAltFull' if baseline else 'beliefOff'
+    baseline_profile = 'beliefRootAltFull' if baseline else 'beliefOffFull'
     command([NODE, '--experimental-strip-types', ROOT / 'scripts/benchmark-native.ts',
              'beliefRootFull', baseline_profile, seed, pairs, 50],
             directory / 'logs' / f'{name}.log', env)

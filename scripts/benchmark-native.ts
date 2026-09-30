@@ -32,7 +32,7 @@ if (!Number.isSafeInteger(fixedIterations) || fixedIterations < 0)
 if (
   fixedIterations &&
   ![candidate, baseline].every((p) =>
-    ["guidedBehavior", "guidedFullSale", "beliefRoot", "beliefRootAlt", "beliefRootFull", "beliefRootAltFull", "beliefOff",
+    ["guidedBehavior", "guidedFullSale", "beliefRoot", "beliefRootAlt", "beliefRootFull", "beliefRootAltFull", "beliefOff", "beliefOffFull",
       "dmcMcts", "dmcMctsPure",
       "douzeroMcts", "douzeroMctsFullSale"].includes(p),
   )
@@ -129,6 +129,12 @@ const profiles: Record<string, [string, string[]]> = {
     join(dir, "search-belief"),
     ["search-budgeted", "1.4142135623730951", "0", "8", "1",
       String(budget), "1", "0", "0", "0", "0", "0", "0"],
+  ],
+  beliefOffFull: [
+    join(dir, "search-belief"),
+    ["search-budgeted", "1.4142135623730951", "0", "8", "1",
+      String(budget), "1", "0", "0", "0", "0", "0", "0",
+      "0", "0", "0", "1"],
   ],
   beliefRootAlt: [
     process.env.JAIPUR_ALT_BELIEF_BIN ?? "",
@@ -490,6 +496,7 @@ try {
                 profile === "beliefRootAlt" ||
                 profile === "beliefRootAltFull" ||
                 profile === "beliefOff" ||
+                profile === "beliefOffFull" ||
                 profile.startsWith("observable")
               ? 0.75
               : true;
