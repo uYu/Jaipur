@@ -26,13 +26,15 @@ python3 scripts/ablate-belief-size.py \
 ```sh
 python3 scripts/run-belief-zero.py \
   --directory output/jaipur-zero-from-scratch \
-  --hidden 1024 --generations 100 \
+  --hidden 1024 --generations 1000 \
   --games-per-generation 128 --validation-games 16 \
   --simulations-per-tree 128 --workers 4 \
   --epochs 15 --replay-generations 5 \
   --gate-every 10 --gate-pairs 100 --gate-threshold 0.55 \
-  --arena-every 100 --arena-pairs 40
+  --arena-every 10 --arena-pairs 50
 ```
+
+这组正式参数训练 1000 代；第 10、20、…、1000 代做升版比赛和原 MCTS 对照，共各 100 次。原 MCTS 每次用 50 组种子交换先后手，**共 100 场**；升版比赛维持每次 100 组配对种子，共 200 场。脚本的 `--arena-every` 默认仍为 100，以上正式命令显式覆盖为 10。
 
 Python 环境须装 `torch`、`numpy`；Node.js 至少 22.13，并需本机 C++ 编译器。`--workers` 控制并行自我对局进程。每步搜索次数是 `8 × --simulations-per-tree`，候选升版和原 MCTS 对照逐步校验次数一致。`run.json` 的 `learner` 是每代继续更新的模型，`champion` 是自我对局使用的最佳模型；未到升版轮时 `gate` 为 `null`，即使一次升版未通过，下一代也从最新 `learner` 继续训练。输出包含每代模型、训练/验证对局、定期比赛记录及可恢复的 `run.json`；二进制只在模型参加自我对局或评测时编译。中断后用相同参数重跑命令；也可以只增大 `--generations` 延长训练。已完成的代不会重训，中断的代会重新生成。请为正式训练使用新的输出目录，不要把先导试验目录作为起点。
 
@@ -54,12 +56,12 @@ mkdir -p output/jaipur-zero-from-scratch
 
 nohup .venv/bin/python scripts/run-belief-zero.py \
   --directory output/jaipur-zero-from-scratch \
-  --hidden 1024 --generations 100 \
+  --hidden 1024 --generations 1000 \
   --games-per-generation 128 --validation-games 16 \
   --simulations-per-tree 128 --workers 4 \
   --epochs 15 --replay-generations 5 \
   --gate-every 10 --gate-pairs 100 --gate-threshold 0.55 \
-  --arena-every 100 --arena-pairs 40 \
+  --arena-every 10 --arena-pairs 50 \
   > output/jaipur-zero-from-scratch/train.log 2>&1 < /dev/null &
 
 nohup .venv/bin/python scripts/track-belief-zero-swanlab.py \
@@ -67,11 +69,11 @@ nohup .venv/bin/python scripts/track-belief-zero-swanlab.py \
   > output/jaipur-zero-from-scratch/swanlab.log 2>&1 < /dev/null &
 ```
 
-跟踪器先补传 `run.json` 中已完成的代，再随训练上传新代的采样数、验证损失、升版胜率、原 MCTS 胜率和阶段耗时。两个进程相互独立；跟踪器故障不会打断训练。SwanLab 运行地址和最后已上传代保存在 `output/jaipur-zero-from-scratch/swanlab-run.json`。跟踪器可用相同命令重启并从已上传代继续；正式训练完成 100 代后自行退出。查看运行状态：
+跟踪器先补传 `run.json` 中已完成的代，再随训练上传新代的采样数、验证损失、升版胜率、原 MCTS 胜率和阶段耗时。两个进程相互独立；跟踪器故障不会打断训练。SwanLab 运行地址和最后已上传代保存在 `output/jaipur-zero-from-scratch/swanlab-run.json`。跟踪器可用相同命令重启并从已上传代继续；正式训练完成 1000 代后自行退出。查看运行状态：
 
 ```sh
 tail -f output/jaipur-zero-from-scratch/train.log
 cat output/jaipur-zero-from-scratch/swanlab-run.json
 ```
 
-只补传现有记录时，省略 `--follow`。跟踪器只上传汇总指标和训练配置，不上传原始对局、模型权重或 API 密钥。若训练需要超过 100 代，使用相同参数并提高 `--generations` 续训，然后重新启动跟踪器。
+只补传现有记录时，省略 `--follow`。跟踪器只上传汇总指标和训练配置，不上传原始对局、模型权重或 API 密钥。若训练需要超过 1000 代，使用相同参数并提高 `--generations` 续训，然后重新启动跟踪器。
