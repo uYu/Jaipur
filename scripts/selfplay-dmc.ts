@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync, appendFileSync, existsSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import {
   newGame,
   applyAction,
@@ -15,6 +15,8 @@ import { dmcClient } from "./dmc-client.ts";
 import { swanlabTracker } from "./dmc-swanlab.ts";
 import { finalDmcEvaluation } from "./dmc-final-eval.ts";
 import { parallelDouzeroBatch } from "./douzero-parallel.ts";
+import { pruneDouzeroCheckpoints } from "./douzero-retention.ts";
+import { evaluateDouzeroMcts, runEvaluationProcess } from "./douzero-mcts-eval.ts";
 import {
   addRoundMetrics, completedGameRoundMetrics, emptyRoundMetrics, ROUND_ACTIONS,
 } from "./douzero-round-metrics.ts";
@@ -30,6 +32,8 @@ const iterations = Number(process.argv[3] ?? 12),
 const targetSamples = Number(process.env.DMC_TARGET_SAMPLES ?? 0),
   evalEvery = Number(process.env.DMC_EVAL_EVERY ?? 3),
   checkpointEvery = Number(process.env.DMC_CHECKPOINT_EVERY ?? 50),
+  checkpointMax = Number(process.env.DMC_CHECKPOINT_MAX ?? 0),
+  maxRuntimeHours = Number(process.env.DMC_MAX_RUNTIME_HOURS ?? 0),
   exploration = Number(process.env.DMC_EXPLORATION ?? (douzero ? 0.01 : 0.1)),
   epochsPerBatch = Number(process.env.DMC_EPOCHS_PER_BATCH ?? (douzero ? 1 : 4)),
   actors = Number(process.env.DMC_ACTORS ?? 1),
@@ -38,6 +42,16 @@ const targetSamples = Number(process.env.DMC_TARGET_SAMPLES ?? 0),
   devPairs = Number(process.env.DMC_DEV_PAIRS ?? 4),
   devSeed = Number(process.env.DMC_DEV_SEED ?? 3_000_000_000);
 const saveBatches = process.env.DMC_SAVE_BATCHES === "1";
+const saveGames = process.env.DMC_SAVE_GAMES !== "0";
+const mctsEveryHours = Number(process.env.DMC_MCTS_EVERY_HOURS ?? 0);
+const mctsPairs = Number(process.env.DMC_MCTS_PAIRS ?? 20);
+const mctsSimulations = Number(process.env.DMC_MCTS_SIMULATIONS ?? 1024);
+if (!Number.isFinite(mctsEveryHours) || mctsEveryHours < 0 ||
+    !Number.isSafeInteger(mctsPairs) || mctsPairs < 1 || mctsPairs > 100 ||
+    !Number.isSafeInteger(mctsSimulations) || mctsSimulations < 1)
+  throw Error("Invalid periodic MCTS evaluation settings");
+if (mctsEveryHours > 0 && (!douzero || hierarchical))
+  throw Error("Periodic MCTS evaluation requires the flat DouZero network");
 for (const [name, value] of Object.entries({
   gamesPerIteration,
   evalEvery,
@@ -61,6 +75,10 @@ if (
   throw Error("Invalid development seed range");
 if (!Number.isSafeInteger(targetSamples) || targetSamples < 0)
   throw Error("Invalid DMC_TARGET_SAMPLES");
+if (!Number.isSafeInteger(checkpointMax) || checkpointMax < 0)
+  throw Error("Invalid DMC_CHECKPOINT_MAX");
+if (!Number.isFinite(maxRuntimeHours) || maxRuntimeHours < 0)
+  throw Error("Invalid DMC_MAX_RUNTIME_HOURS");
 if (scorers > actors || (!douzero && scorers !== 1))
   throw Error("DMC_SCORERS must be 1..DMC_ACTORS for DouZero training");
 if (scorers > 1 && process.env.DMC_ACTOR_DEVICE && process.env.DMC_ACTOR_DEVICE !== "cpu")
@@ -70,11 +88,25 @@ if (!Number.isFinite(exploration) || exploration < 0 || exploration > 1)
 const maxTurns = 700,
   lanes = 16,
   trainSeed = 1_000_000;
+const trainingStarted = performance.now();
+let stopSignal: string | undefined;
+for (const signal of ["SIGINT", "SIGTERM"] as const)
+  process.on(signal, () => {
+    if (!stopSignal) {
+      stopSignal = signal;
+      console.error(`Received ${signal}; saving after the current update`);
+    }
+  });
 if (existsSync(join(directory, "config.json")))
   throw Error(
     "Use a fresh output directory; optional fifth argument resumes a checkpoint",
   );
 mkdirSync(directory, { recursive: true });
+if (mctsEveryHours > 0)
+  await runEvaluationProcess("scripts/build-ai-research.mjs", [],
+    join(directory, "mcts-build.log"), {
+      JAIPUR_AI_BIN_DIR: resolve(directory, "mcts-bin"),
+    });
 const client = dmcClient(directory, process.argv[5],
   douzero ? "scripts/douzero-learner.py" : "scripts/dmc-learner.py",
   douzero ? ["--device", process.env.DMC_DEVICE ?? "auto",
@@ -170,8 +202,12 @@ writeFileSync(
       device: douzero ? process.env.DMC_DEVICE ?? "auto" : "cpu",
       actorDevice: douzero ? process.env.DMC_ACTOR_DEVICE ?? "cpu" : "cpu",
       saveBatches: douzero ? saveBatches : true,
+      saveGameRecords: saveGames,
       evalEvery,
       checkpointEvery: douzero ? checkpointEvery : 1,
+      checkpointMax,
+      maxRuntimeHours,
+      mctsEveryHours, mctsPairs, mctsSimulationsPerTree: mctsSimulations,
       actors: douzero ? actors : 1,
       scorers: douzero ? scorers : 1,
       lanesPerActor: douzero && actors > 1 ? actorLanes : lanes,
@@ -239,9 +275,30 @@ try {
     initialArena.wins[0] - initialArena.wins[1] - initialArena.truncated;
   let bestCheckpoint = initial.checkpoint;
   let latestCheckpoint = initial.checkpoint;
+  let lastLearnedVersion = initial.version;
+  let latestCheckpointVersion = initial.version;
+  const runtimeExpired = () => maxRuntimeHours > 0 &&
+    performance.now() - trainingStarted >= maxRuntimeHours * 3_600_000;
+  let stopReason: string | undefined;
   let cumulativeSamples = 0,
     cumulativeMatches = 0;
+  let nextMctsAt = performance.now() + mctsEveryHours * 3_600_000;
   for (let iteration = 0; iterations === 0 || iteration < iterations; iteration++) {
+    if (stopSignal || runtimeExpired()) {
+      if (douzero && lastLearnedVersion > latestCheckpointVersion) {
+        latestCheckpoint = (await client.call({ op: "save" })).checkpoint;
+        latestCheckpointVersion = lastLearnedVersion;
+        writeFileSync(join(directory, "selection.json"), JSON.stringify({
+          bestCheckpoint, bestDevScore: best, latestCheckpoint,
+          criterion: "paired dev match results; ties keep earlier checkpoint",
+          promoted: false,
+        }, null, 2) + "\n");
+        pruneDouzeroCheckpoints(directory, checkpointMax,
+          [initial.checkpoint, bestCheckpoint, latestCheckpoint]);
+      }
+      stopReason = stopSignal ?? "time-limit";
+      break;
+    }
     const started = performance.now(),
       x: number[][] = [],
       history: number[][][] = [],
@@ -257,6 +314,7 @@ try {
         client, scoreClients, directory, iteration, version: initial.version + iteration,
         epsilon, games: gamesPerIteration, actors, lanesPerActor: actorLanes,
         fullSaleOnly,
+        saveGames,
         maxTurns, trainSeed, cumulativeSamples, targetSamples,
       });
       x.push(...batch.x);
@@ -315,18 +373,19 @@ try {
             if (douzero && sample.history) history.push(sample.history);
             y.push(sample.actor === winner ? 1 : -1);
           }
-          appendFileSync(
-            join(directory, "selfplay-games.jsonl"),
-            JSON.stringify({
-              seed: e.id,
-              iteration,
-              version: answer.version,
-              epsilon,
-              winner,
-              turns: e.turns,
-              events: e.events,
-            }) + "\n",
-          );
+          if (saveGames)
+            appendFileSync(
+              join(directory, "selfplay-games.jsonl"),
+              JSON.stringify({
+                seed: e.id,
+                iteration,
+                version: answer.version,
+                epsilon,
+                winner,
+                turns: e.turns,
+                events: e.events,
+              }) + "\n",
+            );
           completed++;
           rounds += e.state.results.length;
           addRoundMetrics(roundMetrics,
@@ -334,16 +393,17 @@ try {
           active.splice(i, 1);
         } else if (e.turns >= maxTurns) {
           // Jaipur exchanges can cycle: do not fabricate a draw or terminal label.
-          appendFileSync(
-            join(directory, "truncated-games.jsonl"),
-            JSON.stringify({
-              seed: e.id,
-              iteration,
-              version: answer.version,
-              epsilon,
-              events: e.events,
-            }) + "\n",
-          );
+          if (saveGames)
+            appendFileSync(
+              join(directory, "truncated-games.jsonl"),
+              JSON.stringify({
+                seed: e.id,
+                iteration,
+                version: answer.version,
+                epsilon,
+                events: e.events,
+              }) + "\n",
+            );
           truncated++;
           active.splice(i, 1);
         }
@@ -379,6 +439,7 @@ try {
       op: "learn", x, y, epochs: epochsPerBatch,
       ...(douzero ? { history, save_batch: saveBatches } : {}),
     });
+    lastLearnedVersion = learned.version;
     if (scoreClients.length > 1) {
       const snapshot = await client.call({ op: "export_actor" });
       try {
@@ -394,10 +455,10 @@ try {
     cumulativeMatches += completed;
     const reachedTarget =
       targetSamples > 0 && cumulativeSamples >= targetSamples;
+    const stoppingBeforeEval = stopSignal || runtimeExpired();
     const evaluate =
-      (iteration + 1) % evalEvery === 0 ||
-      iteration + 1 === iterations ||
-      reachedTarget;
+      !stoppingBeforeEval && ((iteration + 1) % evalEvery === 0 ||
+        iteration + 1 === iterations || reachedTarget);
     const result = evaluate ? await arena() : undefined;
     let improved = false;
     if (result) {
@@ -407,18 +468,36 @@ try {
         improved = true;
       }
     }
+    const stopping = stopSignal || runtimeExpired();
+    const mctsDue = mctsEveryHours > 0 && !stopping && performance.now() >= nextMctsAt;
     let checkpoint: string | undefined;
     if (douzero) {
       if (learned.version % checkpointEvery === 0 ||
-          iteration + 1 === iterations || reachedTarget || improved) {
+          iteration + 1 === iterations || reachedTarget || improved || stopping || mctsDue) {
         checkpoint = (await client.call({ op: "save" })).checkpoint;
         latestCheckpoint = checkpoint!;
+        latestCheckpointVersion = learned.version;
       }
     } else {
       checkpoint = learned.checkpoint;
       latestCheckpoint = checkpoint!;
     }
     if (improved) bestCheckpoint = latestCheckpoint;
+    let mcts: Awaited<ReturnType<typeof evaluateDouzeroMcts>> | undefined;
+    let mctsError: string | undefined;
+    if (mctsDue) {
+      console.error(`MCTS evaluation: version ${learned.version}, ${mctsPairs * 2} matches`);
+      try {
+        mcts = await evaluateDouzeroMcts(directory, latestCheckpoint,
+          learned.version, fullSaleOnly, mctsPairs, mctsSimulations);
+      } catch (error) {
+        mctsError = String(error);
+        console.error(`MCTS evaluation failed; training will continue: ${mctsError}`);
+      }
+      // Skip missed intervals instead of accumulating an evaluation backlog.
+      const now = performance.now();
+      do { nextMctsAt += mctsEveryHours * 3_600_000; } while (nextMctsAt <= now);
+    }
     writeFileSync(
       join(directory, "selection.json"),
       JSON.stringify(
@@ -447,11 +526,17 @@ try {
       ...(douzero ? { actionCounts } : {}),
       roundMetrics,
       arena: result,
+      ...(mcts ? { mcts } : {}),
+      ...(mctsError ? { mctsError } : {}),
       elapsedSeconds: (performance.now() - started) / 1000,
     });
-    if (reachedTarget) break;
+    if (douzero)
+      pruneDouzeroCheckpoints(directory, checkpointMax,
+        [initial.checkpoint, bestCheckpoint, latestCheckpoint]);
+    if (stopping || stopSignal || runtimeExpired()) stopReason = stopSignal ?? "time-limit";
+    if (reachedTarget || stopReason) break;
   }
-  if (targetSamples && cumulativeSamples < targetSamples)
+  if (targetSamples && cumulativeSamples < targetSamples && !stopReason)
     throw Error(
       `Iteration safety limit reached with ${cumulativeSamples}/${targetSamples} samples`,
     );
@@ -459,17 +544,20 @@ try {
     join(directory, "completion.json"),
     JSON.stringify(
       {
-        phase: "training-complete",
+        phase: stopReason ? "training-stopped" : "training-complete",
+        stopReason: stopReason ?? null,
+        elapsedHours: (performance.now() - trainingStarted) / 3_600_000,
         cumulativeSamples,
         cumulativeMatches,
         targetSamples,
         bestCheckpoint,
+        latestCheckpoint,
       },
       null,
       2,
     ),
   );
-  if (process.env.DMC_FINAL_EVAL === "1") {
+  if (!stopReason && process.env.DMC_FINAL_EVAL === "1") {
     await finalDmcEvaluation(directory, bestCheckpoint, initial.checkpoint);
     await tracker?.evaluate();
     writeFileSync(

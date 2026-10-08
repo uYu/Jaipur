@@ -127,6 +127,20 @@ class Tracker:
             if score > self.best:
                 self.best, self.best_version = score, row['version']
         metrics['selection/best_version'] = self.best_version
+        if row.get('mcts'):
+            result = row['mcts']
+            wins, losses = result['wins']
+            metrics.update({
+                'mcts/model_wins': wins,
+                'mcts/baseline_wins': losses,
+                'mcts/matches': result['matches'],
+                'mcts/model_win_rate': wins / result['matches'],
+                'mcts/model_version': result['version'],
+                'mcts/simulations_per_tree': result['fixedIterationsPerTree'],
+                'time/mcts_seconds': result['elapsedSeconds'],
+            })
+        if 'mcts' in row or 'mctsError' in row:
+            metrics['mcts/evaluation_failed'] = int('mctsError' in row)
         metrics['selection/promoted'] = 0
         self.sdk.log(metrics, step=step)
         if round_metrics and step > 0 and step % self.chart_every == 0:

@@ -27,6 +27,7 @@ export async function parallelDouzeroBatch(args: {
   version: number;
   epsilon: number;
   fullSaleOnly: boolean;
+  saveGames: boolean;
   games: number;
   actors: number;
   lanesPerActor: number;
@@ -101,6 +102,7 @@ export async function parallelDouzeroBatch(args: {
           version: args.version,
           epsilon: args.epsilon,
           fullSaleOnly: args.fullSaleOnly,
+          saveGames: args.saveGames,
         },
       });
       offset += games;
@@ -117,8 +119,9 @@ export async function parallelDouzeroBatch(args: {
             turnsByWorker[index] = message.totalTurns;
             result.totalTurns = turnsByWorker.reduce((sum, value) => sum + value, 0);
             if (message.kind === "game") {
-              appendFileSync(join(args.directory, "selfplay-games.jsonl"),
-                             JSON.stringify(message.game) + "\n");
+              if (args.saveGames)
+                appendFileSync(join(args.directory, "selfplay-games.jsonl"),
+                               JSON.stringify(message.game) + "\n");
               result.completed++;
               result.rounds += message.rounds;
               addRoundMetrics(result.roundMetrics, message.roundMetrics);
@@ -128,8 +131,9 @@ export async function parallelDouzeroBatch(args: {
                 result.y.push(sample.actor === message.winner ? 1 : -1);
               }
             } else {
-              appendFileSync(join(args.directory, "truncated-games.jsonl"),
-                             JSON.stringify(message.game) + "\n");
+              if (args.saveGames)
+                appendFileSync(join(args.directory, "truncated-games.jsonl"),
+                               JSON.stringify(message.game) + "\n");
               result.truncated++;
             }
             writeProgress();

@@ -1,5 +1,7 @@
 # DouZero 式 Jaipur 模型：CPU / GPU 自我对局训练
 
+约两周的定时 GPU 作业参数、自动收尾、检查点保留和任务提交说明见 [DouZero 14 天作业](DOUZERO_14D_JOB.md)。
+
 训练入口为 [`scripts/launch-douzero.sh`](../scripts/launch-douzero.sh)。模型采用当前公开历史 LSTM + 行动条件 Q 网络；每个训练样本来自**已完成整场比赛**中实际执行的行动，目标是行动方的整场胜负 `+1/-1`。`--device` 选择权重更新设备，`--actor-device` 选择批量行动评分设备，默认均按原配置使用 CPU 评分。游戏规则和公开手牌后验由 CPU worker 处理；多个 worker 的预测请求可以合批，也可以用多个独立 CPU 评分进程同时处理。每次权重更新后会同步评分模型。
 
 ## 环境

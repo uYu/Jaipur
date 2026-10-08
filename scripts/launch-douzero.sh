@@ -11,11 +11,14 @@ Options:
   --actor-device cpu|cuda|mps  Batched action-scoring device (default: cpu)
   --python PATH               Python with NumPy and PyTorch (default: python3)
   --target-samples N          New completed-match samples (default: 10000000)
-  --unlimited                 Train until manually stopped; no sample/update cap
+  --unlimited                 No sample/update cap; stop manually or with --max-hours
   --games-per-update N        Completed matches per model update (default: 128)
   --max-updates N             Safety cap on model updates (default: 2000)
   --eval-every N              Development evaluation interval (default: 50)
   --checkpoint-every N        Save a resume checkpoint every N updates (default: 50)
+  --checkpoint-max N          Keep at most N recent numbered checkpoints, plus best/latest (default: unlimited)
+  --max-hours HOURS           Finish after this many hours and save a final checkpoint
+  --no-game-records           Skip per-match replay logs; keep aggregate training metrics
   --exploration RATE          Epsilon-greedy probability after warmup (default: 0.01)
   --epochs-per-batch N        Learner passes over each self-play batch (default: 1)
   --actors N                  Parallel CPU self-play workers (default: 1)
@@ -43,6 +46,9 @@ games_per_update="128"
 max_updates="2000"
 eval_every="50"
 checkpoint_every="50"
+checkpoint_max="0"
+max_hours="0"
+save_games="1"
 exploration="0.01"
 epochs_per_batch="1"
 actors="1"
@@ -57,7 +63,7 @@ full_sale_only="0"
 unlimited="0"
 while (($#)); do
   case "$1" in
-    --output|--device|--actor-device|--python|--target-samples|--games-per-update|--max-updates|--eval-every|--checkpoint-every|--exploration|--epochs-per-batch|--actors|--scorers|--actor-lanes|--dev-pairs|--resume)
+    --output|--device|--actor-device|--python|--target-samples|--games-per-update|--max-updates|--eval-every|--checkpoint-every|--checkpoint-max|--max-hours|--exploration|--epochs-per-batch|--actors|--scorers|--actor-lanes|--dev-pairs|--resume)
       (($# >= 2)) || { echo "Missing value for $1" >&2; exit 2; }
       case "$1" in
         --output) output=$2 ;;
@@ -69,6 +75,8 @@ while (($#)); do
         --max-updates) max_updates=$2 ;;
         --eval-every) eval_every=$2 ;;
         --checkpoint-every) checkpoint_every=$2 ;;
+        --checkpoint-max) checkpoint_max=$2 ;;
+        --max-hours) max_hours=$2 ;;
         --exploration) exploration=$2 ;;
         --epochs-per-batch) epochs_per_batch=$2 ;;
         --actors) actors=$2 ;;
@@ -79,6 +87,7 @@ while (($#)); do
       esac
       shift 2 ;;
     --save-batches) save_batches="1"; shift ;;
+    --no-game-records) save_games="0"; shift ;;
     --unlimited) unlimited="1"; shift ;;
     --hierarchical) hierarchical="1"; shift ;;
     --full-sale-only) full_sale_only="1"; shift ;;
@@ -87,6 +96,8 @@ while (($#)); do
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
+[[ "$checkpoint_max" =~ ^(0|[1-9][0-9]*)$ ]] || { echo "--checkpoint-max must be a nonnegative integer" >&2; exit 2; }
+[[ "$max_hours" =~ ^(0|[0-9]+(\.[0-9]+)?)$ ]] || { echo "--max-hours must be nonnegative" >&2; exit 2; }
 
 [[ -n "$output" ]] || { echo "--output is required" >&2; exit 2; }
 case "$output" in /*) ;; *) output="$(pwd)/$output" ;; esac
@@ -165,6 +176,8 @@ exec env DMC_ARCHITECTURE="$architecture" DMC_FULL_SALE_ONLY="$full_sale_only" D
   DMC_ACTOR_DEVICE="$actor_device" \
   DMC_TARGET_SAMPLES="$target_samples" DMC_EVAL_EVERY="$eval_every" \
   DMC_CHECKPOINT_EVERY="$checkpoint_every" \
+  DMC_CHECKPOINT_MAX="$checkpoint_max" DMC_MAX_RUNTIME_HOURS="$max_hours" \
+  DMC_SAVE_GAMES="$save_games" \
   DMC_EXPLORATION="$exploration" DMC_EPOCHS_PER_BATCH="$epochs_per_batch" \
   DMC_ACTORS="$actors" DMC_ACTOR_LANES="$actor_lanes" \
   DMC_SCORERS="$scorers" \

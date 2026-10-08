@@ -9,7 +9,8 @@ import { completedGameRoundMetrics } from "./douzero-round-metrics.ts";
 
 const port = parentPort;
 if (!port) throw Error("DouZero actor requires a parent thread");
-const { seedStart, gameCount, lanes, maxTurns, iteration, version, epsilon, fullSaleOnly } =
+const { seedStart, gameCount, lanes, maxTurns, iteration, version, epsilon,
+        fullSaleOnly, saveGames } =
   workerData as {
     seedStart: number;
     gameCount: number;
@@ -19,6 +20,7 @@ const { seedStart, gameCount, lanes, maxTurns, iteration, version, epsilon, full
     version: number;
     epsilon: number;
     fullSaleOnly: boolean;
+    saveGames: boolean;
   };
 
 type Sample = { x: number[]; history: number[][]; actor: number };
@@ -111,8 +113,8 @@ async function main() {
         const winner = e.state.seals[0] > e.state.seals[1] ? 0 : 1;
         port.postMessage({
           kind: "game",
-          game: { seed: e.id, iteration, version, epsilon, winner,
-                  turns: e.turns, events: e.events },
+          game: saveGames ? { seed: e.id, iteration, version, epsilon, winner,
+                              turns: e.turns, events: e.events } : undefined,
           samples: e.samples,
           winner,
           turns: e.turns,
@@ -126,7 +128,8 @@ async function main() {
       } else if (e.turns >= maxTurns) {
         port.postMessage({
           kind: "truncated",
-          game: { seed: e.id, iteration, version, epsilon, events: e.events },
+          game: saveGames ? { seed: e.id, iteration, version, epsilon,
+                              events: e.events } : undefined,
           turns: e.turns,
           launched,
           totalTurns,
