@@ -18,6 +18,9 @@ JAIPUR_DOUZERO_FULL_SALE_ONLY (default 1),
 JAIPUR_DOUZERO_MCTS_EVERY_HOURS (default 6; 0 disables),
 JAIPUR_DOUZERO_MCTS_PAIRS (default 20 = 40 matches),
 JAIPUR_DOUZERO_MCTS_SIMULATIONS (default 1024 per tree),
+JAIPUR_DOUZERO_CHECKPOINT_EVERY (default 500 updates),
+JAIPUR_DOUZERO_CHECKPOINT_MAX (default 10 recent checkpoints),
+JAIPUR_SWANLAB_PROJECT (default jaipur-douzero-14d),
 SWANLAB_API_KEY (optional; supply through the scheduler's secret store).
 The output directory must be new, including when resuming from a checkpoint.
 EOF
@@ -39,6 +42,7 @@ fi
 export DMC_MCTS_EVERY_HOURS="${JAIPUR_DOUZERO_MCTS_EVERY_HOURS:-6}"
 export DMC_MCTS_PAIRS="${JAIPUR_DOUZERO_MCTS_PAIRS:-20}"
 export DMC_MCTS_SIMULATIONS="${JAIPUR_DOUZERO_MCTS_SIMULATIONS:-1024}"
+export JAIPUR_SWANLAB_PROJECT="${JAIPUR_SWANLAB_PROJECT:-jaipur-douzero-14d}"
 
 args=(
   --device cuda --actor-device "$JAIPUR_DOUZERO_ACTOR_DEVICE"
@@ -49,7 +53,8 @@ args=(
   --actors "$JAIPUR_DOUZERO_ACTORS" --scorers "$JAIPUR_DOUZERO_SCORERS"
   --actor-lanes "$JAIPUR_DOUZERO_ACTOR_LANES"
   --eval-every 500 --dev-pairs 64
-  --checkpoint-every 50 --checkpoint-max 20 --no-game-records
+  --checkpoint-every "${JAIPUR_DOUZERO_CHECKPOINT_EVERY:-500}"
+  --checkpoint-max "${JAIPUR_DOUZERO_CHECKPOINT_MAX:-10}" --no-game-records
 )
 case "$JAIPUR_DOUZERO_FULL_SALE_ONLY" in
   1) args+=(--full-sale-only) ;;

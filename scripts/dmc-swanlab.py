@@ -13,6 +13,12 @@ import time
 
 ROUND_CATEGORIES = ('take_goods', 'take_camels', 'trade', 'sell_actions')
 BASELINE_PATH = Path(__file__).resolve().parents[1] / 'data/human-elo1600-action-baseline.json'
+ACTION_CHART_NAMES = {
+    'take_goods_share': 'action_take_rate',
+    'take_camels_share': 'action_camels_rate',
+    'trade_share': 'action_exchange_rate',
+    'sell_actions_share': 'action_sell_rate',
+}
 
 
 class Tracker:
@@ -31,7 +37,10 @@ class Tracker:
         self.best_version = 0
         self.baseline = json.loads(BASELINE_PATH.read_text())
         self.comparison_series = {}
-        self.chart_every = max(1, json.loads((self.directory / 'config.json').read_text()).get('evalEvery', 50))
+        self.last_step = self.last_chart_step = 0
+        self.chart_every = int(os.environ.get('JAIPUR_SWANLAB_CHART_EVERY', '25'))
+        if self.chart_every < 1:
+            raise ValueError('JAIPUR_SWANLAB_CHART_EVERY must be positive')
         mode = os.environ.get('SWANLAB_MODE', 'online')
         if mode == 'cloud':
             mode = 'online'
@@ -61,9 +70,17 @@ class Tracker:
         self.info = {'project': project,
                      'url': self.run.url if mode == 'online' else None, 'mode': mode}
         (self.directory / 'swanlab-run.json').write_text(json.dumps(self.info, indent=2) + '\n')
+        # New project Views show the two-series comparison charts in selfplay.
+        # Scalar values remain available for exports without duplicate charts.
+        self.sdk.define_metric('human1600_comparison/*', section_name='selfplay')
+        for name in self.comparison_references():
+            self.sdk.define_metric(f'selfplay/{name}', hidden=True)
+        for name in ACTION_CHART_NAMES.values():
+            self.sdk.define_metric(f'selfplay/{name}', hidden=True)
 
     def record(self, row):
         step = row['iteration']
+        self.last_step = step
         metrics = {'train/version': row['version']}
         for source, target in [('epsilon', 'train/epsilon'),
                                ('samples', 'train/batch_samples'),
@@ -143,14 +160,11 @@ class Tracker:
             metrics['mcts/evaluation_failed'] = int('mctsError' in row)
         metrics['selection/promoted'] = 0
         self.sdk.log(metrics, step=step)
-        if round_metrics and step > 0 and step % self.chart_every == 0:
+        if round_metrics and step > 0 and (step == 1 or step % self.chart_every == 0):
             self.comparison_charts(step)
 
-    def comparison_charts(self, step):
-        """Two series in each chart make the expert reference a horizontal line."""
-        import pyecharts.options as opts
-        charts = {}
-        references = {
+    def comparison_references(self):
+        return {
             **{f'{name}_per_player_round': self.baseline['per_player_round_mean'][name]
                for name in ROUND_CATEGORIES},
             **{f'{name}_share': self.baseline['action_share'][name]
@@ -160,6 +174,11 @@ class Tracker:
             'all_actions_per_player_round': self.baseline['per_player_round_mean']['total'],
             'round_score_mean': self.baseline['per_player_round_mean']['score'],
         }
+    def comparison_charts(self, step):
+        """Two series in each chart make the expert reference a horizontal line."""
+        import pyecharts.options as opts
+        charts = {}
+        references = self.comparison_references()
         for name, reference in references.items():
             if name not in self.comparison_series:
                 continue
@@ -181,8 +200,10 @@ class Tracker:
                     'cards per player-round' if name == 'goods_sold_per_player_round' else
                     'actions per player-round')),
             )
-            charts[f'human1600_comparison/{name}'] = chart
+            display_name = ACTION_CHART_NAMES.get(name, name)
+            charts[f'human1600_comparison/{display_name}'] = chart
         self.sdk.log(charts, step=step)
+        self.last_chart_step = step
 
     def evaluations(self):
         metrics = {}
@@ -223,6 +244,8 @@ class Tracker:
             json.dumps({'evaluations': summaries, 'promoted': False}, indent=2) + '\n')
 
     def finish(self, failed=False):
+        if self.comparison_series and self.last_step != self.last_chart_step:
+            self.comparison_charts(self.last_step)
         self.sdk.finish(state='crashed' if failed else 'success')
 
 
