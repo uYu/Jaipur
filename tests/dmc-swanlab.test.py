@@ -1,6 +1,12 @@
 """Offline chart checks; no SwanLab run or network upload is created."""
 import importlib.util
 import json
+import io
+import os
+import sys
+import tempfile
+from types import SimpleNamespace
+from unittest.mock import patch
 from pathlib import Path
 import unittest
 import swanlab
@@ -17,7 +23,7 @@ class FakeSDK:
     def __init__(self):
         self.logs = []
 
-    def log(self, data, step):
+    def log(self, data, step=None):
         self.logs.append((step, data))
 
     def finish(self, state):
@@ -67,6 +73,50 @@ class ChartsTest(unittest.TestCase):
         self.tracker.finish()
         self.assertEqual(self.tracker.last_chart_step, 26)
         self.assertEqual(self.tracker.sdk.state, 'success')
+
+    def test_heartbeat_does_not_write_training_metrics(self):
+        self.record(50)
+        self.tracker.heartbeat()
+        step, metrics = self.tracker.sdk.logs[-1]
+        self.assertIsNone(step)
+        self.assertEqual(metrics['monitor/last_training_iteration'], 50)
+        self.assertTrue(all(key.startswith('monitor/') for key in metrics))
+        self.assertEqual(self.tracker.last_step, 50)
+
+    def test_resume_uses_original_project_and_id(self):
+        options = {}
+        fake = SimpleNamespace(
+            login=lambda **kw: None,
+            init=lambda **kw: options.update(kw) or SimpleNamespace(
+                id='a0d0bbub', url='https://swanlab.cn/@franzyu/jaipur-dmc/runs/a0d0bbub'),
+            Settings=lambda **kw: kw, define_metric=lambda *args, **kw: None,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, 'config.json').write_text('{}')
+            Path(directory, 'swanlab-run.json').write_text(json.dumps({
+                'project': 'jaipur-dmc',
+                'url': 'https://swanlab.cn/@franzyu/jaipur-dmc/runs/a0d0bbub',
+            }))
+            with patch.dict(sys.modules, {'swanlab': fake}), patch.dict(os.environ, {
+                'SWANLAB_API_KEY': 'fake-for-test', 'SWANLAB_MODE': 'online',
+                'JAIPUR_SWANLAB_PROJECT': 'different-new-project',
+            }):
+                tracker = module.Tracker(directory, resume=True)
+            self.assertEqual(options['project'], 'jaipur-dmc')
+            self.assertEqual(options['id'], 'a0d0bbub')
+            self.assertEqual(options['resume'], 'must')
+            self.assertEqual(tracker.info['id'], 'a0d0bbub')
+
+    def test_partial_live_line_waits_until_completed(self):
+        source = io.StringIO('{"iteration":1}\n{"iteration":')
+        self.assertEqual(module.read_complete_row(source, follow=True), {'iteration': 1})
+        offset = source.tell()
+        self.assertIsNone(module.read_complete_row(source, follow=True))
+        self.assertEqual(source.tell(), offset)
+        source.seek(0, io.SEEK_END)
+        source.write('2}\n')
+        source.seek(offset)
+        self.assertEqual(module.read_complete_row(source, follow=True), {'iteration': 2})
 
 
 if __name__ == '__main__':

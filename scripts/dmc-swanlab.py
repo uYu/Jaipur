@@ -7,9 +7,32 @@ import argparse
 import contextlib
 import json
 import os
+import queue
+import re
 from pathlib import Path
 import sys
 import time
+import threading
+
+
+def previous_run_id(info):
+    """Older trackers saved a URL but no explicit ID."""
+    if info.get('id'):
+        return info['id']
+    match = re.search(r'/runs/([A-Za-z0-9_-]+)', info.get('url') or '')
+    return match.group(1) if match else None
+
+
+def read_complete_row(source, follow=False):
+    """A writer may be halfway through appending a JSON line."""
+    offset = source.tell()
+    line = source.readline()
+    if not line:
+        return None
+    if follow and not line.endswith('\n'):
+        source.seek(offset)
+        return None
+    return json.loads(line)
 
 ROUND_CATEGORIES = ('take_goods', 'take_camels', 'trade', 'sell_actions')
 BASELINE_PATH = Path(__file__).resolve().parents[1] / 'data/human-elo1600-action-baseline.json'
@@ -22,16 +45,23 @@ ACTION_CHART_NAMES = {
 
 
 class Tracker:
-    def __init__(self, directory):
+    def __init__(self, directory, resume=False, run_id=None, project_override=None,
+                 workspace=None):
         # SwanLab's SDK also reads SWANLAB_PROJECT as a structured setting.
         # Consume our legacy scalar option before the SDK initializes settings.
         legacy_project = os.environ.pop('SWANLAB_PROJECT', None)
-        project = os.environ.pop('JAIPUR_SWANLAB_PROJECT', None) or legacy_project or 'jaipur-dmc'
+        environment_project = os.environ.pop('JAIPUR_SWANLAB_PROJECT', None) or legacy_project
+        self.directory = Path(directory)
+        info_path = self.directory / 'swanlab-run.json'
+        previous = json.loads(info_path.read_text()) if resume and info_path.exists() else {}
+        project = project_override or previous.get('project') or environment_project or 'jaipur-dmc'
+        run_id = run_id or (previous_run_id(previous) if resume else None)
+        if resume and not run_id:
+            raise ValueError('Cannot find original run ID; provide --run-id')
         legacy_name = os.environ.pop('SWANLAB_EXPERIMENT_NAME', None)
         experiment_name = os.environ.pop('JAIPUR_SWANLAB_EXPERIMENT_NAME', None) or legacy_name
         import swanlab
         self.sdk = swanlab
-        self.directory = Path(directory)
         self.games = self.samples = self.seconds = 0
         self.best = float('-inf')
         self.best_version = 0
@@ -44,6 +74,8 @@ class Tracker:
         mode = os.environ.get('SWANLAB_MODE', 'online')
         if mode == 'cloud':
             mode = 'online'
+        if run_id and mode != 'online':
+            raise ValueError('Resuming a cloud run requires online mode')
         if mode == 'online':
             key = os.environ.get('SWANLAB_API_KEY')
             if not key:
@@ -54,6 +86,9 @@ class Tracker:
             'full-set sales; choose kind')
         self.run = swanlab.init(
             project=project,
+            workspace=workspace,
+            id=run_id,
+            resume='must' if run_id else 'never',
             name=experiment_name or self.directory.name,
             public=False,
             config=config,
@@ -67,7 +102,7 @@ class Tracker:
                 terminal={'proxy_type': 'none'},
             ),
         )
-        self.info = {'project': project,
+        self.info = {'project': project, 'id': self.run.id,
                      'url': self.run.url if mode == 'online' else None, 'mode': mode}
         (self.directory / 'swanlab-run.json').write_text(json.dumps(self.info, indent=2) + '\n')
         # New project Views show the two-series comparison charts in selfplay.
@@ -77,8 +112,14 @@ class Tracker:
             self.sdk.define_metric(f'selfplay/{name}', hidden=True)
         for name in ACTION_CHART_NAMES.values():
             self.sdk.define_metric(f'selfplay/{name}', hidden=True)
+        self.sdk.define_metric('monitor/*', hidden=True)
 
-    def record(self, row):
+    def heartbeat(self):
+        # Separate metric keys: never invent a loss or advance a training metric.
+        self.sdk.log({'monitor/heartbeat_unix': time.time(),
+                      'monitor/last_training_iteration': self.last_step})
+
+    def record(self, row, emit_charts=True):
         step = row['iteration']
         self.last_step = step
         metrics = {'train/version': row['version']}
@@ -160,7 +201,7 @@ class Tracker:
             metrics['mcts/evaluation_failed'] = int('mctsError' in row)
         metrics['selection/promoted'] = 0
         self.sdk.log(metrics, step=step)
-        if round_metrics and step > 0 and (step == 1 or step % self.chart_every == 0):
+        if emit_charts and round_metrics and step > 0 and (step == 1 or step % self.chart_every == 0):
             self.comparison_charts(step)
 
     def comparison_references(self):
@@ -255,31 +296,85 @@ def main():
     parser.add_argument('--backfill', action='store_true')
     parser.add_argument('--follow', action='store_true',
                         help='Backfill training.jsonl, then stream new rows until completion.json exists')
+    parser.add_argument('--resume', action='store_true',
+                        help='Resume the cloud run saved in swanlab-run.json')
+    parser.add_argument('--run-id', help='Existing cloud run ID (requires --backfill or --follow)')
+    parser.add_argument('--project', help='Project containing the existing cloud run')
+    parser.add_argument('--workspace', help='SwanLab workspace owner, e.g. franzyu')
+    parser.add_argument('--heartbeat-seconds', type=float, default=300)
     args = parser.parse_args()
     if args.backfill and args.follow:
         parser.error('--backfill and --follow are mutually exclusive')
+    if (args.resume or args.run_id) and not (args.backfill or args.follow):
+        parser.error('Resume requires --backfill or --follow')
+    if not 0 < args.heartbeat_seconds <= 600:
+        parser.error('--heartbeat-seconds must be between 0 and 600')
     tracker = None
     failed = False
+    # Prevent accidentally launching several recovery followers on this host.
+    lock = None
+    if args.backfill or args.follow:
+        import fcntl
+        lock = (Path(args.directory) / 'swanlab-follow.lock').open('a')
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            parser.error('A SwanLab recovery uploader already owns this directory')
     try:
         with contextlib.redirect_stdout(sys.stderr):
-            tracker = Tracker(args.directory)
+            tracker = Tracker(args.directory, args.resume, args.run_id,
+                              args.project, args.workspace)
         print(json.dumps({'ready': True, **tracker.info}), flush=True)
         if args.backfill or args.follow:
             directory = Path(args.directory)
+            last_activity = time.monotonic()
+            caught_up = False
+            backlog_end = (directory / 'training.jsonl').stat().st_size
+            last_report = 0
             with (directory / 'training.jsonl').open() as source:
                 while True:
-                    line = source.readline()
-                    if line:
+                    row = read_complete_row(source, follow=args.follow)
+                    if row is not None:
                         with contextlib.redirect_stdout(sys.stderr):
-                            tracker.record(json.loads(line))
+                            tracker.record(row, emit_charts=caught_up)
+                        if tracker.last_step - last_report >= 500:
+                            print(json.dumps({'processed_iteration': tracker.last_step}), flush=True)
+                            last_report = tracker.last_step
+                        if not caught_up and source.tell() >= backlog_end:
+                            if tracker.comparison_series:
+                                with contextlib.redirect_stdout(sys.stderr):
+                                    tracker.comparison_charts(tracker.last_step)
+                            caught_up = True
+                            print(json.dumps({'backfill_complete': tracker.last_step}), flush=True)
+                        last_activity = time.monotonic()
                         continue
                     if not args.follow or (directory / 'completion.json').exists():
                         break
+                    if time.monotonic() - last_activity >= args.heartbeat_seconds:
+                        with contextlib.redirect_stdout(sys.stderr):
+                            tracker.heartbeat()
+                        print(json.dumps({'heartbeat': tracker.last_step}), flush=True)
+                        last_activity = time.monotonic()
                     time.sleep(2)
             with contextlib.redirect_stdout(sys.stderr):
                 tracker.evaluations()
         else:
-            for line in sys.stdin:
+            inbox = queue.Queue()
+            def read_requests():
+                for line in sys.stdin:
+                    inbox.put(line)
+                inbox.put(None)
+            threading.Thread(target=read_requests, daemon=True).start()
+            while True:
+                try:
+                    line = inbox.get(timeout=args.heartbeat_seconds)
+                except queue.Empty:
+                    with contextlib.redirect_stdout(sys.stderr):
+                        tracker.heartbeat()
+                    # No protocol response: the parent only expects request acknowledgements.
+                    continue
+                if line is None:
+                    break
                 request = json.loads(line)
                 if request.get('op') == 'evaluate':
                     with contextlib.redirect_stdout(sys.stderr):
