@@ -1,4 +1,9 @@
 import type { Action, Card, State } from "./types.ts";
+import {
+  initialMarketSlots,
+  nextMarketSlots,
+  takenMarketIndices,
+} from "./market-layout.ts";
 export type Flight = {
   from: string;
   to: string;
@@ -17,10 +22,12 @@ export function actionFlights(
   before: State,
   action: Action,
   after: State,
+  marketSlots = initialMarketSlots(),
 ): Flight[] {
   const actor = before.current,
     p = before.players[actor],
     flights: Flight[] = [];
+  const nextSlots = nextMarketSlots(before, action, after, marketSlots);
   const hand = (i: number) => (actor === 0 ? `hand-${i}` : "opponent-hand");
   const destination = actor === 0 ? "your-hand" : "opponent-hand";
   const herd = actor === 0 ? "your-herd" : "opponent-herd";
@@ -35,29 +42,26 @@ export function actionFlights(
   if (actor === 0 && surrendered.length)
     p.hand
       .flatMap((_, i) => (surrendered.includes(i) ? [] : [i]))
-      .forEach((i, j) =>
+      .forEach((i, j) => {
+        if (i === j) return;
         flights.push({
           from: hand(i),
           to: "your-hand",
           good: p.hand[i],
           slot: j,
-          start: 0,
-          end: 0.7,
+          start: 0.25,
+          end: 0.8,
           hideSource: true,
-        }),
-      );
-  let taken: number[] = [];
-  if (action.type === "take") taken = [action.index];
-  if (action.type === "camels")
-    taken = before.market.flatMap((c, i) => (c === "camel" ? [i] : []));
-  if (action.type === "exchange") taken = action.market;
+        });
+      });
+  const taken = takenMarketIndices(before, action);
   taken.forEach((i, j) =>
     flights.push({
-      from: `market-${i}`,
+      from: `market-${marketSlots[i]}`,
       to: action.type === "camels" ? herd : destination,
       good: before.market[i],
       start: j * 0.035,
-      end: 0.5 + j * 0.035,
+      end: 0.42 + j * 0.035,
       hideSource: true,
       toBack: actor === 1,
       slot:
@@ -110,16 +114,6 @@ export function actionFlights(
   const retained = before.market.flatMap((_, i) =>
     taken.includes(i) ? [] : [i],
   );
-  retained.forEach((i, j) =>
-    flights.push({
-      from: `market-${i}`,
-      to: `market-${j}`,
-      good: before.market[i],
-      start: 0,
-      end: 0.65,
-      hideSource: true,
-    }),
-  );
   if (action.type === "exchange") {
     const outgoing = [
       ...action.hand.map((i) => ({
@@ -138,16 +132,16 @@ export function actionFlights(
     outgoing.forEach((card, j) =>
       flights.push({
         ...card,
-        to: `market-${retained.length + j}`,
-        start: 0.12 + j * 0.025,
-        end: 0.78 + j * 0.025,
+        to: `market-${nextSlots[retained.length + j]}`,
+        start: 0.38 + j * 0.025,
+        end: 0.88 + j * 0.02,
       }),
     );
   } else {
     after.market.slice(retained.length).forEach((good, j) =>
       flights.push({
         from: "deck",
-        to: `market-${retained.length + j}`,
+        to: `market-${nextSlots[retained.length + j]}`,
         good,
         fromBack: true,
         start: 0.5 + j * 0.04,

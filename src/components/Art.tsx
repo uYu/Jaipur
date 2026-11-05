@@ -1,8 +1,14 @@
 import type { Card } from "../game/types.ts";
-export function GoodsArt({ good }: { good: Card }) {
+export function GoodsArt({
+  good,
+  cardFace = false,
+}: {
+  good: Card;
+  cardFace?: boolean;
+}) {
   return (
     <svg
-      viewBox="0 0 120 120"
+      viewBox={cardFace ? "12 12 96 96" : "0 0 120 120"}
       fill="none"
       aria-hidden="true"
       className="goods-art"

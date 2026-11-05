@@ -4,10 +4,23 @@ import {
   chooseTimedWasmActionWithStats,
 } from "./ai-wasm.ts";
 import { MCTS_TIME_BUDGET_MS } from "./ai-config.ts";
+import { chooseDouzeroAction } from "./douzero-browser.ts";
 
 self.onmessage = async (event) => {
   try {
     const started = performance.now();
+    if (event.data.difficulty === "experimental") {
+      const action = await chooseDouzeroAction(
+        event.data.observation,
+        event.data.history,
+      );
+      self.postMessage({
+        action,
+        algorithm: "自博弈神经策略 · v75182",
+        elapsedMs: Math.round(performance.now() - started),
+      });
+      return;
+    }
     if (event.data.difficulty === "hard") {
       const model = event.data.model === "neural" ? "neural" : "linear";
       const decision = await chooseTimedWasmActionWithStats(

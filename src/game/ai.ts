@@ -156,7 +156,7 @@ function potential(hand: Good[], o: Observation): number {
 
 function chooseHeuristicAction(
   o: Observation,
-  difficulty: Exclude<Difficulty, "hard">,
+  difficulty: Extract<Difficulty, "easy" | "normal">,
 ): Action {
   const actions = legalActions({
     phase: "playing",
@@ -228,7 +228,7 @@ function chooseHeuristicAction(
 // High difficulty is asynchronous and lives exclusively in ai-wasm.ts.
 export function chooseAction(
   o: Observation,
-  difficulty: Exclude<Difficulty, "hard">,
+  difficulty: Extract<Difficulty, "easy" | "normal">,
 ): Action {
   return chooseHeuristicAction(o, difficulty);
 }

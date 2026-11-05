@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { newGame, applyAction } from "../src/game/engine.ts";
-import { presentAction } from "../src/game/presentation.ts";
+import { actionCaption, presentAction } from "../src/game/presentation.ts";
 test("exchange animation identifies incoming goods and surrendered goods/camels for both actors", () => {
   for (const actor of [0, 1]) {
     const s = newGame(2);
@@ -54,4 +54,29 @@ test("take and camel animation use the previous market rather than refilled card
     "camel",
     "camel",
   ]);
+});
+
+test("plain action summaries describe both sides of exchanges and hide bonus face values", () => {
+  const base = { actor: 1, incoming: [], outgoing: [], coins: [], bonus: null };
+  assert.equal(
+    actionCaption({
+      ...base,
+      type: "exchange",
+      outgoing: ["spice", "leather", "camel"],
+      incoming: ["gold", "gold", "diamond"],
+    }),
+    "用 香料×1、皮革×1、骆驼×1 换入 黄金×2、钻石×1",
+  );
+  for (const bonus of ["hidden" as const, 6]) {
+    assert.equal(
+      actionCaption({
+        ...base,
+        type: "sell",
+        outgoing: ["gold", "gold", "gold"],
+        coins: [6, 6, 5],
+        bonus,
+      }),
+      "卖出 黄金×3 · 收入 17 卢比 · 3 张奖励",
+    );
+  }
 });

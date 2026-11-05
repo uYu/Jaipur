@@ -1,48 +1,60 @@
-import { ChevronDown } from "lucide-react";
+import { useLayoutEffect, useRef } from "react";
 import { GOODS } from "../game/types.ts";
 import type { State } from "../game/types.ts";
 import { LABEL, precious } from "../game/data.ts";
 export function MobileSupply({ state }: { state: State }) {
+  const panel = useRef<HTMLDetailsElement>(null);
+  useLayoutEffect(() => {
+    const desktop = window.matchMedia("(min-width: 861px)");
+    const sync = () => {
+      if (panel.current) panel.current.open = desktop.matches;
+    };
+    sync();
+    desktop.addEventListener("change", sync);
+    return () => desktop.removeEventListener("change", sync);
+  }, []);
   const depleted = GOODS.filter((g) => !state.tokens[g].length).length;
   return (
-    <details className="mobile-supply">
-      <summary>
+    <details className="mobile-supply" ref={panel}>
+      <summary title="点击整个筹码面板，展开或收起明细">
         <div className="supply-heading">
           <b>筹码余量</b>
           <span>{depleted}/3 类售罄即收市</span>
           <span className="supply-expand">
-            明细 <ChevronDown size={13} />
+            <span className="supply-expand-label">点击面板展开</span>
+            <span className="supply-collapse-label">点击面板收起</span>
           </span>
         </div>
-        <div className="supply-grid">
+        <div className="supply-strip">
           {GOODS.map((g) => (
             <div
-              className={`supply-item ${g} ${state.tokens[g].length ? "" : "supply-empty"}`}
+              className={`supply-counter ${g} ${state.tokens[g].length ? "" : "counter-empty"}`}
               key={g}
-              aria-label={`${LABEL[g]}${precious(g) ? "，高级货物" : ""}，剩余 ${state.tokens[g].length} 枚${state.tokens[g].length ? `，下一枚 ${state.tokens[g][0]} 卢比` : "，已售罄"}`}
+              aria-label={`${LABEL[g]}，剩余 ${state.tokens[g].length} 枚${state.tokens[g].length ? `，下一枚 ${state.tokens[g][0]} 卢比` : "，已售罄"}`}
             >
-              <span className="supply-good">
+              <span className="counter-name">
                 {LABEL[g]}
                 {precious(g) && <small>高</small>}
               </span>
-              <strong>
-                {state.tokens[g].length}
-                <small>枚</small>
-              </strong>
-              <span className="supply-next">
+              <span className="counter-remaining">
+                <small>剩</small>
+                <b>{state.tokens[g].length}</b>
+              </span>
+              <span className="counter-next">
                 {state.tokens[g].length ? (
                   <>
-                    下枚 <b>{state.tokens[g][0]}</b>
+                    <small>下枚</small>
+                    <b>{state.tokens[g][0]}</b>
                     {state.tokens[g].map((_, i) => (
                       <i
                         key={i}
                         aria-hidden="true"
-                        data-motion-anchor={`token-${g}-${i}`}
+                        data-motion-fallback={`token-${g}-${i}`}
                       />
                     ))}
                   </>
                 ) : (
-                  "售罄"
+                  <small>售罄</small>
                 )}
               </span>
             </div>
@@ -70,7 +82,11 @@ export function MobileSupply({ state }: { state: State }) {
             <span>
               {state.tokens[g].length
                 ? state.tokens[g].map((v, i) => (
-                    <i className="coin" key={i}>
+                    <i
+                      className="coin"
+                      data-motion-anchor={`token-${g}-${i}`}
+                      key={i}
+                    >
                       {v}
                     </i>
                   ))

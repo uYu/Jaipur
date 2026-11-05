@@ -38,7 +38,7 @@ export function Card({
       ) : (
         <span className="card-corner">{good === "camel" ? "∞" : "Ⅰ"}</span>
       )}
-      <GoodsArt good={good} />
+      <GoodsArt good={good} cardFace />
       <span className="card-name">{LABEL[good]}</span>
       {premium ? (
         <span className="card-sale-rule">2 张起售</span>

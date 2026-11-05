@@ -1,5 +1,5 @@
 import type { Action, Card, State } from "./types.ts";
-import { sum } from "./data.ts";
+import { LABEL, sum } from "./data.ts";
 export type Presentation = {
   actor: number;
   type: Action["type"];
@@ -45,4 +45,16 @@ export function presentAction(
 }
 export function saleCaption(p: Presentation): string {
   return `货物 +${sum(p.coins)} 卢比${p.bonus === null ? "" : p.bonus === "hidden" ? " · 奖励 +1 枚（面值保密）" : ` · 奖励 +${p.bonus} 卢比`}`;
+}
+
+export function actionCaption(p: Presentation): string {
+  const describe = (cards: Card[]) =>
+    [...new Set(cards)]
+      .map((good) => `${LABEL[good]}×${cards.filter((c) => c === good).length}`)
+      .join("、");
+  if (p.type === "take") return `拿取 ${describe(p.incoming)}`;
+  if (p.type === "camels") return `收下 ${p.incoming.length} 头骆驼`;
+  if (p.type === "exchange")
+    return `用 ${describe(p.outgoing)} 换入 ${describe(p.incoming)}`;
+  return `卖出 ${describe(p.outgoing)} · 收入 ${sum(p.coins)} 卢比${p.bonus === null ? "" : ` · ${Math.min(p.outgoing.length, 5)} 张奖励`}`;
 }

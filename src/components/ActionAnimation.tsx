@@ -1,8 +1,8 @@
 import { useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { Flight } from "../game/flights.ts";
-import { GoodsArt } from "./Art.tsx";
-import { LABEL } from "../game/data.ts";
+import { Card } from "./Card.tsx";
+import { useReducedMotion } from "../hooks/useReducedMotion.ts";
 export function ActionAnimation({
   flights,
   duration,
@@ -14,24 +14,26 @@ export function ActionAnimation({
   paused: boolean;
   elapsed: number;
 }) {
+  const reduced = useReducedMotion();
   const layer = useRef<HTMLDivElement>(null),
     animations = useRef<Animation[]>([]),
     frozen = useRef(paused);
   frozen.current = paused;
   useLayoutEffect(() => {
     const hidden = new Map<HTMLElement, string>();
-    const find = (name: string) =>
-      Array.from(
-        document.querySelectorAll<HTMLElement>(
-          `[data-motion-anchor="${name}"]`,
-        ),
-      ).find((element) => {
-        const rect = element.getBoundingClientRect();
-        return rect.width > 0 && rect.height > 0;
-      });
-    const reduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    const find = (name: string) => {
+      const visible = (selector: string) =>
+        Array.from(document.querySelectorAll<HTMLElement>(selector)).find(
+          (element) => {
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0;
+          },
+        );
+      return (
+        visible(`[data-motion-anchor="${name}"]`) ??
+        visible(`[data-motion-fallback="${name}"]`)
+      );
+    };
     let time = elapsed;
     const build = () => {
       if (animations.current.length)
@@ -51,8 +53,13 @@ export function ActionAnimation({
           : flight.from.startsWith("market-") || flight.from.startsWith("hand-")
             ? a.width
             : 64;
-        const height = coin ? 34 : width * 1.43;
-        const measure = find("hand-measure")?.getBoundingClientRect();
+        const height = coin
+          ? 34
+          : source.classList.contains("card")
+            ? a.height
+            : width * 1.43;
+        const measureElement = find("hand-measure");
+        const measure = measureElement?.getBoundingClientRect();
         const targetWidth = coin
           ? b.width
           : flight.to.startsWith("market-") || flight.to.startsWith("hand-")
@@ -70,17 +77,37 @@ export function ActionAnimation({
           1,
           Math.floor((b.width + gap) / (targetWidth + gap)),
         );
+        const singleRow =
+          flight.to === "your-hand" &&
+          getComputedStyle(target).flexWrap === "nowrap";
+        const overlap =
+          singleRow && measureElement
+            ? Number.parseFloat(getComputedStyle(measureElement).marginLeft) ||
+              0
+            : 0;
+        const targetStyle = getComputedStyle(target);
+        const paddingLeft = Number.parseFloat(targetStyle.paddingLeft) || 0;
+        const paddingTop = Number.parseFloat(targetStyle.paddingTop) || 0;
         const targetX =
           flight.to === "your-hand"
-            ? b.left +
-              targetWidth / 2 +
-              ((flight.slot ?? 0) % columns) * (targetWidth + gap)
+            ? Math.min(
+                b.right - targetWidth / 2 - paddingLeft,
+                b.left +
+                  paddingLeft -
+                  (singleRow ? target.scrollLeft : 0) +
+                  targetWidth / 2 +
+                  (singleRow
+                    ? (flight.slot ?? 0)
+                    : (flight.slot ?? 0) % columns) *
+                    (targetWidth + gap + overlap),
+              )
             : b.left + b.width / 2 + spread;
         const targetY =
           flight.to === "your-hand"
             ? b.top +
+              paddingTop +
               (measure?.height ?? targetWidth * 1.43) / 2 +
-              Math.floor((flight.slot ?? 0) / columns) *
+              (singleRow ? 0 : Math.floor((flight.slot ?? 0) / columns)) *
                 ((measure?.height ?? targetWidth * 1.43) + gap)
             : b.top + b.height / 2;
         const x = a.left + window.scrollX + a.width / 2 - width / 2,
@@ -95,21 +122,41 @@ export function ActionAnimation({
         });
         if (flight.hideSource && !hidden.has(source)) {
           hidden.set(source, source.style.visibility);
-          source.style.visibility = "hidden";
+          if (!reduced || typeof source.animate !== "function")
+            source.style.visibility = "hidden";
         }
         if (flight.hideTarget && !hidden.has(target)) {
           hidden.set(target, target.style.visibility);
           target.style.visibility = "hidden";
         }
+        const targetHeight = coin
+          ? b.height
+          : flight.to.startsWith("market-") ||
+              flight.to.startsWith("hand-") ||
+              flight.to === "sale"
+            ? b.height
+            : flight.to === "your-hand"
+              ? (measure?.height ?? targetWidth * 1.43)
+              : targetWidth * 1.43;
         const start = Math.min(0.95, flight.start),
           end = Math.min(0.99, flight.end),
           middle = (start + end) / 2;
-        const landing = `translate(${tx - x}px, ${ty - y}px) scale(${targetWidth / width})`;
+        const landing = `translate(${tx - x}px, ${ty - y}px) scale(${targetWidth / width}, ${targetHeight / height})`;
         const frames =
           reduced || flight.from === flight.to
             ? [
-                { opacity: 1, transform: landing },
-                { opacity: 1, transform: landing },
+                { offset: 0, opacity: 0, transform: landing },
+                { offset: start, opacity: 0, transform: landing },
+                {
+                  offset: Math.min(start + 0.16, end),
+                  opacity: flight.to === "sale" ? 0 : 1,
+                  transform: landing,
+                },
+                {
+                  offset: 1,
+                  opacity: flight.to === "sale" ? 0 : 1,
+                  transform: landing,
+                },
               ]
             : [
                 {
@@ -121,15 +168,41 @@ export function ActionAnimation({
                   offset: start,
                   opacity: 1,
                   transform: "translate(0,0) scale(1)",
+                  easing: "cubic-bezier(0.22, 0.68, 0, 1)",
                 },
                 {
-                  offset: middle,
-                  opacity: 1,
-                  transform: `translate(${(tx - x) * 0.5}px, ${(ty - y) * 0.5 - 28}px) scale(${(1 + targetWidth / width) * 0.54}) rotate(${flight.to === "sale" ? 8 : -3}deg)`,
+                  offset: end,
+                  opacity: flight.to === "sale" ? 0 : 1,
+                  transform: landing,
                 },
-                { offset: end, opacity: 1, transform: landing },
-                { offset: 1, opacity: 1, transform: landing },
+                {
+                  offset: 1,
+                  opacity: flight.to === "sale" ? 0 : 1,
+                  transform: landing,
+                },
               ];
+        const back = sprite.querySelector<HTMLElement>(".flight-back");
+        if (typeof sprite.animate !== "function") {
+          Object.assign(sprite.style, {
+            transform: landing,
+            opacity: flight.to === "sale" ? "0" : "1",
+          });
+          if (back) back.style.opacity = flight.toBack ? "1" : "0";
+          return;
+        }
+        if (reduced && flight.hideSource) {
+          const departure = source.animate(
+            [
+              { offset: 0, opacity: 1 },
+              { offset: Math.min(0.2, end), opacity: 0 },
+              { offset: 1, opacity: 0 },
+            ],
+            { duration, fill: "both" },
+          );
+          departure.currentTime = time;
+          if (frozen.current) departure.pause();
+          animations.current.push(departure);
+        }
         const motion = sprite.animate(frames, {
           duration,
           fill: "both",
@@ -138,8 +211,12 @@ export function ActionAnimation({
         motion.currentTime = time;
         if (frozen.current) motion.pause();
         animations.current.push(motion);
-        const back = sprite.querySelector<HTMLElement>(".flight-back");
         if (back) {
+          if (reduced) {
+            back.style.opacity = flight.toBack ? "1" : "0";
+            return;
+          }
+          back.style.opacity = "";
           const flip = back.animate(
             [
               { offset: 0, opacity: flight.fromBack ? 1 : 0 },
@@ -165,7 +242,7 @@ export function ActionAnimation({
         element.style.visibility = visibility;
       });
     };
-  }, [flights, duration]);
+  }, [flights, duration, reduced]);
   useLayoutEffect(() => {
     animations.current.forEach((a) => (paused ? a.pause() : a.play()));
   }, [paused]);
@@ -174,12 +251,15 @@ export function ActionAnimation({
       {flights.map((flight, i) => (
         <div
           key={i}
-          className={`flight-sprite ${flight.good ?? flight.coinGood ?? ""} ${flight.coin !== undefined ? "flight-coin" : ""}`}
+          className={`flight-sprite ${flight.good ?? flight.coinGood ?? ""} ${flight.coin !== undefined ? "flight-coin" : "flight-card"} ${flight.from.startsWith("market-") ? "flight-market" : ""}`}
         >
           {flight.good ? (
             <>
-              <GoodsArt good={flight.good} />
-              <span>{LABEL[flight.good]}</span>
+              <Card
+                good={flight.good}
+                disabled
+                small={flight.from.startsWith("hand-")}
+              />
               <div className="flight-back">✳</div>
             </>
           ) : (

@@ -5,7 +5,9 @@ export function advance(s: State, event: Event): State {
   return event.type === "next" ? nextRound(s) : applyAction(s, event);
 }
 export function replay(save: Save, end = save.events.length): State {
-  return save.events.slice(0, end).reduce(advance, newGame(save.seed));
+  return save.events
+    .slice(0, end)
+    .reduce(advance, newGame(save.seed, save.targetSeals ?? 2));
 }
 export function parseSave(text: string): Save {
   if (text.length > 2000000) throw new Error("存档文件过大");
@@ -16,7 +18,10 @@ export function parseSave(text: string): Save {
     !Number.isInteger(value.seed) ||
     value.seed < 0 ||
     value.seed > 4294967295 ||
-    !["easy", "normal", "hard"].includes(value.difficulty) ||
+    (value.targetSeals !== undefined &&
+      value.targetSeals !== 1 &&
+      value.targetSeals !== 2) ||
+    !["easy", "normal", "hard", "experimental"].includes(value.difficulty) ||
     !Array.isArray(value.events) ||
     value.events.length > 4000
   )
@@ -26,6 +31,9 @@ export function parseSave(text: string): Save {
     seed: value.seed,
     difficulty: value.difficulty,
     events: value.events,
+    ...(value.targetSeals === undefined
+      ? {}
+      : { targetSeals: value.targetSeals }),
   };
   try {
     replay(save);

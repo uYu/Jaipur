@@ -3,7 +3,9 @@ import { Trophy, X, ArrowRight } from "lucide-react";
 import type { State } from "../game/types.ts";
 export function resultTitle(state: State) {
   if (state.phase === "finished")
-    return state.seals[0] >= 2 ? "你赢得了整场比赛！" : "米拉赢得了整场比赛";
+    return state.seals[0] >= (state.targetSeals ?? 2)
+      ? "你赢得了整场比赛！"
+      : "米拉赢得了整场比赛";
   const winner = state.results.at(-1)?.winner;
   return winner === null
     ? "本轮平局"
@@ -67,7 +69,9 @@ export function ResultDialog({
         <h2 id="result-title">{resultTitle(state)}</h2>
         <p id="result-summary">
           {finished
-            ? `${state.seals[0] >= 2 ? "你" : "米拉"}率先获得两枚卓越印章，成为大君的御用商人。`
+            ? state.targetSeals === 1
+              ? `${result.winner === 0 ? "你" : "米拉"}赢下本局，获得卓越印章。`
+              : `${state.seals[0] >= 2 ? "你" : "米拉"}率先获得两枚卓越印章，成为大君的御用商人。`
             : result.winner === null
               ? "本轮不颁发印章，轮换先手继续角逐。"
               : `${result.winner === 0 ? "你" : "米拉"}获得一枚卓越印章；下一轮由${result.winner === 0 ? "米拉" : "你"}先手。`}
@@ -78,7 +82,9 @@ export function ResultDialog({
         <b>
           你 {state.seals[0]} <i>:</i> {state.seals[1]} 米拉
         </b>
-        <small>先得 2 枚获胜</small>
+        <small>
+          {state.targetSeals === 1 ? "1 局定胜负" : "先得 2 枚获胜"}
+        </small>
       </div>
       <div className="round-scorecards">
         {[0, 1].map((i) => (

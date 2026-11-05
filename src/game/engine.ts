@@ -16,9 +16,10 @@ const emptyPlayer = (): Player => ({
   goods: [],
   bonuses: [],
 });
-export function newGame(seed: number): State {
+export function newGame(seed: number, targetSeals: 1 | 2 = 2): State {
   const [r, rng] = random(seed >>> 0);
   return deal({
+    targetSeals,
     seed: seed >>> 0,
     rng,
     round: 0,
@@ -138,7 +139,9 @@ function finish(s: State, reason: string) {
     winner,
     reason,
   });
-  s.phase = s.seals.some((n) => n >= 2) ? "finished" : "roundEnd";
+  s.phase = s.seals.some((n) => n >= (s.targetSeals ?? 2))
+    ? "finished"
+    : "roundEnd";
   s.log.push(
     `本轮结算 · 你 ${scores[0]} : ${scores[1]} 米拉${winner === null ? " · 平局" : ` · ${winner === 0 ? "你" : "米拉"}获得卓越印章`}`,
   );

@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
-  Check,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -11,26 +10,23 @@ import {
   Home,
   Pause,
   Play,
-  RotateCcw,
   Settings2,
-  ShoppingBag,
   Upload,
   X,
 } from "lucide-react";
-import type { Difficulty, Event, Save, State } from "./game/types.ts";
+import type { Action, Difficulty, Event, Save, State } from "./game/types.ts";
 import type { MctsStats } from "./game/ai-wasm.ts";
 import { MCTS_TIME_BUDGET_MS, MCTS_TREES } from "./game/ai-config.ts";
-import { GOODS } from "./game/types.ts";
-import { ENGLISH, LABEL, precious, sum } from "./game/data.ts";
-import { newGame } from "./game/engine.ts";
+import { sum } from "./game/data.ts";
+import { applyAction, newGame } from "./game/engine.ts";
 import {
   emptySelection,
   selectMarket,
   selectHand,
-  selectCamels,
   selectedAction,
 } from "./game/selection.ts";
 import { observe } from "./game/ai.ts";
+import { dmcEventHistory } from "./game/dmc-history.ts";
 import {
   advance,
   downloadSave,
@@ -38,19 +34,37 @@ import {
   replay,
   SAVE_KEY,
 } from "./game/storage.ts";
-import { GoodsArt, Palace } from "./components/Art.tsx";
+import { Palace } from "./components/Art.tsx";
 import { Card } from "./components/Card.tsx";
 import { MobileSupply } from "./components/MobileSupply.tsx";
 import { ResultDialog, resultTitle } from "./components/ResultDialog.tsx";
 import { SaleReceipt } from "./components/SaleReceipt.tsx";
-import { saleReceipts } from "./game/receipts.ts";
+import { actionSummaries } from "./game/receipts.ts";
+import { LastActions } from "./components/LastActions.tsx";
+import { ActionHistory } from "./components/ActionHistory.tsx";
 import { ActionAnimation } from "./components/ActionAnimation.tsx";
 import { actionFlights, dealFlights } from "./game/flights.ts";
 import type { Flight } from "./game/flights.ts";
+import { initialMarketSlots, nextMarketSlots } from "./game/market-layout.ts";
 import { presentAction } from "./game/presentation.ts";
 import type { Presentation } from "./game/presentation.ts";
 import { Rules } from "./components/Rules.tsx";
+import { Tutorial } from "./components/Tutorial.tsx";
+import { ActionPanel } from "./components/ActionPanel.tsx";
+import {
+  createTutorialSave,
+  TUTORIAL_ACTIONS,
+  TUTORIAL_STEPS,
+  tutorialAccepts,
+  tutorialStepAfterSelection,
+  normalizeTutorialSelection,
+  tutorialAllowsMarket,
+  tutorialAllowsHand,
+  tutorialFeedback,
+} from "./game/tutorial.ts";
+import type { Selection } from "./game/selection.ts";
 import { readPreferences, writePreferences } from "./game/preferences.ts";
+import { useReducedMotion } from "./hooks/useReducedMotion.ts";
 function initialSave(): { save: Save | null; error: string } {
   try {
     const data = localStorage.getItem(SAVE_KEY);
@@ -66,6 +80,7 @@ const DIFFICULTY_NAME: Record<Difficulty, string> = {
   easy: "入门",
   normal: "重度",
   hard: "高难",
+  experimental: "实验",
 };
 type AiInsight = {
   algorithm: string;
@@ -89,43 +104,58 @@ function DifficultySelect({
       <option value="easy">入门 · 学徒商人</option>
       <option value="normal">重度 · 资深商人</option>
       <option value="hard">高难 · 粉城大师</option>
+      <option value="experimental">实验 · 自博弈商人</option>
     </select>
   );
 }
 export default function App() {
+  const reducedMotion = useReducedMotion();
   const [initial] = useState(initialSave),
     [save, setSave] = useState<Save | null>(initial.save);
   const [game, setGame] = useState(() =>
     initial.save ? replay(initial.save) : null,
   );
-  const [screen, setScreen] = useState<"menu" | "game" | "replay">("menu");
+  const [screen, setScreen] = useState<"menu" | "game" | "replay" | "tutorial">(
+    "menu",
+  );
+  const [tutorialSave, setTutorialSave] = useState(createTutorialSave);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [tutorialSlots, setTutorialSlots] = useState(initialMarketSlots);
+  const tutorialState = useMemo(() => replay(tutorialSave), [tutorialSave]);
+  const teaching = screen === "tutorial";
+  const tutorialGuide = TUTORIAL_STEPS[tutorialStep];
   const [dismissedResult, setDismissedResult] = useState("");
   const [inspectResult, setInspectResult] = useState(false);
   const [menu, setMenu] = useState<"home" | "new" | "settings">("home");
-  const [modal, setModal] = useState<"rules" | "log" | null>(null),
-    [paused, setPaused] = useState(false);
+  const [modal, setModal] = useState<"rules" | "log" | null>(null);
   const [preferences] = useState(readPreferences);
   const [difficulty, setDifficulty] = useState<Difficulty>(
       preferences.difficulty,
     ),
     [speed, setSpeed] = useState(preferences.speed);
+  const [targetSeals, setTargetSeals] = useState<1 | 2>(
+    preferences.targetSeals,
+  );
   useEffect(() => {
-    writePreferences({ difficulty, speed });
-  }, [difficulty, speed]);
+    writePreferences({ difficulty, speed, targetSeals });
+  }, [difficulty, speed, targetSeals]);
   const [error, setError] = useState(initial.error),
     [aiError, setAiError] = useState(""),
     [retry, setRetry] = useState(0);
   const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
   const [transition, setTransition] = useState<{
     before: State;
+    marketSlots: number[];
     action: Presentation;
     caption?: string;
     flights: Flight[];
     duration: number;
   } | null>(null);
+  const [marketSlots, setMarketSlots] = useState(initialMarketSlots);
   const transitionRemaining = useRef(0);
   useEffect(() => {
-    if (!transition || screen !== "game" || paused || modal) return;
+    if (!transition || (screen !== "game" && screen !== "tutorial") || modal)
+      return;
     const started = Date.now();
     const timer = setTimeout(
       () => setTransition(null),
@@ -138,19 +168,22 @@ export default function App() {
         transitionRemaining.current - (Date.now() - started),
       );
     };
-  }, [transition, screen, paused, modal]);
+  }, [transition, screen, modal]);
   const [selection, setSelection] = useState(emptySelection);
-  const { market, hand, camels } = selection;
+  const { market, hand } = selection;
   const [replayIndex, setReplayIndex] = useState(0),
     [replayPlaying, setReplayPlaying] = useState(false);
-  const receipts = useMemo(
+  const { receipts, lastActions, lastTurns, latestActor, history } = useMemo(
     () =>
-      saleReceipts(
-        save,
-        screen === "replay" ? replayIndex : save?.events.length,
+      actionSummaries(
+        screen === "tutorial" ? tutorialSave : save,
+        screen === "replay" ? replayIndex : undefined,
       ),
-    [save, screen, replayIndex],
+    [save, screen, replayIndex, tutorialSave],
   );
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [screen, menu]);
   const closeRef = useRef<HTMLButtonElement>(null),
     dialogRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -167,16 +200,23 @@ export default function App() {
     try {
       const next = advance(game, event);
       if (event.type !== "next") {
-        const duration =
-          (speed === 350 ? 1400 : speed === 2000 ? 3500 : 2500) +
-          (event.type === "exchange" ? 500 : event.type === "sell" ? 1100 : 0);
+        const duration = reducedMotion
+          ? event.type === "sell"
+            ? 900
+            : event.type === "exchange"
+              ? 650
+              : 500
+          : (speed === 350 ? 650 : speed === 2000 ? 1400 : 950) +
+            (event.type === "exchange" ? 200 : event.type === "sell" ? 550 : 0);
         transitionRemaining.current = duration;
         setTransition({
           before: game,
+          marketSlots,
           action: presentAction(game, event, next),
-          flights: actionFlights(game, event, next),
+          flights: actionFlights(game, event, next, marketSlots),
           duration,
         });
+        setMarketSlots(nextMarketSlots(game, event, next, marketSlots));
       } else {
         animateDeal(next);
       }
@@ -193,7 +233,6 @@ export default function App() {
       !game ||
       game.phase !== "playing" ||
       game.current !== 1 ||
-      paused ||
       modal ||
       aiError ||
       transition
@@ -211,9 +250,11 @@ export default function App() {
           ? neuralExperiment
             ? "实验神经先验 MCTS · C++/Wasm"
             : "自对弈引导 MCTS · C++/Wasm"
-          : activeDifficulty === "normal"
-            ? "战术穷举 · C++/Wasm"
-            : "轻量启发式 · TypeScript",
+          : activeDifficulty === "experimental"
+            ? "自博弈神经策略 · v75182"
+            : activeDifficulty === "normal"
+              ? "战术穷举 · C++/Wasm"
+              : "轻量启发式 · TypeScript",
       searching: true,
     });
     let active = true;
@@ -249,7 +290,15 @@ export default function App() {
       if (active) setAiError("米拉暂时无法完成思考，请重试。");
     };
     worker.postMessage({
-      observation: observe(game, save?.events),
+      observation: observe(
+        game,
+        save?.events,
+        activeDifficulty === "experimental" ? 0.75 : false,
+      ),
+      history:
+        activeDifficulty === "experimental" && save
+          ? dmcEventHistory(save.seed, save.events, game.current)
+          : undefined,
       difficulty: activeDifficulty,
       model: neuralExperiment ? "neural" : "linear",
     });
@@ -260,7 +309,7 @@ export default function App() {
     };
     // A fresh worker receives only the acting player's observation for each committed turn.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game, screen, paused, modal, speed, retry, aiError, transition]);
+  }, [game, screen, modal, speed, retry, aiError, transition]);
   useEffect(() => {
     if (screen !== "replay" || !replayPlaying || !save) return;
     if (replayIndex >= save.events.length) {
@@ -300,12 +349,14 @@ export default function App() {
   }, [modal]);
   const viewed = useMemo(
     () =>
-      screen === "replay" && save
-        ? replay(save, replayIndex)
-        : screen === "game" && transition
-          ? transition.before
-          : game,
-    [screen, save, replayIndex, game, transition],
+      screen === "tutorial"
+        ? (transition?.before ?? tutorialState)
+        : screen === "replay" && save
+          ? replay(save, replayIndex)
+          : screen === "game" && transition
+            ? transition.before
+            : game,
+    [screen, save, replayIndex, game, transition, tutorialState],
   );
   const resultKey = viewed
     ? `${viewed.seed}:${viewed.round}:${viewed.phase}`
@@ -321,11 +372,92 @@ export default function App() {
     setDismissedResult(resultKey);
     setInspectResult(false);
   };
+  function beginTutorial() {
+    setTutorialSave(createTutorialSave());
+    setTutorialStep(0);
+    setTutorialSlots(initialMarketSlots());
+    setTransition(null);
+    setModal(null);
+    clear();
+    setScreen("tutorial");
+  }
+  function selectCards(next: Selection) {
+    if (teaching) {
+      let clean = normalizeTutorialSelection(tutorialStep, next, tutorialState);
+      const nextStep = tutorialStepAfterSelection(
+        tutorialStep,
+        clean,
+        tutorialState,
+      );
+      if (
+        nextStep !== tutorialStep &&
+        TUTORIAL_STEPS[nextStep].id.endsWith("exchange-select")
+      )
+        clean = { ...clean, hand: [], camels: 0 };
+      if (
+        nextStep !== tutorialStep &&
+        TUTORIAL_STEPS[nextStep].id === "mixed-exchange-hand"
+      )
+        clean = { ...clean, camels: 0 };
+      setSelection(clean);
+      setTutorialStep(nextStep);
+    } else {
+      setSelection(next);
+    }
+  }
+  function commitTutorial(action: Action) {
+    const before = tutorialState;
+    if (transition || modal) return;
+    if (
+      before.current === 0 &&
+      (tutorialGuide.kind !== "confirm" ||
+        !tutorialAccepts(
+          tutorialGuide.lesson!,
+          action,
+          before.market,
+          before.players[0].hand,
+        ))
+    )
+      return;
+    const next = applyAction(before, action);
+    const duration = reducedMotion ? 650 : action.type === "sell" ? 1800 : 1300;
+    transitionRemaining.current = duration;
+    setTransition({
+      before,
+      marketSlots: tutorialSlots,
+      action: presentAction(before, action, next),
+      flights: actionFlights(before, action, next, tutorialSlots),
+      duration,
+    });
+    setTutorialSlots(nextMarketSlots(before, action, next, tutorialSlots));
+    setTutorialSave((previous) => ({
+      ...previous,
+      events: [...previous.events, action],
+    }));
+    setTutorialStep((step) => step + 1);
+    clear();
+  }
+  useEffect(() => {
+    if (!teaching || transition || modal || tutorialGuide.kind !== "opponent")
+      return;
+    const timer = setTimeout(
+      () => commitTutorial(TUTORIAL_ACTIONS[tutorialSave.events.length]),
+      600,
+    );
+    return () => clearTimeout(timer);
+  }, [teaching, transition, modal, tutorialStep, tutorialSave]);
   function animateDeal(state: State) {
-    const duration = speed === 350 ? 1700 : speed === 2000 ? 3600 : 2700;
+    const duration = reducedMotion
+      ? 500
+      : speed === 350
+        ? 1700
+        : speed === 2000
+          ? 3600
+          : 2700;
     transitionRemaining.current = duration;
     setTransition({
       before: state,
+      marketSlots: initialMarketSlots(),
       action: {
         actor: 0,
         type: "take",
@@ -338,18 +470,24 @@ export default function App() {
       duration,
       caption: "正在发牌：牌堆 → 双方手牌…",
     });
+    setMarketSlots(initialMarketSlots());
   }
   function start() {
     const seed = crypto.getRandomValues(new Uint32Array(1))[0];
-    const fresh: Save = { version: 1, seed, difficulty, events: [] };
+    const fresh: Save = {
+      version: 1,
+      seed,
+      difficulty,
+      targetSeals,
+      events: [],
+    };
     setDismissedResult("");
-    const freshGame = newGame(seed);
+    const freshGame = newGame(seed, targetSeals);
     animateDeal(freshGame);
     setSave(fresh);
     setGame(freshGame);
     setScreen("game");
     setMenu("home");
-    setPaused(false);
     setAiError("");
     setAiInsight(null);
     clear();
@@ -360,6 +498,7 @@ export default function App() {
       if (file.size > 2000000) throw new Error("存档文件过大");
       const imported = parseSave(await file.text());
       setTransition(null);
+      setMarketSlots(initialMarketSlots());
       setDismissedResult("");
       setSave(imported);
       setGame(replay(imported));
@@ -373,21 +512,21 @@ export default function App() {
   }
   const p = viewed?.players[0],
     opponent = viewed?.players[1];
+  const visibleMarketSlots =
+    screen === "replay"
+      ? initialMarketSlots()
+      : (transition?.marketSlots ?? (teaching ? tutorialSlots : marketSlots));
   const active =
-    screen === "game" &&
+    (screen === "game" ||
+      (teaching &&
+        (tutorialGuide.kind === "select" ||
+          tutorialGuide.kind === "confirm"))) &&
     viewed?.phase === "playing" &&
     viewed.current === 0 &&
-    !paused &&
     !modal &&
     !transition;
-  const { action, error: selectionError } =
-    viewed && active
-      ? selectedAction(viewed, selection)
-      : { action: null, error: "" };
-  const soldValue =
-    action?.type === "sell" && viewed
-      ? sum(viewed.tokens[action.good].slice(0, action.count))
-      : 0;
+  const { action } =
+    viewed && active ? selectedAction(viewed, selection) : { action: null };
   const brand = (
     <div className="brand">
       <span className="brand-icon">✳</span>
@@ -429,7 +568,6 @@ export default function App() {
                       className="primary"
                       onClick={() => {
                         setScreen("game");
-                        setPaused(false);
                       }}
                     >
                       <Play size={17} />
@@ -442,6 +580,17 @@ export default function App() {
                     onClick={() => setMenu("new")}
                   >
                     {save ? "开始新的比赛" : "走进斋普尔"}
+                    <ArrowRight size={18} />
+                  </button>
+                  <button
+                    className="tutorial-entry home-tutorial-entry"
+                    onClick={beginTutorial}
+                  >
+                    <BookOpen size={22} />
+                    <span>
+                      <b>新手教程 · 跟着做一笔生意</b>
+                      <small>边点边学 · 亲手练习三种交换</small>
+                    </span>
                     <ArrowRight size={18} />
                   </button>
                   <div className="menu-shortcuts">
@@ -471,7 +620,7 @@ export default function App() {
                 </div>
                 <div className="menu-meta">
                   <span>2 位商人</span>
-                  <span>先赢 2 轮</span>
+                  <span>1 局定胜负 / 三局两胜</span>
                   <span>本地 AI · 无需联网</span>
                 </div>
               </>
@@ -498,6 +647,39 @@ export default function App() {
                     : "比赛进度保存在此浏览器，也可以导出随身带走。"}
                 </p>
                 <div className="setup">
+                  {menu === "new" && (
+                    <>
+                      <fieldset className="match-format">
+                        <legend>比赛赛制</legend>
+                        <div className="format-options">
+                          {([1, 2] as const).map((wins) => (
+                            <label
+                              key={wins}
+                              className={targetSeals === wins ? "chosen" : ""}
+                            >
+                              <input
+                                type="radio"
+                                name="match-format"
+                                value={wins}
+                                checked={targetSeals === wins}
+                                onChange={() => setTargetSeals(wins)}
+                              />
+                              <span>
+                                <b>
+                                  {wins === 1 ? "1 局定胜负" : "标准三局两胜"}
+                                </b>
+                                <small>
+                                  {wins === 1
+                                    ? "轻松开一局"
+                                    : "先赢两轮，角逐印章"}
+                                </small>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </fieldset>
+                    </>
+                  )}
                   <label>
                     对手难度
                     <DifficultySelect
@@ -508,9 +690,11 @@ export default function App() {
                   <p className="muted">
                     {difficulty === "easy"
                       ? "轻量启发式并保留探索性，适合熟悉规则与操作。"
-                      : difficulty === "normal"
-                        ? "C++ 穷举当前合法行动，权衡收益、手牌潜力与收市风险。"
-                        : "C++/Wasm 确定化 MCTS：8 棵树模拟隐藏信息与后续对局。"}
+                      : difficulty === "experimental"
+                        ? "与自博弈训练的神经策略对弈，使用第 75,182 版检查点。"
+                        : difficulty === "normal"
+                          ? "C++ 穷举当前合法行动，权衡收益、手牌潜力与收市风险。"
+                          : "C++/Wasm 确定化 MCTS：8 棵树模拟隐藏信息与后续对局。"}
                     {menu === "settings" ? " 难度设置应用于新比赛。" : ""}
                   </p>
                   <label>
@@ -534,6 +718,17 @@ export default function App() {
                       )}
                       <button className="primary" onClick={start}>
                         摆好货摊，开始游戏
+                        <ArrowRight size={18} />
+                      </button>
+                      <button
+                        className="tutorial-entry"
+                        onClick={beginTutorial}
+                      >
+                        <BookOpen size={21} />
+                        <span>
+                          <b>第一次玩？跟着做一笔生意</b>
+                          <small>跟着亮框操作 · 不影响存档</small>
+                        </span>
                         <ArrowRight size={18} />
                       </button>
                     </>
@@ -595,48 +790,48 @@ export default function App() {
           </section>
         </main>
       ) : viewed && p && opponent ? (
-        <main className="game-shell">
+        <main className={`game-shell ${teaching ? "tutorial-game" : ""}`}>
+          <nav className="game-tools" aria-label="游戏功能">
+            <span className="game-tools-label">牌桌功能</span>
+            <button
+              title="游戏规则"
+              aria-label="游戏规则"
+              onClick={() => setModal("rules")}
+            >
+              <BookOpen size={19} />
+              <span>游戏规则</span>
+            </button>
+            <button
+              title="行动记录"
+              aria-label="行动记录"
+              onClick={() => setModal("log")}
+            >
+              <History size={19} />
+              <span>行动记录</span>
+            </button>
+            <button
+              title="返回菜单"
+              aria-label="返回菜单"
+              onClick={() => {
+                setScreen("menu");
+                setMenu("home");
+                setReplayPlaying(false);
+                if (teaching) {
+                  setTransition(null);
+                  clear();
+                }
+              }}
+            >
+              <Home size={19} />
+              <span>返回菜单</span>
+            </button>
+          </nav>
           <header className="game-header">
             {brand}
             <div className="header-round">
-              第 {viewed.round} 轮 <span>·</span> 先赢两枚印章
+              第 {viewed.round} 轮 <span>·</span>{" "}
+              {viewed.targetSeals === 1 ? "1 局定胜负" : "三局两胜"}
             </div>
-            <nav>
-              <button
-                title="游戏规则"
-                aria-label="游戏规则"
-                onClick={() => setModal("rules")}
-              >
-                <BookOpen size={19} />
-              </button>
-              <button
-                title="行动记录"
-                aria-label="行动记录"
-                onClick={() => setModal("log")}
-              >
-                <History size={19} />
-              </button>
-              {screen === "game" && (
-                <button
-                  title={paused ? "继续" : "暂停"}
-                  aria-label={paused ? "继续" : "暂停"}
-                  onClick={() => setPaused((v) => !v)}
-                >
-                  {paused ? <Play size={19} /> : <Pause size={19} />}
-                </button>
-              )}
-              <button
-                title="返回菜单"
-                aria-label="返回菜单"
-                onClick={() => {
-                  setScreen("menu");
-                  setMenu("home");
-                  setReplayPlaying(false);
-                }}
-              >
-                <Home size={19} />
-              </button>
-            </nav>
           </header>
           {screen === "replay" && (
             <div className="replay-bar">
@@ -710,22 +905,38 @@ export default function App() {
             </div>
           )}
           <div className="game-grid">
-            <section className="table-column">
+            <section className="game-overview" aria-label="统计信息">
+              <h2 className="overview-title">局势概览</h2>
               <MobileSupply state={viewed} />
+              <LastActions
+                actions={lastActions}
+                turns={lastTurns}
+                latestActor={latestActor}
+                settled={!transition}
+              />
+            </section>
+            <section className="table-column">
+              <div className="board-divider" aria-hidden="true">
+                牌桌
+              </div>
               <div
                 className={`opponent-panel ${viewed.current === 1 && viewed.phase === "playing" ? "turn-active" : ""}`}
               >
-                <div className="avatar">米</div>
+                <div className="avatar" data-motion-anchor="opponent-hand">
+                  米
+                </div>
                 <div className="player-name" data-motion-anchor="opponent-herd">
                   <h2>
                     米拉{" "}
                     <span>
                       集市商人 ·{" "}
-                      {DIFFICULTY_NAME[save?.difficulty ?? difficulty]}
+                      {teaching
+                        ? "教学对手"
+                        : DIFFICULTY_NAME[save?.difficulty ?? difficulty]}
                     </span>
                   </h2>
                   <div className="seals">
-                    {[0, 1].map((n) => (
+                    {Array.from({ length: viewed.targetSeals ?? 2 }, (_, n) => (
                       <span
                         key={n}
                         className={viewed.seals[1] > n ? "won" : ""}
@@ -737,17 +948,6 @@ export default function App() {
                       {opponent.hand.length} 张手牌 · 驼队保密
                     </span>
                   </div>
-                </div>
-                <div
-                  className="opponent-cards"
-                  data-motion-anchor="opponent-hand"
-                  aria-label={`对手有 ${opponent.hand.length} 张隐藏手牌`}
-                >
-                  {opponent.hand.map((_, i) => (
-                    <span className="card-back" key={i}>
-                      ✳
-                    </span>
-                  ))}
                 </div>
                 <div
                   className="opponent-score"
@@ -767,46 +967,49 @@ export default function App() {
                   </div>
                   <span className="market-count">始终补至 5 张</span>
                 </div>
-                <div className="market-cards">
-                  {viewed.market.map((good, i) => (
-                    <Card
-                      key={`${i}-${good}`}
-                      motionId={`market-${i}`}
-                      good={good}
-                      selected={market.includes(i)}
-                      disabled={!active}
-                      onClick={() =>
-                        setSelection((current) =>
-                          selectMarket(viewed, current, i),
-                        )
-                      }
-                    />
-                  ))}
-                </div>
-                <div className="market-bottom">
-                  <span>
-                    <span className="deck-icon" data-motion-anchor="deck">
+                <div className="market-row">
+                  <div
+                    className={`market-deck ${viewed.deck.length ? "" : "empty-deck"}`}
+                    data-motion-anchor="deck"
+                    aria-label={`牌堆剩余 ${viewed.deck.length} 张`}
+                  >
+                    <span className="market-deck-symbol" aria-hidden="true">
                       ✳
                     </span>
-                    牌堆 <b>{viewed.deck.length}</b> 张
-                  </span>
-                  <span className="sale-area">
-                    <span className="sale-slot" data-motion-anchor="sale">
-                      {viewed.discard.length ? (
-                        <GoodsArt good={viewed.discard.at(-1)!} />
-                      ) : (
-                        "↓"
-                      )}
-                    </span>
-                    <span>
-                      售卖区 <b>{viewed.discard.length}</b> 张
-                    </span>
-                  </span>
-                  <span className="market-end-note">
-                    {GOODS.filter((g) => !viewed.tokens[g].length).length} / 3
-                    类筹码售罄
-                  </span>
+                    <b>{viewed.deck.length}</b>
+                    <span className="market-deck-label">牌堆</span>
+                  </div>
+                  <div className="market-cards">
+                    {viewed.market
+                      .map((good, i) => ({
+                        good,
+                        i,
+                        slot: visibleMarketSlots[i],
+                      }))
+                      .sort((a, b) => a.slot - b.slot)
+                      .map(({ good, i, slot }) => (
+                        <Card
+                          key={slot}
+                          motionId={`market-${slot}`}
+                          good={good}
+                          selected={market.includes(i)}
+                          disabled={
+                            !active ||
+                            (teaching &&
+                              !tutorialAllowsMarket(tutorialStep, good))
+                          }
+                          onClick={() =>
+                            selectCards(selectMarket(viewed, selection, i))
+                          }
+                        />
+                      ))}
+                  </div>
                 </div>
+                <span
+                  className="sale-motion-anchor"
+                  data-motion-anchor="sale"
+                  aria-hidden="true"
+                />
               </section>
               <div className="turn-line" aria-live="polite">
                 <span className={`status-dot ${active ? "your-turn" : ""}`} />
@@ -814,16 +1017,14 @@ export default function App() {
                   ? "正在回看已发生的交易"
                   : viewed.phase !== "playing"
                     ? "本轮集市已收市"
-                    : paused
-                      ? "比赛已暂停"
-                      : transition
-                        ? (transition.caption ??
-                          `${transition.action.actor === 0 ? "你" : "米拉"}正在${{ take: "拿取货物", camels: "收下骆驼", sell: "出售货物", exchange: "交换货物" }[transition.action.type]}…`)
-                        : aiError
-                          ? "AI 等待重试"
-                          : viewed.current === 1
-                            ? "米拉正在盘算下一笔生意…"
-                            : "轮到你了，今天想做哪笔生意？"}
+                    : transition
+                      ? (transition.caption ??
+                        `${transition.action.actor === 0 ? "你" : "米拉"}正在${{ take: "拿取货物", camels: "收下骆驼", sell: "出售货物", exchange: "交换货物" }[transition.action.type]}…`)
+                      : aiError
+                        ? "AI 等待重试"
+                        : viewed.current === 1
+                          ? "米拉正在盘算下一笔生意…"
+                          : "轮到你了，今天想做哪笔生意？"}
                 <span>第 {viewed.turn + 1} 手</span>
               </div>
               {screen === "game" &&
@@ -901,14 +1102,23 @@ export default function App() {
                         你的货摊 <span>{p.hand.length} / 7 张</span>
                       </h2>
                       <div className="seals">
-                        {[0, 1].map((n) => (
-                          <span
-                            key={n}
-                            className={viewed.seals[0] > n ? "won" : ""}
-                          >
-                            ✺
-                          </span>
-                        ))}
+                        {Array.from(
+                          { length: viewed.targetSeals ?? 2 },
+                          (_, n) => (
+                            <span
+                              key={n}
+                              className={viewed.seals[0] > n ? "won" : ""}
+                            >
+                              ✺
+                            </span>
+                          ),
+                        )}
+                        <span
+                          className="herd-summary camel"
+                          data-motion-anchor="your-herd"
+                        >
+                          驼队 <b>{p.camels}</b> 头
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -936,11 +1146,13 @@ export default function App() {
                           motionId={`hand-${i}`}
                           small
                           selected={hand.includes(i)}
-                          disabled={!active}
+                          disabled={
+                            !active ||
+                            (teaching &&
+                              !tutorialAllowsHand(tutorialStep, good))
+                          }
                           onClick={() =>
-                            setSelection((current) =>
-                              selectHand(viewed, current, i),
-                            )
+                            selectCards(selectHand(viewed, selection, i))
                           }
                         />
                       ))
@@ -950,117 +1162,33 @@ export default function App() {
                       </div>
                     )}
                   </div>
-                  <div className="herd" data-motion-anchor="your-herd">
-                    <button
-                      className={`herd-select ${camels ? "selected" : ""}`}
-                      aria-label="选择一头骆驼用于交换"
-                      disabled={!active || camels >= p.camels}
-                      onClick={() =>
-                        setSelection((current) =>
-                          selectCamels(viewed, current, current.camels + 1),
-                        )
-                      }
-                    >
-                      <GoodsArt good="camel" />
-                    </button>
-                    <strong>
-                      {p.camels}
-                      <small>头骆驼</small>
-                    </strong>
-                    {active ? (
-                      <div className="stepper">
-                        <button
-                          aria-label="减少付出骆驼"
-                          disabled={!camels}
-                          onClick={() =>
-                            setSelection((current) =>
-                              selectCamels(viewed, current, current.camels - 1),
-                            )
-                          }
-                        >
-                          −
-                        </button>
-                        <span>{camels}</span>
-                        <button
-                          aria-label="增加付出骆驼"
-                          disabled={camels >= p.camels}
-                          onClick={() =>
-                            setSelection((current) =>
-                              selectCamels(viewed, current, current.camels + 1),
-                            )
-                          }
-                        >
-                          +
-                        </button>
-                      </div>
-                    ) : (
-                      <span>不占手牌上限</span>
-                    )}
-                  </div>
                 </div>
               </section>
-              {viewed.phase === "playing" && screen === "game" ? (
-                <section className="action-panel">
-                  <div className="action-description" aria-live="polite">
-                    <b>
-                      {action?.type === "camels"
-                        ? `收下市场全部 ${market.length} 头骆驼`
-                        : action?.type === "exchange"
-                          ? `换入 ${market.length} 张 · 付出 ${hand.length} 张货物 + ${camels} 头骆驼`
-                          : action?.type === "sell"
-                            ? `出售 ${hand.length} 张${LABEL[action.good]}`
-                            : action?.type === "take"
-                              ? `拿取 1 张${LABEL[viewed.market[action.index]]}`
-                              : "直接点选卡牌，决定这笔生意"}
-                    </b>
-                    <span className={selectionError ? "invalid" : ""}>
-                      {selectionError ||
-                        (action?.type === "sell"
-                          ? `获得 ${soldValue} 卢比${action.count >= 3 ? "，并在奖励堆有剩余时领取奖励" : ""}`
-                          : action?.type === "exchange"
-                            ? "数量已配平，可以确认交换；再次点击可取消选牌"
-                            : action?.type === "camels"
-                              ? "骆驼加入你的驼队，不占手牌上限"
-                              : action?.type === "take"
-                                ? "继续点选市场与手牌可组成交换；再次点击取消"
-                                : "点市场拿取，点手牌出售；两边选牌进行交换，点驼队付出骆驼")}
-                    </span>
-                  </div>
-                  <button
-                    className="clear-button"
-                    aria-label="清空选择"
-                    title="清空选择"
-                    disabled={!active}
-                    onClick={clear}
-                  >
-                    <RotateCcw size={17} />
-                  </button>
-                  <button
-                    className="primary confirm"
-                    disabled={!active || !action || !!selectionError}
-                    onClick={() => action && commit(action)}
-                  >
-                    <Check size={17} />
-                    {action?.type === "camels"
-                      ? "收下全部骆驼"
-                      : action?.type === "sell"
-                        ? "确认出售"
-                        : action?.type === "exchange"
-                          ? "确认交换"
-                          : action?.type === "take"
-                            ? "确认拿取"
-                            : "确认交易"}
-                  </button>
-                </section>
+              {viewed.phase === "playing" && (screen === "game" || teaching) ? (
+                <ActionPanel
+                  state={viewed}
+                  selection={selection}
+                  active={active}
+                  onSelectionChange={selectCards}
+                  onClear={() => selectCards(emptySelection())}
+                  confirmationBlocked={
+                    teaching &&
+                    (tutorialGuide.kind !== "confirm" ||
+                      !action ||
+                      !tutorialAccepts(
+                        tutorialGuide.lesson!,
+                        action,
+                        viewed.market,
+                        viewed.players[0].hand,
+                      ))
+                  }
+                  onConfirm={() =>
+                    action &&
+                    (teaching ? commitTutorial(action) : commit(action))
+                  }
+                />
               ) : null}
-              {paused && screen === "game" && viewed.phase === "playing" && (
-                <div className="pause-note">
-                  <Pause size={18} />
-                  休息一下，集市等你回来。
-                  <button onClick={() => setPaused(false)}>继续比赛 →</button>
-                </div>
-              )}
-              {aiError && (
+              {aiError && !teaching && (
                 <div className="pause-note" role="alert">
                   {aiError}
                   <button
@@ -1078,99 +1206,40 @@ export default function App() {
                 <span>{viewed.log.at(-1)}</span>
               </div>
             </section>
-            <aside className="token-column">
-              <div className="tokens-title">
-                <div>
-                  <p className="eyebrow">THE PRICE OF OPPORTUNITY</p>
-                  <h2>货物筹码</h2>
-                </div>
-                <ShoppingBag size={20} />
-              </div>
-              <p className="token-note">先卖先得，从左侧最高价值取起</p>
-              <p className="premium-guide">
-                <b>高级货物</b>钻石 · 黄金 · 白银<span>至少 2 张起售</span>
-              </p>
-              <div className="token-stacks">
-                {GOODS.map((g) => (
-                  <div
-                    className={`token-row ${g} ${precious(g) ? "premium-row" : ""}`}
-                    data-motion-anchor={`tokens-${g}`}
-                    key={g}
-                  >
-                    <div className="token-label">
-                      <span>
-                        {LABEL[g]}{" "}
-                        {precious(g) ? (
-                          <em className="premium-tag">高级</em>
-                        ) : (
-                          <small>{ENGLISH[g]}</small>
-                        )}
-                      </span>
-                      <span>{viewed.tokens[g].length} 枚</span>
-                    </div>
-                    <div className="coins">
-                      {viewed.tokens[g].length ? (
-                        viewed.tokens[g].map((v, i) => (
-                          <span
-                            className={`coin ${i === 0 ? "top" : ""}`}
-                            data-motion-anchor={`token-${g}-${i}`}
-                            key={i}
-                          >
-                            {v}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="sold-out">已售罄</span>
-                      )}
-                    </div>
-                    <div className="token-min">
-                      {precious(g) ? "至少出售 2 张" : "1 张起售"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="bonus-section">
-                <h3>
-                  大宗交易奖励 <span>随机面值</span>
-                </h3>
-                <div className="bonus-tokens" data-motion-anchor="bonus">
-                  {([3, 4, 5] as const).map((n) => (
-                    <div key={n}>
-                      <div
-                        data-motion-anchor={`bonus-${n}`}
-                        className={`bonus-coin bonus-${n} ${!viewed.bonus[n].length ? "depleted" : ""}`}
-                      >
-                        {n}
-                        {n === 5 ? "+" : ""}
-                        <small>张</small>
-                      </div>
-                      <b>{n === 3 ? "1–3" : n === 4 ? "4–6" : "8–10"} 卢比</b>
-                      <span>剩余 {viewed.bonus[n].length} 枚</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="camel-award">
-                <GoodsArt good="camel" />
-                <div>
-                  <b>
-                    驼队奖励 <span>+5</span>
-                  </b>
-                  <p>收市时，骆驼更多的商人获得</p>
-                </div>
-              </div>
-            </aside>
           </div>
           <footer className="game-footer">
             <span>JAIPUR · 每一笔交易，都是一次取舍。</span>
             <span>
               {screen === "replay"
                 ? "回放不会改变存档"
-                : "进度自动保存在此浏览器"}
+                : teaching
+                  ? "固定教学对局 · 不影响比赛存档"
+                  : "进度自动保存在此浏览器"}
             </span>
           </footer>
         </main>
       ) : null}
+      {teaching && (
+        <Tutorial
+          step={tutorialStep}
+          feedback={tutorialFeedback(tutorialStep, selection)}
+          onHistory={() => setModal("log")}
+          paused={!!transition || !!modal}
+          onNext={() => setTutorialStep((step) => step + 1)}
+          onExit={() => {
+            setScreen("menu");
+            setMenu("home");
+            setTransition(null);
+            clear();
+          }}
+          onComplete={() => {
+            setScreen("menu");
+            setMenu("new");
+            clear();
+          }}
+          onRestart={beginTutorial}
+        />
+      )}
       {showResult && viewed && (
         <ResultDialog
           state={viewed}
@@ -1178,7 +1247,6 @@ export default function App() {
           onNext={
             screen === "game"
               ? () => {
-                  setPaused(false);
                   commit({ type: "next" });
                 }
               : undefined
@@ -1201,12 +1269,12 @@ export default function App() {
           }
         />
       )}
-      {transition && screen === "game" && (
+      {transition && (screen === "game" || teaching) && (
         <ActionAnimation
           flights={transition.flights}
           elapsed={transition.duration - transitionRemaining.current}
           duration={transition.duration}
-          paused={paused || !!modal}
+          paused={!!modal}
         />
       )}
       {modal && (
@@ -1233,11 +1301,10 @@ export default function App() {
               <>
                 <p className="eyebrow">THE MERCHANT’S JOURNAL</p>
                 <h2>每一笔生意，都有迹可循。</h2>
-                <ol className="log-list">
-                  {(viewed?.log ?? []).map((line, i) => (
-                    <li key={i}>{line}</li>
-                  ))}
-                </ol>
+                <ActionHistory
+                  records={history}
+                  results={viewed?.results ?? []}
+                />
               </>
             )}
           </div>
