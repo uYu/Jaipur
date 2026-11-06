@@ -220,6 +220,7 @@ export function LastActions({
   turnNumber,
   active = false,
   paused = false,
+  focusOpponent = false,
 }: {
   actions: [Presentation | null, Presentation | null];
   latestActor: number | null;
@@ -230,6 +231,7 @@ export function LastActions({
   turnNumber?: number;
   active?: boolean;
   paused?: boolean;
+  focusOpponent?: boolean;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const measure = useRef<HTMLTableElement>(null);
@@ -277,6 +279,22 @@ export function LastActions({
       paused={paused}
     />
   ));
+  if (focusOpponent)
+    return (
+      <section
+        className="action-ledger table-turn-note"
+        aria-label="米拉本手行动"
+      >
+        <div className="table-last-action" aria-live="polite">
+          <span className="table-action-actor">米拉</span>
+          {actions[1] ? (
+            <ActionSummary action={actions[1]} />
+          ) : (
+            <span className="ledger-empty">等待第一笔生意</span>
+          )}
+        </div>
+      </section>
+    );
   return (
     <section className="action-ledger" aria-label="双方上步行动">
       <div className="ledger-heading">
@@ -297,6 +315,7 @@ export function LastActions({
         title="点击查看全部历史行动"
         onClick={onHistory}
       >
+        <span>历史</span>
         <ChevronRight size={15} aria-hidden="true" />
       </button>
       <div className="compact-ledger" ref={container}>

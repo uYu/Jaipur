@@ -87,3 +87,152 @@ test("invalid direct selections remain previews and report existing rule constra
   assert.equal(selectCamels(s, emptySelection(), 99).camels, 3);
   assert.equal(selectCamels(s, emptySelection(), -1).camels, 0);
 });
+
+test("choosing an action is required before cards or camel payment can change", () => {
+  const s = table();
+  const selection = { market: [0], hand: [1], camels: 1 };
+  assert.deepEqual(selectMarket(s, selection, 2, null), selection);
+  assert.deepEqual(selectHand(s, selection, 2, null), selection);
+  assert.deepEqual(selectCamels(s, selection, 2, null), selection);
+  assert.deepEqual(selectedAction(s, selection, null), {
+    action: null,
+    error: "",
+  });
+});
+
+test("taking replaces the chosen good and includes collecting all market camels", () => {
+  const s = table();
+  let selection = selectMarket(s, emptySelection(), 0, "take");
+  selection = selectMarket(s, selection, 2, "take");
+  assert.deepEqual(selection, { market: [2], hand: [], camels: 0 });
+  assert.deepEqual(selectHand(s, selection, 1, "take"), selection);
+  assert.deepEqual(selectCamels(s, selection, 1, "take"), selection);
+  assert.deepEqual(selectedAction(s, selection, "take"), {
+    action: { type: "take", index: 2 },
+    error: "",
+  });
+  assert.deepEqual(selectMarket(s, selection, 2, "take"), emptySelection());
+  selection = selectMarket(s, selection, 3, "take");
+  assert.deepEqual(selection, { market: [3, 4], hand: [], camels: 0 });
+  assert.deepEqual(selectedAction(s, selection, "take"), {
+    action: { type: "camels" },
+    error: "",
+  });
+  assert.deepEqual(selectMarket(s, selection, 4, "take"), emptySelection());
+});
+
+test("selling groups one good and switches groups when a different good is clicked", () => {
+  const s = table();
+  let selection = selectHand(s, emptySelection(), 1, "sell");
+  selection = selectHand(s, selection, 2, "sell");
+  assert.deepEqual(selectedAction(s, selection, "sell"), {
+    action: { type: "sell", good: "spice", count: 2 },
+    error: "",
+  });
+  assert.deepEqual(selectMarket(s, selection, 0, "sell"), selection);
+  assert.deepEqual(selectCamels(s, selection, 1, "sell"), selection);
+  selection = selectHand(s, selection, 3, "sell");
+  assert.deepEqual(selection, { market: [], hand: [3], camels: 0 });
+  assert.deepEqual(selectedAction(s, selection, "sell"), {
+    action: { type: "sell", good: "leather", count: 1 },
+    error: "",
+  });
+  assert.deepEqual(selectHand(s, selection, 3, "sell"), emptySelection());
+});
+
+test("incomplete exchanges stay exchanges regardless of which side is selected first", () => {
+  const s = table();
+  const marketFirst = selectMarket(s, emptySelection(), 0, "exchange");
+  assert.equal(
+    selectedAction(s, marketFirst, "exchange").action?.type,
+    "exchange",
+  );
+  assert.match(selectedAction(s, marketFirst, "exchange").error, /至少/);
+  let selection = selectHand(s, emptySelection(), 1, "exchange");
+  assert.equal(
+    selectedAction(s, selection, "exchange").action?.type,
+    "exchange",
+  );
+  assert.ok(selectedAction(s, selection, "exchange").error);
+  assert.deepEqual(selectMarket(s, selection, 3, "exchange"), selection);
+  selection = selectMarket(s, selection, 0, "exchange");
+  selection = selectMarket(s, selection, 2, "exchange");
+  selection = selectCamels(s, selection, 1, "exchange");
+  assert.deepEqual(selectedAction(s, selection, "exchange"), {
+    action: { type: "exchange", market: [0, 2], hand: [1], camels: 1 },
+    error: "",
+  });
+  assert.deepEqual(selectedAction(s, emptySelection(), "exchange"), {
+    action: null,
+    error: "",
+  });
+});
+
+test("explicit modes cannot infer a different action from stray selection fields", () => {
+  const s = table();
+  const selection = { market: [0], hand: [1, 2], camels: 1 };
+  assert.deepEqual(selectedAction(s, selection, "take"), {
+    action: { type: "take", index: 0 },
+    error: "",
+  });
+  assert.deepEqual(selectedAction(s, selection, "sell"), {
+    action: { type: "sell", good: "spice", count: 2 },
+    error: "",
+  });
+  assert.equal(
+    selectedAction(s, { market: [], hand: [1], camels: 1 }, "take").action,
+    null,
+  );
+  assert.equal(
+    selectedAction(s, { market: [0], hand: [], camels: 1 }, "sell").action,
+    null,
+  );
+});
+
+test("explicit modes preserve hand limits, premium sale minimum and exchange restrictions", () => {
+  const s = table();
+  s.players[0].hand.push("cloth", "cloth", "gold");
+  assert.match(
+    selectedAction(s, selectMarket(s, emptySelection(), 0, "take"), "take")
+      .error,
+    /7 张/,
+  );
+  assert.equal(
+    selectedAction(s, selectMarket(s, emptySelection(), 3, "take"), "take")
+      .error,
+    "",
+  );
+  assert.match(
+    selectedAction(s, selectHand(s, emptySelection(), 0, "sell"), "sell").error,
+    /至少出售 2 张/,
+  );
+  assert.equal(
+    selectedAction(s, { market: [0, 2], hand: [1, 2], camels: 0 }, "exchange")
+      .error,
+    "",
+  );
+  assert.match(
+    selectedAction(s, { market: [0, 2], hand: [1], camels: 1 }, "exchange")
+      .error,
+    /超过 7 张/,
+  );
+  assert.match(
+    selectedAction(s, { market: [0, 2], hand: [4, 5], camels: 0 }, "exchange")
+      .error,
+    /同一种/,
+  );
+});
+
+test("out-of-range card clicks do not create selections", () => {
+  const s = table();
+  for (const index of [-1, 99, 1.5]) {
+    assert.deepEqual(
+      selectMarket(s, emptySelection(), index, "take"),
+      emptySelection(),
+    );
+    assert.deepEqual(
+      selectHand(s, emptySelection(), index, "sell"),
+      emptySelection(),
+    );
+  }
+});

@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { Award, ChevronRight, Info } from "lucide-react";
 import { GOODS } from "../game/types.ts";
 import type { State } from "../game/types.ts";
 import { LABEL } from "../game/data.ts";
@@ -6,9 +7,11 @@ import { GoodsArt } from "./Art.tsx";
 export function MobileSupply({
   state,
   onInspect,
+  tabletop = false,
 }: {
   state: State;
   onInspect: () => void;
+  tabletop?: boolean;
 }) {
   const panel = useRef<HTMLDetailsElement>(null);
   const [mobile, setMobile] = useState(false);
@@ -24,11 +27,19 @@ export function MobileSupply({
   }, []);
   const depleted = GOODS.filter((g) => !state.tokens[g].length).length;
   return (
-    <details className="mobile-supply" ref={panel}>
+    <details
+      className={`mobile-supply${tabletop ? " supply-tabletop" : ""}`}
+      ref={panel}
+    >
       <summary
         title={
-          mobile ? "点击查看完整筹码盘" : "点击整个筹码面板，展开或收起明细"
+          tabletop
+            ? "查看筹码盘"
+            : mobile
+              ? "点击查看完整筹码盘"
+              : "点击整个筹码面板，展开或收起明细"
         }
+        aria-label={tabletop ? "查看筹码盘" : undefined}
         aria-haspopup={mobile ? "dialog" : undefined}
         onClick={(event) => {
           if (mobile) {
@@ -38,10 +49,17 @@ export function MobileSupply({
         }}
       >
         <div className="supply-heading">
-          <b>筹码余量</b>
-          <span>{depleted}/3 类售罄即收市</span>
+          <b>{tabletop ? "筹码" : "筹码余量"}</b>
+          <span>
+            {tabletop ? `售罄 ${depleted}/3` : `${depleted}/3 类售罄即收市`}
+          </span>
           <span className="supply-expand">
-            {mobile ? (
+            {tabletop ? (
+              <>
+                <Info size={14} aria-hidden="true" />
+                <ChevronRight size={14} aria-hidden="true" />
+              </>
+            ) : mobile ? (
               "查看筹码盘 ›"
             ) : (
               <>
@@ -59,19 +77,40 @@ export function MobileSupply({
               aria-label={`${LABEL[g]}，剩余 ${state.tokens[g].length} 枚${state.tokens[g].length ? `，下一枚 ${state.tokens[g][0]} 卢比` : "，已售罄"}`}
             >
               <span
-                className="counter-name"
+                className={`counter-name${tabletop ? " stock-good-name" : ""}`}
                 title={LABEL[g]}
                 aria-hidden="true"
               >
-                <GoodsArt good={g} cardFace />
+                {!tabletop && <GoodsArt good={g} cardFace />}
                 <span>{LABEL[g]}</span>
               </span>
               <span className="counter-remaining">
-                <small>剩</small>
+                <small>{tabletop ? "×" : "剩"}</small>
                 <b>{state.tokens[g].length}</b>
               </span>
               <span className="counter-next">
-                {state.tokens[g].length ? (
+                {tabletop ? (
+                  <>
+                    <small>
+                      下<span className="counter-next-suffix">枚</span>
+                    </small>
+                    <span
+                      className="stock-chip-face"
+                      data-motion-anchor={`stock-${g}`}
+                      aria-hidden="true"
+                    >
+                      <GoodsArt good={g} cardFace />
+                      <b>{state.tokens[g].length ? state.tokens[g][0] : "—"}</b>
+                    </span>
+                    {state.tokens[g].map((_, i) => (
+                      <i
+                        key={i}
+                        aria-hidden="true"
+                        data-motion-fallback={`token-${g}-${i}`}
+                      />
+                    ))}
+                  </>
+                ) : state.tokens[g].length ? (
                   <>
                     <small>
                       下<span className="counter-next-suffix">枚</span>
@@ -92,16 +131,48 @@ export function MobileSupply({
             </div>
           ))}
         </div>
-        <div className="supply-bonuses">
-          <span>奖励剩余</span>
+        <div
+          className={`supply-bonuses${tabletop ? " stock-bonus-bank" : ""}`}
+          role={tabletop ? "group" : undefined}
+          aria-label={tabletop ? "奖励筹码余量" : undefined}
+        >
+          {tabletop ? (
+            <Award className="stock-bonus-icon" size={15} aria-hidden="true" />
+          ) : (
+            <span>奖励剩余</span>
+          )}
           {([3, 4, 5] as const).map((n) => (
             <span
               key={n}
-              className="supply-bonus"
+              className={`supply-bonus${tabletop ? " stock-bonus-group" : ""}`}
+              role={tabletop ? "group" : undefined}
               data-motion-anchor={`bonus-${n}`}
+              aria-label={
+                tabletop
+                  ? `${n}${n === 5 ? "张及以上" : "张"}奖励，剩余 ${state.bonus[n].length} 枚`
+                  : undefined
+              }
             >
-              {n}
-              {n === 5 ? "+" : ""}张 <b>{state.bonus[n].length}</b>枚
+              {tabletop ? (
+                <>
+                  <span
+                    className={`stock-bonus-chip stock-bonus-${n}`}
+                    data-motion-anchor={`bonus-face-${n}`}
+                    aria-hidden="true"
+                  >
+                    {n}
+                    {n === 5 ? "+" : ""}
+                  </span>
+                  <span className="stock-bonus-count" aria-hidden="true">
+                    ×<b>{state.bonus[n].length}</b>
+                  </span>
+                </>
+              ) : (
+                <>
+                  {n}
+                  {n === 5 ? "+" : ""}张 <b>{state.bonus[n].length}</b>枚
+                </>
+              )}
             </span>
           ))}
         </div>

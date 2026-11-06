@@ -39,7 +39,14 @@ export function Card({
       aria-label={`${LABEL[good]}${premium ? "，高级货物，至少 2 张起售" : ""}${selected ? "，已选中" : ""}${notice ? `，${notice}` : ""}`}
       aria-pressed={selected}
     >
-      {premium && <span className="premium-badge">高级</span>}
+      {premium && (
+        <span className="premium-badge">
+          <span className="premium-badge-label">高级</span>
+          <span className="premium-badge-minimum" aria-hidden="true">
+            2+
+          </span>
+        </span>
+      )}
       <GoodsArt good={good} cardFace />
       <span className="card-name">{LABEL[good]}</span>
       <span className="card-sale-rule">

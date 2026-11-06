@@ -1,0 +1,784 @@
+/* Portrait tabletop. Cards, selections, actions and tutorial stay shared. */
+@media (max-width: 860px) {
+  .game-shell.portrait-table {
+    --felt: #245e4e;
+    --felt-line: #c0d4ac40;
+    --board-gap: 7px;
+    padding-inline: max(8px, env(safe-area-inset-left));
+  }
+  .portrait-table .game-header {
+    padding-inline: 3px;
+  }
+  .portrait-table .game-grid {
+    display: block;
+    margin-top: 4px;
+  }
+  .game-shell.portrait-table .table-column {
+    --text: #fff3d9;
+    --text-secondary: #d7e3cd;
+    --board-line: var(--felt-line);
+    --board-muted: #d7e3cd;
+    --board-quiet: #b4cab1;
+    --accent: #eed59c;
+    container-type: inline-size;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 10px;
+    border: 7px solid #90643e;
+    outline: 1px solid #6d492f;
+    border-radius: 20px;
+    background-color: var(--felt);
+    background-image: repeating-linear-gradient(
+      45deg,
+      #ffffff02 0 1px,
+      transparent 1px 5px
+    );
+    color: var(--text);
+    box-shadow:
+      inset 0 0 0 1px #dfc48988,
+      inset 0 0 0 4px #17473788,
+      0 5px 15px #45331e24;
+  }
+  .portrait-table .table-column::before {
+    content: "";
+    position: absolute;
+    inset: 5px;
+    border: 1px solid #d8c18c44;
+    border-radius: 8px;
+    pointer-events: none;
+  }
+  .portrait-table .board-divider,
+  .portrait-table .opponent-panel,
+  .portrait-table .hand-panel > .hand-heading {
+    display: none;
+  }
+
+  /* Each player keeps their own name, public inventory and score in one seat. */
+  .game-shell.portrait-table .mobile-player-scores {
+    display: block;
+    padding: 0;
+    border: 0;
+    margin: 0;
+  }
+  .portrait-table .player-seat {
+    position: relative;
+    border: 0;
+  }
+  .game-shell.portrait-table .mobile-player-scores .player-score-card {
+    display: grid;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    padding: 0 2px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: 24px;
+    align-items: center;
+    gap: 10px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .portrait-table .score-card-heading {
+    display: contents;
+  }
+  .portrait-table .score-card-identity {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .portrait-table .score-card-stats {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .portrait-table .score-card-seals {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .game-shell.portrait-table .score-card-identity > b {
+    font-size: var(--board-type-body);
+    color: #f4e5bd;
+  }
+  .portrait-table
+    :is(.score-stat-label, .score-seals-label, .score-private-label) {
+    display: none;
+  }
+  .portrait-table .score-private-glyph {
+    display: block;
+    color: var(--board-quiet);
+  }
+  .game-shell.portrait-table .score-card-identity::before {
+    background: #f3da92;
+  }
+  .game-shell.portrait-table .score-opponent .score-card-identity > b {
+    color: #f0c6a0;
+  }
+  .game-shell.portrait-table
+    :is(.score-icon, .score-card-seals, .score-card-seals b) {
+    color: var(--board-muted);
+  }
+  .game-shell.portrait-table .score-card-seals {
+    margin-left: auto;
+    font-size: var(--board-type-label);
+  }
+  .game-shell.portrait-table .mobile-player-scores .score-card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
+  }
+  .game-shell.portrait-table .seat-with-herd-pile .score-card-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .game-shell.portrait-table
+    .mobile-player-scores
+    .seat-with-herd-pile
+    .score-card-stats
+    > .score-stat-herd {
+    display: none;
+  }
+  .game-shell.portrait-table
+    .mobile-player-scores
+    .score-card-stats
+    > .score-stat {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .portrait-table .score-card-stats > .score-stat:last-child {
+    justify-content: center;
+  }
+  .portrait-table .score-card-stats > .score-stat:nth-child(2) {
+    justify-content: center;
+  }
+  .game-shell.portrait-table .score-stat-title {
+    line-height: 18px;
+  }
+  .game-shell.portrait-table .score-card-stats strong {
+    font-size: var(--board-type-body);
+    line-height: 20px;
+    color: var(--text);
+  }
+  .game-shell.portrait-table .score-stat-income > strong {
+    color: #f4dd9d;
+  }
+  .game-shell.portrait-table .score-card-stats .score-private {
+    font-size: var(--board-type-label);
+  }
+  .portrait-table .score-card-stats strong > small {
+    font-size: var(--board-type-label);
+  }
+
+  /* Real back faces use only the public count; no hidden goods enter the DOM. */
+  .portrait-table .opponent-cards-and-herd {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    align-items: center;
+    gap: 3px;
+    min-height: 64px;
+    margin-top: 4px;
+  }
+  .portrait-table .opponent-cards-and-herd > .camel-pile {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .opponent-hand-fan {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 45px;
+    margin: 3px 0 2px;
+    padding-inline: 10px;
+    pointer-events: none;
+  }
+  .portrait-table .camel-pile {
+    position: relative;
+    display: inline-block;
+    flex: none;
+    width: 44px;
+    height: 60px;
+    vertical-align: bottom;
+  }
+  .portrait-table .camel-pile-stack {
+    position: absolute;
+    inset: 1px 3px 4px 2px;
+  }
+  .portrait-table .camel-pile-card {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid #d4bd83;
+    border-radius: 5px;
+    background: var(--card-bg);
+    color: var(--card-color);
+    box-shadow: 0 2px 1px #183d2c55;
+  }
+  .portrait-table .camel-pile-card:nth-child(1):not(:last-child) {
+    transform: translate(-4px, 4px);
+  }
+  .portrait-table .camel-pile-card:nth-child(2):not(:last-child) {
+    transform: translate(-2px, 2px);
+  }
+  .portrait-table .camel-pile-card > .goods-art {
+    width: 30px;
+    height: 36px;
+    max-width: none;
+  }
+  .portrait-table .camel-pile-count {
+    position: absolute;
+    right: -1px;
+    bottom: 0;
+    display: grid;
+    place-items: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 3px;
+    border: 2px solid var(--felt);
+    border-radius: 50%;
+    background: #f1dba4;
+    color: #3e4d32;
+    font-size: var(--board-type-body);
+    line-height: 18px;
+    font-variant-numeric: tabular-nums;
+  }
+  .portrait-table .camel-pile-empty .camel-pile-stack {
+    opacity: 0.4;
+  }
+  .opponent-hand-card {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 29px;
+    height: 42px;
+    border: 1px solid #f6f1dc;
+    border-radius: 4px;
+    background: var(--card-bg, #e7e0d1);
+    color: var(--card-color, #fbf8ed);
+    box-shadow: 0 1px 2px #273c3020;
+    transform: rotate(
+      calc((var(--fan-index) - (var(--fan-count) - 1) / 2) * 3deg)
+    );
+    transform-origin: center 90%;
+  }
+  .opponent-hand-card + .opponent-hand-card {
+    margin-left: -8px;
+  }
+  .opponent-hand-card.card-back {
+    background: repeating-linear-gradient(
+      45deg,
+      #173f34,
+      #173f34 3px,
+      #214b3e 3px,
+      #214b3e 5px
+    );
+    color: #f5f2df;
+  }
+  .opponent-card-back-mark {
+    display: grid;
+    place-items: center;
+    opacity: 0.75;
+  }
+  .opponent-card-back-mark > svg {
+    width: 16px;
+    height: 16px;
+  }
+  .opponent-hand-card > .goods-art {
+    width: 25px;
+    height: 29px;
+    max-width: none;
+  }
+  .opponent-hand-empty {
+    color: var(--board-muted);
+    font-size: var(--board-type-label);
+  }
+
+  /* A compact bank sits beside the shared play area, folded across the phone. */
+  .portrait-table .table-supply {
+    padding-block: 4px;
+    border: 0;
+  }
+  .game-shell.portrait-table .table-supply .mobile-supply {
+    position: static;
+    margin: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .game-shell.portrait-table .table-supply .mobile-supply > summary {
+    padding: 0;
+    background: transparent;
+  }
+  .portrait-table .supply-heading {
+    margin-bottom: 2px;
+    line-height: 16px;
+  }
+  .portrait-table .supply-heading .supply-expand {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .game-shell.portrait-table .supply-counter {
+    display: grid;
+    --stock-chip: clamp(34px, calc((100cqw - 60px) / 6), 44px);
+    grid-template-columns: auto auto;
+    justify-content: center;
+    align-items: center;
+    gap: 3px 1px;
+    padding: 0;
+    border: 0;
+  }
+  .game-shell.portrait-table .counter-name {
+    display: none;
+  }
+  .portrait-table .counter-next-suffix {
+    display: none;
+  }
+  .game-shell.portrait-table .counter-remaining {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: center;
+    gap: 1px;
+    min-height: 16px;
+    line-height: 16px;
+  }
+  .game-shell.portrait-table .counter-remaining :is(small, b) {
+    font-size: var(--board-type-label);
+    color: var(--board-muted);
+  }
+  .game-shell.portrait-table .counter-remaining b {
+    color: #f4dd9d;
+  }
+  .game-shell.portrait-table .counter-next {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+    min-height: 0;
+    display: block;
+  }
+  .portrait-table .counter-next > small {
+    display: none;
+  }
+  .portrait-table .stock-chip-face {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 0;
+    width: var(--stock-chip);
+    height: var(--stock-chip);
+    border: 2px solid color-mix(in srgb, var(--card-color) 50%, #fff1c9);
+    border-radius: 50%;
+    background: var(--card-bg);
+    color: var(--card-color);
+    box-shadow:
+      inset 0 0 0 2px #fff8df66,
+      0 2px 0 var(--card-color),
+      0 4px 0 color-mix(in srgb, var(--card-color) 80%, #203c2c),
+      0 5px 5px #102c2633;
+  }
+  .portrait-table .stock-chip-face > .goods-art {
+    width: 14px;
+    height: 14px;
+    max-width: none;
+    color: var(--card-color);
+  }
+  .game-shell.portrait-table .stock-chip-face > b {
+    display: block;
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    font-size: var(--board-type-body);
+    line-height: 16px;
+    color: var(--card-color);
+  }
+  .game-shell.portrait-table .supply-bonuses {
+    margin-top: 2px;
+    padding-top: 2px;
+    border: 0;
+    font-size: var(--board-type-label);
+    line-height: 16px;
+  }
+  .game-shell.portrait-table .stock-bonus-bank {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 4px;
+    padding-top: 0;
+  }
+  .portrait-table .stock-bonus-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .portrait-table .stock-bonus-chip {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 2px solid #ecd6a7;
+    border-radius: 50%;
+    background: #a9784d;
+    color: #fff3d9;
+    font-size: var(--board-type-heading);
+    font-weight: 600;
+    box-shadow:
+      inset 0 0 0 2px #fff4d220,
+      0 3px 0 #60442b;
+  }
+  .portrait-table .stock-bonus-4 {
+    background: #63746a;
+    box-shadow:
+      inset 0 0 0 2px #fff4d220,
+      0 3px 0 #394c42;
+  }
+  .portrait-table .stock-bonus-5 {
+    background: #b08b45;
+    box-shadow:
+      inset 0 0 0 2px #fff4d220,
+      0 3px 0 #6b542d;
+  }
+  .portrait-table .stock-bonus-count > b {
+    color: #f4dd9d;
+    font-weight: 400;
+  }
+
+  .game-shell.portrait-table .market-table {
+    padding: 2px 0 4px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .game-shell.portrait-table .market-heading {
+    display: none;
+  }
+  .portrait-table .market-heading .eyebrow {
+    display: none;
+  }
+  .portrait-table .market-count {
+    color: var(--board-muted);
+  }
+  .portrait-table .market-deck-label {
+    display: none;
+  }
+  .game-shell.portrait-table .market-deck {
+    background: repeating-linear-gradient(
+      45deg,
+      #173f34,
+      #173f34 3px,
+      #214b3e 3px,
+      #214b3e 5px
+    );
+    color: #f5eacb;
+    box-shadow: -2px 2px 0 #b7a97c88;
+  }
+  .portrait-table .card {
+    --text: #33251f;
+    --text-secondary: #6a4d3c;
+    --board-muted: #746e64;
+  }
+  .portrait-table .card .premium-badge-label,
+  .portrait-table .card .card-sale-rule {
+    display: none;
+  }
+  .portrait-table .card .premium-badge-minimum {
+    display: inline;
+  }
+  .portrait-table .card.selected .premium-badge {
+    visibility: hidden;
+  }
+  .game-shell.portrait-table .card .premium-badge {
+    padding: 1px 3px;
+    color: #635034;
+    border-radius: 3px;
+  }
+  .game-shell.portrait-table .market-row {
+    --market-card-width: min(
+      108px,
+      var(--fit-market-width, 108px),
+      calc((100cqw - 30px) / 6)
+    );
+  }
+
+  .game-shell.portrait-table .action-ledger {
+    position: relative;
+    padding: 3px 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .portrait-table .action-ledger .ledger-heading {
+    min-height: 19px;
+  }
+  .portrait-table .ledger-open {
+    padding-top: 2px;
+  }
+  .portrait-table .table-turn-note {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .portrait-table .table-turn-note .ledger-open {
+    position: static;
+    order: 2;
+    flex: none;
+    padding: 4px 0 4px 5px;
+  }
+  .portrait-table .table-turn-note .table-last-action {
+    flex: 1;
+    min-width: 0;
+  }
+  .game-shell.portrait-table .compact-ledger-table tbody tr {
+    height: 22px;
+  }
+  .portrait-table .compact-ledger-table :is(th, td) {
+    padding-block: 0;
+  }
+
+  .game-shell.portrait-table .hand-panel {
+    padding: 4px 0 0;
+    border: 0;
+  }
+  .portrait-table .hand-panel .mobile-player-scores {
+    margin-bottom: 6px;
+  }
+  .game-shell.portrait-table .hand-and-herd {
+    --hand-card-width: min(
+      var(--fit-hand-width, 60px),
+      calc((100% - 30px) / 7)
+    );
+  }
+  .game-shell.portrait-table .hand-cards {
+    gap: 5px;
+  }
+  .game-shell.portrait-table .hand-cards > button.card {
+    margin-left: 0;
+  }
+  .game-shell.portrait-table .action-panel {
+    padding: 7px 0 max(6px, env(safe-area-inset-bottom));
+    background: transparent;
+    border-top-color: var(--felt-line);
+  }
+  .portrait-table .action-description.has-error > .invalid {
+    color: #ffcf9b;
+  }
+  .portrait-table .action-description {
+    min-height: 21px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    justify-content: stretch;
+    text-align: left;
+  }
+  .portrait-table .action-description > :is(b, .toolbar-turn-status, .invalid) {
+    grid-area: 1 / 1;
+  }
+  .portrait-table .toolbar-turn-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--text);
+    font-size: var(--board-type-body);
+  }
+  .portrait-table .toolbar-turn-status > small {
+    margin-left: auto;
+    color: var(--board-muted);
+    font-size: var(--board-type-label);
+  }
+  .portrait-table .action-panel[data-ready="true"] .toolbar-turn-status,
+  .portrait-table .has-error .toolbar-turn-status,
+  .portrait-table .clear-button > span {
+    display: none;
+  }
+  .portrait-table .camel-picker-label {
+    display: inline-flex;
+  }
+  .portrait-table .camel-picker {
+    align-items: end;
+  }
+  .portrait-table .action-panel .clear-button {
+    justify-content: center;
+  }
+  .game-shell.portrait-table .camel-picker button {
+    background: #f6ecd8;
+    color: #384a38;
+    border-color: #dfceaa;
+  }
+  .game-shell.portrait-table .camel-picker output {
+    display: grid;
+    align-content: center;
+    height: 44px;
+    color: var(--text);
+  }
+  .portrait-table .camel-picker output > small {
+    font-size: var(--board-type-label);
+    line-height: 16px;
+    color: var(--board-muted);
+  }
+  .portrait-table .camel-picker output > span {
+    line-height: 20px;
+  }
+  .game-shell.portrait-table .confirm {
+    background: #eed59c;
+    color: #294536;
+    border-color: #f7e4b4;
+  }
+  .game-shell.portrait-table .confirm:disabled {
+    background: #ffffff0c;
+    border-color: var(--felt-line);
+    color: #bacab3;
+  }
+  .portrait-table .selected-check {
+    background: #eed59c;
+    color: #294536;
+  }
+  .game-shell.portrait-table[data-fit="scroll"] .action-panel {
+    left: calc(max(8px, env(safe-area-inset-left)) + 7px);
+    right: calc(max(8px, env(safe-area-inset-right)) + 7px);
+    padding-inline: 4px;
+    background: var(--felt);
+    box-shadow: 0 -5px 12px #17473755;
+  }
+  .portrait-table .seat-opponent .sale-feedback {
+    right: 0;
+    bottom: 0;
+    left: auto;
+    transform: none;
+  }
+  .portrait-table .seat-you .sale-feedback {
+    right: 0;
+    bottom: calc(100% + 6px);
+    left: auto;
+    transform: none;
+  }
+  .portrait-table .sale-feedback {
+    --text: #33251f;
+    --text-secondary: #6a4d3c;
+    --board-muted: #746e64;
+    --accent: #963e2c;
+    --accent-soft: #dfad91;
+  }
+  .portrait-table .table-last-action {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 25px;
+    font-size: var(--board-type-label);
+  }
+  .portrait-table .table-action-actor {
+    flex: none;
+    color: #efc49f;
+  }
+  .portrait-table .table-turn-note .action-summary {
+    flex: 1;
+    gap: 5px;
+    margin: 0;
+    font-size: var(--board-type-label);
+    color: var(--board-muted);
+  }
+  .portrait-table .action-summary-goods {
+    flex: 1;
+    gap: 2px;
+  }
+  .portrait-table .table-turn-note .ledger-item-name,
+  .portrait-table .table-turn-note .single-good .ledger-item-value {
+    display: none;
+  }
+  .portrait-table .action-summary .ledger-good {
+    background: var(--card-bg);
+    border-color: var(--card-color);
+    color: var(--card-color);
+  }
+  .portrait-table .action-summary .ledger-item-value {
+    color: var(--card-color);
+  }
+  .portrait-table :is(.action-summary-income, .action-summary-bonus) {
+    color: #f4dd9d;
+  }
+  .portrait-table .table-last-action .ledger-empty {
+    color: var(--board-quiet);
+  }
+
+  .game-shell.portrait-table[data-density="tight"] .table-column {
+    gap: 5px;
+    padding-block: 7px;
+  }
+  .portrait-table[data-density="tight"] .opponent-hand-fan {
+    height: 36px;
+    margin-block: 1px;
+  }
+  .portrait-table[data-density="tight"] .opponent-hand-card {
+    width: 25px;
+    height: 35px;
+  }
+  .portrait-table[data-density="tight"] .table-supply {
+    padding-block: 3px;
+  }
+}
+
+@media (max-width: 360px) {
+  .game-shell.portrait-table .table-column {
+    padding-inline: 7px;
+  }
+  .portrait-table .score-stat-title .score-icon {
+    display: inline-flex;
+  }
+  .portrait-table .score-card-seals .score-icon {
+    display: inline-flex;
+  }
+  .game-shell.portrait-table .score-card-stats > .score-stat {
+    gap: 2px;
+  }
+  .game-shell.portrait-table .supply-counter {
+    column-gap: 1px;
+  }
+  .game-shell.portrait-table .action-panel .confirm {
+    padding-inline: 6px;
+    gap: 3px;
+    font-size: var(--board-type-label);
+  }
+  .game-shell.portrait-table .mobile-player-scores .player-score-card {
+    gap: 5px;
+  }
+  .game-shell.portrait-table .camel-picker {
+    grid-template-columns: auto 32px 24px 32px;
+  }
+  .game-shell.portrait-table .camel-picker button {
+    width: 32px;
+  }
+  .portrait-table .camel-picker-label {
+    margin-right: 3px;
+  }
+  .portrait-table .camel-picker .camel-pile {
+    width: 36px;
+    height: 55px;
+  }
+  .portrait-table .camel-picker .camel-pile-card > .goods-art {
+    width: 26px;
+  }
+  .game-shell.portrait-table .action-panel {
+    grid-template-columns: minmax(0, 1fr) 32px auto;
+  }
+  .game-shell.portrait-table .action-panel .clear-button {
+    min-width: 32px;
+  }
+}
+
+@media (max-width: 860px) {
+  .flight-layer .card :is(.premium-badge-label, .card-sale-rule) {
+    display: none;
+  }
+  .flight-layer .card .premium-badge-minimum {
+    display: inline;
+  }
+}

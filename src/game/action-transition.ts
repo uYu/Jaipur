@@ -3,7 +3,7 @@ import { boardFeedback } from "./action-feedback.ts";
 import type { BoardFeedback } from "./action-feedback.ts";
 import { presentAction } from "./presentation.ts";
 import type { Presentation } from "./presentation.ts";
-import { dealFlights } from "./flights.ts";
+import { actionFlights, dealFlights } from "./flights.ts";
 import type { Flight } from "./flights.ts";
 import { settlementFlights } from "./settlement-flights.ts";
 import { initialMarketSlots } from "./market-layout.ts";
@@ -29,6 +29,115 @@ export type ActionTransition = {
   replayTarget?: number;
 };
 
+function mobileFlights(
+  action: Action,
+  flights: Flight[],
+  actor: number,
+  reduced: boolean,
+): Pick<ActionTransition, "flights" | "duration" | "departureHoldMs"> {
+  if (action.type === "sell") {
+    const departureHoldMs = reduced ? 400 : 500;
+    const cards = flights.filter((flight) => flight.to === "sale");
+    const income = flights.filter((flight) => flight.coin !== undefined);
+    const cardTravel = reduced ? 150 : 1050;
+    const cardStagger = reduced ? 0 : 90;
+    const cardsEnd =
+      departureHoldMs + cardTravel + (cards.length - 1) * cardStagger;
+    const incomeStart = cardsEnd + (reduced ? 100 : 150);
+    const incomeTravel = reduced ? 180 : 650;
+    const incomeStagger = reduced ? 0 : 110;
+    const duration = income.length
+      ? incomeStart +
+        incomeTravel +
+        (income.length - 1) * incomeStagger +
+        (reduced ? 200 : 220)
+      : cardsEnd + (reduced ? 200 : 250);
+    return {
+      departureHoldMs,
+      duration,
+      flights: [
+        ...cards.map((flight, index) => ({
+          ...flight,
+          start: (departureHoldMs + index * cardStagger) / duration,
+          end: (departureHoldMs + index * cardStagger + cardTravel) / duration,
+        })),
+        ...income.map((flight, index) => ({
+          ...flight,
+          start: (incomeStart + index * incomeStagger) / duration,
+          end: (incomeStart + index * incomeStagger + incomeTravel) / duration,
+        })),
+      ],
+    };
+  }
+
+  // An opponent's choice stays on the market long enough to identify it.
+  // Exchange directions then run as two distinct, ordered movements.
+  const departureHoldMs = actor === 1 ? 1200 : reduced ? 450 : 500;
+  if (action.type === "exchange") {
+    const incoming = flights.filter((flight) =>
+      flight.from.startsWith("market-"),
+    );
+    const outgoing = flights.filter((flight) =>
+      flight.to.startsWith("market-"),
+    );
+    const stagger = reduced ? 0 : 40;
+    const incomingTravel = reduced ? 240 : 620;
+    const outgoingTravel = reduced ? 240 : 720;
+    const incomingSpan = incomingTravel + (incoming.length - 1) * stagger;
+    const outgoingStart =
+      departureHoldMs + incomingSpan + (reduced ? 140 : 120);
+    const duration =
+      outgoingStart +
+      outgoingTravel +
+      (outgoing.length - 1) * stagger +
+      (reduced ? 180 : 160);
+    const phase = (items: Flight[], start: number, travel: number) =>
+      items.map((flight, index) => ({
+        ...flight,
+        start: (start + index * stagger) / duration,
+        end: (start + index * stagger + travel) / duration,
+      }));
+    return {
+      departureHoldMs,
+      duration,
+      flights: [
+        ...phase(incoming, departureHoldMs, incomingTravel),
+        ...phase(outgoing, outgoingStart, outgoingTravel),
+      ],
+    };
+  }
+  const stagger = reduced ? 0 : 60;
+  const travel = reduced ? 150 : 800;
+  const departures = flights.filter((flight) => flight.from !== "deck");
+  const refills = flights.filter((flight) => flight.from === "deck");
+  const departureEnd =
+    departureHoldMs + travel + (departures.length - 1) * stagger;
+  const refillStart = departureEnd + (reduced ? 140 : 120);
+  const refillTravel = reduced ? 180 : 800;
+  const duration =
+    (refills.length
+      ? refillStart + refillTravel + (refills.length - 1) * stagger
+      : departureEnd) + (reduced ? 200 : 160);
+  return {
+    departureHoldMs,
+    duration,
+    flights: [
+      ...departures.map((flight, index) => ({
+        ...flight,
+        start: (departureHoldMs + index * stagger) / duration,
+        end: (departureHoldMs + index * stagger + travel) / duration,
+      })),
+      ...refills.map((flight, index) => ({
+        ...flight,
+        hideSource: false,
+        hideTarget: false,
+        start: (refillStart + index * stagger) / duration,
+        end: (refillStart + index * stagger + refillTravel) / duration,
+      })),
+    ],
+  };
+}
+
 export function actionTransition(
   before: State,
   action: Action,
@@ -37,31 +146,45 @@ export function actionTransition(
   eventLimit: number,
   options: TransitionOptions,
 ): ActionTransition {
-  // Give the opponent's market selection time to be read before it fades.
-  const departureHoldMs = options.mobile
-    ? before.current === 1 && action.type !== "sell"
-      ? 1200
-      : options.reduced
-        ? 450
-        : 570
-    : 0;
+  const flights = settlementFlights(before, action, after, slots);
+  if (options.mobile && (action.type === "take" || action.type === "camels"))
+    flights.push(
+      ...actionFlights(before, action, after, slots).filter(
+        (flight) => flight.from === "deck",
+      ),
+    );
+  if (options.mobile && action.type === "sell")
+    flights.push(
+      ...actionFlights(before, action, after, slots)
+        .filter((flight) => flight.coin !== undefined)
+        .map((flight) => ({
+          ...flight,
+          from: flight.coinGood
+            ? `stock-${action.good}`
+            : `bonus-face-${Math.min(action.count, 5)}`,
+          to: `money-${before.current}`,
+          hideSource: false,
+          hideTarget: false,
+          coin:
+            !flight.coinGood && options.revealOpponent
+              ? after.players[before.current].bonuses.at(-1)!
+              : flight.coin,
+        })),
+    );
+  const motion = options.mobile
+    ? mobileFlights(action, flights, before.current, options.reduced)
+    : {
+        flights,
+        duration: options.reduced ? 180 : before.current === 0 ? 500 : 850,
+        departureHoldMs: 0,
+      };
   return {
     kind: "action",
     eventLimit,
     before,
     marketSlots: slots,
     action: presentAction(before, action, after, options.revealOpponent),
-    flights: options.mobile
-      ? []
-      : settlementFlights(before, action, after, slots),
-    duration: options.mobile
-      ? departureHoldMs + (options.reduced ? 50 : 380)
-      : options.reduced
-        ? 180
-        : before.current === 0
-          ? 500
-          : 850,
-    departureHoldMs,
+    ...motion,
     feedback: boardFeedback(before, action, after, slots),
   };
 }

@@ -1,5 +1,5 @@
 import type { Action, Card, Save, State } from "./types.ts";
-import type { Selection } from "./selection.ts";
+import type { ActionMode, Selection } from "./selection.ts";
 import { newGame } from "./engine.ts";
 
 // An ordinary deal; neither the deck nor either player's hand is edited.
@@ -32,11 +32,21 @@ type GuideStep = {
   title: string;
   text: string;
   target: string;
-  kind?: "select" | "confirm" | "opponent" | "opponent-result" | "finish";
+  kind?:
+    "mode" | "select" | "confirm" | "opponent" | "opponent-result" | "finish";
+  mode?: ActionMode;
   lesson?: number;
   tradeoff?: string;
 };
 export const TUTORIAL_STEPS: GuideStep[] = [
+  {
+    id: "take-mode",
+    title: "先选「拿取」",
+    text: "每手先决定做什么，再选牌。这次想从市场拿一张货物：点击「拿取」，再点「下一步」。选择行动还不会成交。",
+    target: ".action-mode-take",
+    kind: "mode",
+    mode: "take",
+  },
   {
     id: "take-select",
     title: "先点集市里的这张香料",
@@ -70,7 +80,7 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     id: "opponent-1",
     title: "米拉正在行动",
     text: "",
-    target: ".opponent-panel",
+    target: ".opponent-panel, .player-seat.seat-opponent",
     kind: "opponent",
   },
   {
@@ -79,6 +89,14 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     text: "上次行动用图标显示双方的行动、付出与收获。米拉这一行是「卖出 → 黄金 ×2 → 12 卢比」。每笔货物收入可见，但对手累计分和奖励面值不会直接展示，收市才揭晓总分。",
     target: ".action-ledger",
     kind: "opponent-result",
+  },
+  {
+    id: "sell-mode",
+    title: "现在选「出售」",
+    text: "米拉行动完了，轮到你把手里的货物换成筹码。点击「出售」，再点「下一步」选牌。",
+    target: ".action-mode-sell",
+    kind: "mode",
+    mode: "sell",
   },
   {
     id: "sell-select",
@@ -99,7 +117,7 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     id: "opponent-2",
     title: "米拉正在行动",
     text: "",
-    target: ".opponent-panel",
+    target: ".opponent-panel, .player-seat.seat-opponent",
     kind: "opponent",
   },
   {
@@ -114,6 +132,14 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     title: "你多赚了 2 卢比！",
     text: "你的收入已变成 13 卢比：11 来自香料，2 来自刚领到的批量奖励。是同一种货物在一次交易里卖够张数，才有这份额外收入；分几次累计不算。",
     target: ".your-score, .mobile-player-scores .score-you",
+  },
+  {
+    id: "camel-mode",
+    title: "收骆驼，也先选「拿取」",
+    text: "拿货物和收骆驼都从「拿取」开始。点击「拿取」，再点「下一步」；接下来会一次收下市场里的全部骆驼。",
+    target: ".action-mode-take",
+    kind: "mode",
+    mode: "take",
   },
   {
     id: "camel-select",
@@ -136,7 +162,7 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     id: "opponent-3",
     title: "米拉正在行动",
     text: "",
-    target: ".opponent-panel",
+    target: ".opponent-panel, .player-seat.seat-opponent",
     kind: "opponent",
   },
   {
@@ -145,6 +171,14 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     text: "米拉这一行显示「拿取 → 无付出 → 白银 ×1」。你收骆驼后翻出的白银被她先拿走了，这是补货让先手的代价。她的整手牌仍保密。",
     target: ".action-ledger",
     kind: "opponent-result",
+  },
+  {
+    id: "camel-exchange-mode",
+    title: "想拿多张，先选「交换」",
+    text: "交换可以同时拿进多张货物，再用手牌或骆驼等量付出。点击「交换」，再点「下一步」，先练用骆驼付款。",
+    target: ".action-mode-exchange",
+    kind: "mode",
+    mode: "exchange",
   },
   {
     id: "camel-exchange-select",
@@ -174,7 +208,7 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     id: "opponent-4",
     title: "米拉正在行动",
     text: "",
-    target: ".opponent-panel",
+    target: ".opponent-panel, .player-seat.seat-opponent",
     kind: "opponent",
   },
   {
@@ -183,6 +217,14 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     text: "记录里米拉收下了你付出的 2 头骆驼。现在她有 3 头、你有 2 头，驼队优势已经反转。交换付出的牌会留在市场，对手也能拿；实战别只看换进了什么。",
     target: ".action-ledger",
     kind: "opponent-result",
+  },
+  {
+    id: "goods-exchange-mode",
+    title: "再选「交换」，试试手牌付款",
+    text: "这次用自己的货物换市场货物。点击「交换」，再点「下一步」；选中的手牌会作为付款，不会出售。",
+    target: ".action-mode-exchange",
+    kind: "mode",
+    mode: "exchange",
   },
   {
     id: "goods-exchange-select",
@@ -212,7 +254,7 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     id: "opponent-5",
     title: "米拉正在行动",
     text: "",
-    target: ".opponent-panel",
+    target: ".opponent-panel, .player-seat.seat-opponent",
     kind: "opponent",
   },
   {
@@ -221,6 +263,14 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     text: "先看最新记录：「拿取 → 无付出 → 黄金 ×1」。现在轮到你，下一笔亲手试试混合支付。",
     target: ".action-ledger",
     kind: "opponent-result",
+  },
+  {
+    id: "mixed-exchange-mode",
+    title: "最后选「交换」，混合付款",
+    text: "一笔交换也能同时用手牌和骆驼付款。点击「交换」，再点「下一步」，亲手试一次。",
+    target: ".action-mode-exchange",
+    kind: "mode",
+    mode: "exchange",
   },
   {
     id: "mixed-exchange-select",
@@ -257,7 +307,7 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     id: "opponent-6",
     title: "米拉正在行动",
     text: "",
-    target: ".opponent-panel",
+    target: ".opponent-panel, .player-seat.seat-opponent",
     kind: "opponent",
   },
   {
@@ -289,7 +339,8 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     id: "end-match",
     title: "赢下一轮，才会点亮印章",
     text: "当前是「1 局定胜负」，赢本轮就赢比赛。标准赛则先赢两轮、集齐两枚印章获胜。结束时会弹出结算；完全平局会加赛。",
-    target: ".hand-panel .seals, .mobile-player-scores .score-card-seals",
+    target:
+      ".hand-panel .seals, .mobile-player-scores .score-you .score-card-seals",
   },
   {
     id: "finish",
@@ -419,6 +470,7 @@ export function tutorialStepAfterSelection(
   selection: Selection,
   state: State,
 ) {
+  if (TUTORIAL_STEPS[step].kind === "mode") return step;
   // Finishing an input enables Next; it never advances the guide by itself.
   if (tutorialSelectionReady(step, selection, state)) return step;
   const id = TUTORIAL_STEPS[step].id;
@@ -460,8 +512,10 @@ export function tutorialStepAfterNext(
   step: number,
   selection: Selection,
   state: State,
+  mode?: ActionMode | null,
 ) {
   const guide = TUTORIAL_STEPS[step];
+  if (guide.kind === "mode") return mode === guide.mode ? step + 1 : step;
   if (guide.kind === "select")
     return tutorialSelectionReady(step, selection, state) ? step + 1 : step;
   if (!guide.kind || guide.kind === "opponent-result") return step + 1;

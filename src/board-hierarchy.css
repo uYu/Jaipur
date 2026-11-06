@@ -1,0 +1,527 @@
+/* The cards are the playing surface. Reference data sits on the page, while
+   terracotta is reserved for a selection, a new event or the commit button. */
+.game-shell,
+.flight-layer {
+  --board-type-heading: 16px;
+  --board-type-body: 14px;
+  --board-type-label: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--board-type-body);
+  font-weight: 400;
+}
+.game-shell {
+  --board-line: #ded8cd;
+  --board-muted: #746e64;
+  --board-quiet: #8a847a;
+  --board-table: #efede5;
+}
+
+.game-shell .brand b,
+.game-shell :is(.opponent-score > b, .your-score > b, .market-deck > b) {
+  font-size: var(--board-type-heading);
+  line-height: 1.5;
+}
+.game-shell :is(.brand, .header-round, .market-count, .hand-heading h2 > span),
+.game-shell
+  :is(.game-tools-label, .game-tools button, .mobile-game-menu > summary),
+.game-shell
+  :is(
+    .opponent-score > span,
+    .opponent-score > small,
+    .your-score > span,
+    .your-score > small
+  ),
+.game-shell
+  :is(
+    .seals .muted,
+    .herd-summary,
+    .market-deck-label,
+    .recent-log,
+    .game-footer
+  ) {
+  font-size: var(--board-type-label);
+}
+.game-shell :is(.avatar, .seals > span:not(.muted)) {
+  font-size: var(--board-type-heading);
+}
+.game-shell .herd-summary b,
+.game-shell .camel-picker output {
+  font-size: var(--board-type-body);
+}
+.game-shell
+  .compact-ledger-table
+  :is(
+    .ledger-status,
+    .ledger-simple-verb,
+    .ledger-actor > small,
+    .ledger-latest,
+    .ledger-item-name,
+    .ledger-item-value
+  ) {
+  font-size: var(--board-type-label);
+}
+.game-shell :is(.ledger-good, .ledger-income, .ledger-bonus, .receipt-coin) {
+  font-weight: 400;
+}
+.game-shell :is(.ledger-status, .ledger-turn-number),
+.game-shell .card .market-card-notice,
+.game-shell
+  .sale-feedback
+  :is(.sale-feedback-tier, .sale-feedback-plus, small) {
+  font-size: var(--board-type-label);
+}
+:is(.game-shell, .flight-layer)
+  .card
+  :is(.card-name, .card-sale-rule, .premium-badge, .selected-check) {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+:is(.game-shell, .flight-layer) .card .card-name {
+  font-size: var(--board-type-body);
+  line-height: 1.4;
+}
+:is(.game-shell, .flight-layer)
+  .card
+  :is(.card-sale-rule, .premium-badge, .selected-check) {
+  font-size: var(--board-type-label);
+  line-height: 1.25;
+}
+.premium-badge-minimum,
+.score-private-glyph {
+  display: none;
+}
+.game-shell .card .premium-badge {
+  padding: 0 2px;
+}
+.game-shell .action-panel .action-description > span.invalid {
+  font-size: var(--board-type-label);
+}
+.game-shell .action-panel .confirm {
+  font-size: var(--board-type-body);
+}
+
+.game-shell .game-header {
+  border-color: transparent;
+}
+.game-shell :is(.header-round, .market-count, .hand-heading h2 > span) {
+  color: var(--board-muted);
+  letter-spacing: 0;
+}
+.game-shell .mobile-game-menu > summary {
+  background: transparent;
+  border-color: var(--board-line);
+  color: var(--board-muted);
+}
+
+/* Reference area: one reading surface, without nested boxes or filled rows. */
+.game-shell .game-overview,
+.game-shell .game-overview .mobile-supply,
+.game-shell .game-overview .mobile-supply > summary {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.game-shell .overview-title {
+  color: var(--board-muted);
+  font-size: var(--board-type-body);
+}
+.game-shell .game-overview .mobile-supply > summary {
+  padding: 0;
+}
+.game-shell .supply-heading {
+  margin-bottom: 4px;
+}
+.game-shell .supply-heading > b {
+  color: var(--board-muted);
+  font-size: var(--board-type-label);
+  font-weight: 400;
+}
+.game-shell .supply-heading > span,
+.game-shell .supply-heading .supply-expand {
+  color: var(--board-muted);
+  font-size: var(--board-type-label);
+  font-weight: 400;
+}
+.game-shell .supply-counter {
+  border-color: transparent;
+  padding-block: 1px;
+}
+.game-shell .counter-name {
+  min-height: 19px;
+  gap: 3px;
+  font-size: var(--board-type-label);
+  font-weight: 400;
+}
+.game-shell .counter-name > .goods-art {
+  width: 16px;
+  height: 16px;
+}
+.game-shell :is(.counter-remaining small, .counter-next small) {
+  color: var(--board-muted);
+  font-size: var(--board-type-label);
+}
+.game-shell .counter-remaining b {
+  color: var(--text);
+  font-size: var(--board-type-body);
+}
+.game-shell .counter-next b {
+  color: var(--board-muted);
+  font-size: var(--board-type-label);
+  font-weight: 400;
+}
+.game-shell .supply-bonuses {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-color: var(--board-line);
+  color: var(--board-muted);
+  font-size: var(--board-type-label);
+}
+.game-shell .supply-bonus b {
+  color: var(--board-muted);
+  font-size: var(--board-type-label);
+}
+.game-shell :is(.supply-details, .supply-detail-row, .game-footer) {
+  border-color: var(--board-line);
+}
+.game-shell .supply-detail-row > b {
+  font-weight: 600;
+}
+.game-shell .supply-details .supply-detail-row .coin {
+  font-size: var(--board-type-label);
+}
+.game-shell :is(.ledger-item-name, .ledger-item-value) {
+  font-weight: 400;
+}
+.game-shell .opponent-panel .seals .muted {
+  font-size: var(--board-type-label);
+}
+.game-shell .game-overview .action-ledger {
+  border-color: var(--board-line);
+}
+.game-shell .action-ledger .ledger-heading {
+  padding-right: 56px;
+  margin-bottom: 1px;
+}
+.game-shell .ledger-open {
+  gap: 1px;
+  color: var(--board-muted);
+  font-size: var(--board-type-label);
+}
+.game-shell .ledger-turn-number {
+  color: var(--board-quiet);
+}
+.game-shell .compact-ledger-table :is(.ledger-you, .ledger-opponent),
+.game-shell .compact-ledger-table .action-notice {
+  background: transparent;
+  box-shadow: none;
+}
+.game-shell .compact-ledger-table :is(th, td) {
+  border-color: var(--board-line);
+}
+.game-shell .compact-ledger-table tbody tr + tr {
+  border-color: var(--board-line);
+}
+.game-shell .compact-ledger-table .ledger-you .ledger-actor > b {
+  color: #426250;
+}
+.game-shell .compact-ledger-table .ledger-opponent .ledger-actor > b {
+  color: #956650;
+}
+.game-shell .compact-ledger-table .ledger-empty {
+  color: var(--board-quiet);
+  font-size: var(--board-type-label);
+}
+.game-shell .compact-ledger-table .action-flash {
+  outline: none;
+  background: #f0e5d7;
+}
+.game-shell .compact-ledger-table .action-flash > :first-child {
+  box-shadow: inset 2px 0 var(--accent);
+}
+
+/* A single subtle tabletop puts the selectable cards ahead of the chrome. */
+.game-shell .market-table {
+  background: var(--board-table);
+  border: 0;
+  border-radius: 12px;
+  box-shadow: none;
+}
+.game-shell :is(.market-heading h2, .hand-heading h2) {
+  font-size: var(--board-type-heading);
+  font-weight: 600;
+}
+.game-shell .market-deck,
+.flight-layer .flight-back,
+.flight-layer .card-back {
+  background: repeating-linear-gradient(
+    45deg,
+    #8c7d6c,
+    #8c7d6c 3px,
+    #958675 3px,
+    #958675 5px
+  );
+  border: 1px solid #fcf8ef99;
+  box-shadow: -2px 2px 0 #c1b8a8;
+}
+:is(.game-shell, .flight-layer) .card {
+  background: color-mix(in srgb, var(--card-bg) 72%, #fffdf7);
+  border-color: color-mix(in srgb, var(--card-color) 32%, transparent);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--card-color) 15%, transparent);
+}
+.game-shell .card.selected {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+:is(.game-shell, .flight-layer) .card:not(.premium-card) .card-sale-rule {
+  display: none;
+}
+:is(.game-shell, .flight-layer) .card .premium-badge {
+  border-color: transparent;
+  background: #fffdf7bb;
+  color: var(--board-muted, #746e64);
+  white-space: nowrap;
+}
+.game-shell .hand-panel {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.game-shell .opponent-panel,
+.game-shell .opponent-panel.turn-active {
+  border-color: transparent;
+  background: transparent;
+}
+.game-shell .opponent-panel .avatar {
+  background: #eee2d5;
+  border-color: transparent;
+}
+
+/* The toolbar continues the hand area. Only a valid transaction is filled. */
+.game-shell .action-panel {
+  border: 0;
+  border-top: 1px solid var(--board-line);
+  border-radius: 0;
+  background: var(--page);
+  box-shadow: none;
+}
+.game-shell .action-description > b {
+  color: var(--board-muted);
+  font-size: var(--board-type-label);
+  font-weight: 400;
+}
+.game-shell .action-panel[data-ready="true"] .action-description > b {
+  color: var(--text);
+  font-size: var(--board-type-body);
+  font-weight: 600;
+}
+.game-shell .action-description.has-error > .invalid {
+  color: var(--accent);
+}
+.game-shell .camel-picker,
+.game-shell .camel-picker-label {
+  color: var(--board-muted);
+}
+.game-shell .camel-picker {
+  justify-self: start;
+  width: max-content;
+}
+.game-shell .camel-picker button {
+  border-color: var(--board-line);
+  background: #fffdf7;
+}
+.game-shell .clear-button {
+  background: transparent;
+  border-color: transparent;
+  color: var(--board-muted);
+}
+.game-shell .confirm {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fffaf2;
+}
+.game-shell .confirm:disabled {
+  border-color: var(--board-line);
+  background: transparent;
+  color: var(--board-quiet);
+}
+
+@media (min-width: 861px) {
+  .game-shell .game-tools button {
+    background: transparent;
+    border-color: transparent;
+    color: var(--board-muted);
+  }
+  .game-shell .game-grid {
+    gap: 28px;
+  }
+  .game-shell .game-overview {
+    padding: 8px 0 8px 20px;
+    border-left: 1px solid var(--board-line);
+  }
+  .game-shell .hand-panel {
+    padding-inline: 6px;
+  }
+  .game-shell .action-panel {
+    padding-inline: 6px;
+  }
+}
+
+@media (max-width: 860px) {
+  .game-shell.viewport-table {
+    --board-gap: 10px;
+    padding-top: 4px;
+  }
+  .game-shell.viewport-table:is(
+      [data-density="compact"],
+      [data-density="tight"]
+    ) {
+    --board-gap: 7px;
+  }
+  .game-shell.viewport-table .game-overview {
+    padding: 2px 4px 0;
+  }
+  .game-shell.viewport-table .game-overview .action-ledger {
+    padding-top: 5px;
+  }
+  .game-shell.viewport-table .compact-ledger-table tbody tr {
+    height: 23px;
+  }
+  .game-shell.viewport-table .compact-ledger-table :is(th, td) {
+    padding-block: 1px;
+  }
+  .game-shell.viewport-table[data-density="tight"] .supply-counter {
+    grid-template-columns: auto auto;
+    justify-content: center;
+    column-gap: 4px;
+  }
+  .game-shell.viewport-table[data-density="tight"] .counter-name {
+    font-size: var(--board-type-label);
+  }
+  .game-shell .mobile-player-scores {
+    gap: 0;
+    padding-block: 4px;
+    border-top: 1px solid var(--board-line);
+    border-bottom: 1px solid var(--board-line);
+  }
+  .game-shell .player-score-slot + .player-score-slot {
+    border-left: 1px solid var(--board-line);
+  }
+  .game-shell .mobile-player-scores .player-score-card {
+    height: 62px;
+    min-height: 62px;
+    padding: 3px 8px;
+    gap: 4px;
+    grid-template-rows: 15px minmax(0, 1fr);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .game-shell .score-card-identity > b {
+    color: #426250;
+    font-size: var(--board-type-label);
+  }
+  .game-shell .score-opponent .score-card-identity > b {
+    color: #956650;
+  }
+  .game-shell .score-active .score-card-identity::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    margin-right: 4px;
+    border-radius: 50%;
+    background: #426250;
+  }
+  .game-shell .score-opponent.score-active .score-card-identity::before {
+    background: #956650;
+  }
+  .game-shell .score-card-seals,
+  .game-shell .score-card-seals b {
+    color: var(--board-muted);
+    font-size: var(--board-type-label);
+  }
+  .game-shell .mobile-player-scores .score-card-stats {
+    gap: 2px;
+  }
+  .game-shell .mobile-player-scores .score-card-stats > .score-stat {
+    gap: 0;
+  }
+  .game-shell .mobile-player-scores .score-stat-title {
+    color: var(--board-muted);
+    font-size: var(--board-type-label);
+    gap: 2px;
+  }
+  .game-shell .mobile-player-scores .score-card-stats strong {
+    font-size: var(--board-type-body);
+    line-height: 21px;
+  }
+  .game-shell .mobile-player-scores .score-stat-income > strong {
+    font-size: var(--board-type-heading);
+    color: #426250;
+  }
+  .game-shell .mobile-player-scores .score-card-stats .score-private {
+    font-size: var(--board-type-label);
+    color: var(--board-muted);
+    font-weight: 400;
+  }
+  .game-shell.viewport-table .market-table {
+    padding: 11px 10px 12px;
+  }
+  .game-shell.viewport-table .market-heading {
+    margin-bottom: 8px;
+  }
+  .game-shell.viewport-table .hand-panel {
+    padding: 3px 2px 0;
+  }
+  .game-shell.viewport-table .hand-heading {
+    margin-bottom: 7px;
+  }
+  .game-shell.viewport-table .action-panel {
+    gap: 5px;
+    padding: 8px 2px max(6px, env(safe-area-inset-bottom));
+  }
+  .game-shell.viewport-table[data-fit="scroll"] .action-panel {
+    padding-inline: 8px;
+    background: var(--page);
+    box-shadow: 0 -8px 16px #f7f4ed;
+  }
+  .game-shell .action-panel .confirm {
+    min-width: 96px;
+  }
+}
+
+@media (max-width: 360px) {
+  .game-shell.viewport-table {
+    --board-gap: 7px;
+  }
+  .game-shell.viewport-table:is(
+      [data-density="compact"],
+      [data-density="tight"]
+    ) {
+    --board-gap: 6px;
+  }
+  .game-shell .counter-name {
+    gap: 2px;
+    font-size: var(--board-type-label);
+  }
+  .game-shell .counter-name > .goods-art {
+    width: 14px;
+    height: 14px;
+  }
+  .game-shell .score-card-seals .score-icon {
+    display: none;
+  }
+  .game-shell .action-panel .confirm {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+  :is(.game-shell, .flight-layer) .card .card-name {
+    font-size: var(--board-type-label);
+  }
+}

@@ -8,6 +8,7 @@ import {
   selectCamels,
   selectedAction,
 } from "../src/game/selection.ts";
+import type { ActionMode } from "../src/game/selection.ts";
 import { replay } from "../src/game/storage.ts";
 import {
   createTutorialSave,
@@ -142,6 +143,50 @@ test("every player confirmation is followed by one scripted opponent move and a 
   assert.equal(TUTORIAL_STEPS.at(-1)!.kind, "finish");
 });
 
+test("each lesson requires its action choice and waits for Next before selecting cards", () => {
+  const state = createTutorialState();
+  const expected: [string, ActionMode][] = [
+    ["take", "take"],
+    ["sell", "sell"],
+    ["camel", "take"],
+    ["camel-exchange", "exchange"],
+    ["goods-exchange", "exchange"],
+    ["mixed-exchange", "exchange"],
+  ];
+  assert.equal(
+    TUTORIAL_STEPS.filter((guide) => guide.kind === "mode").length,
+    6,
+  );
+  for (const [lesson, mode] of expected) {
+    const index = step(`${lesson}-mode`);
+    const guide = TUTORIAL_STEPS[index];
+    assert.equal(guide.kind, "mode");
+    assert.equal(guide.mode, mode);
+    assert.equal(guide.target, `.action-mode-${mode}`);
+    assert.equal(index + 1, step(`${lesson}-select`));
+    for (const choice of [
+      undefined,
+      null,
+      "take",
+      "sell",
+      "exchange",
+    ] as const) {
+      assert.equal(
+        tutorialStepAfterNext(index, emptySelection(), state, choice),
+        choice === mode ? index + 1 : index,
+      );
+    }
+    assert.equal(
+      tutorialStepAfterSelection(
+        index,
+        { market: [0, 1], hand: [0], camels: 1 },
+        state,
+      ),
+      index,
+    );
+  }
+});
+
 test("bulk sale lesson pauses on the real bonus and beats selling the same cards singly", () => {
   let before = createTutorialState();
   for (const action of TUTORIAL_ACTIONS.slice(0, 2))
@@ -172,7 +217,7 @@ test("bulk sale lesson pauses on the real bonus and beats selling the same cards
   );
   assert.equal(
     tutorialStepAfterNext(step("bulk-bonus"), emptySelection(), bulk),
-    step("camel-select"),
+    step("camel-mode"),
   );
 });
 
@@ -223,7 +268,7 @@ test("completed selections wait for Next and incomplete selections cannot advanc
   );
   assert.equal(
     tutorialStepAfterNext(step("history-1"), emptySelection(), state),
-    step("sell-select"),
+    step("sell-mode"),
   );
 });
 

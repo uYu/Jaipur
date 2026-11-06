@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { Good, State } from "../game/types.ts";
 import type { Presentation } from "../game/presentation.ts";
 import {
@@ -14,8 +15,10 @@ import {
   LockKeyhole,
   Trophy,
 } from "lucide-react";
-import { GoodsArt } from "./Art.tsx";
+import { GoodsArt, JaipurMark } from "./Art.tsx";
 import { SaleFeedback } from "./SaleFeedback.tsx";
+import { CamelPile } from "./CamelPile.tsx";
+import { MoneyPile } from "./MoneyPile.tsx";
 
 function ScoreIcon({
   kind,
@@ -51,6 +54,7 @@ export function PlayerScores({
   sales,
   paused = false,
   revealOpponent = false,
+  actor: selectedActor,
 }: {
   state: State;
   receipts: [Presentation | null, Presentation | null];
@@ -58,10 +62,22 @@ export function PlayerScores({
   sales?: readonly ({ id: string; action: Presentation } | null)[];
   paused?: boolean;
   revealOpponent?: boolean;
+  actor?: 0 | 1;
 }) {
+  const actors: readonly (0 | 1)[] =
+    selectedActor === undefined ? [0, 1] : [selectedActor];
   return (
-    <section className="mobile-player-scores" aria-label="双方得分">
-      {([0, 1] as const).map((actor) => {
+    <section
+      className={`mobile-player-scores${selectedActor === undefined ? "" : " player-scores-single"}`}
+      aria-label={
+        selectedActor === undefined
+          ? "双方得分"
+          : selectedActor === 0
+            ? "你的座位"
+            : "米拉的座位"
+      }
+    >
+      {actors.map((actor) => {
         const player = state.players[actor];
         const own = actor === 0;
         const score = playerScoreDisplay(state, actor, revealOpponent);
@@ -71,7 +87,7 @@ export function PlayerScores({
         return (
           <div
             key={actor}
-            className={`player-score-slot ${own ? "slot-you" : "slot-opponent"}`}
+            className={`player-score-slot player-seat ${own ? "slot-you seat-you" : "slot-opponent seat-opponent"}${selectedActor !== undefined ? " seat-with-herd-pile" : ""}`}
           >
             <button
               className={`player-score-card ${own ? "score-you" : "score-opponent"} ${state.current === actor && state.phase === "playing" ? "score-active" : ""}`}
@@ -84,9 +100,12 @@ export function PlayerScores({
                 <span className="score-card-identity">
                   <b>{own ? "你" : "米拉"}</b>
                 </span>
-                <span className="score-card-seals">
+                <span
+                  className="score-card-seals"
+                  aria-label={`胜局 ${state.seals[actor]}/${state.targetSeals ?? 2}`}
+                >
                   <ScoreIcon kind="wins" />
-                  胜局{" "}
+                  <span className="score-seals-label">胜局</span>{" "}
                   <b>
                     {state.seals[actor]}/{state.targetSeals ?? 2}
                   </b>
@@ -95,12 +114,14 @@ export function PlayerScores({
               <span className="score-card-stats">
                 <span
                   className="score-stat score-stat-hand"
-                  data-motion-anchor={own ? undefined : "opponent-hand"}
+                  data-motion-anchor={
+                    own || selectedActor === 1 ? undefined : "opponent-hand"
+                  }
                   aria-label={`手牌 ${player.hand.length}/7 张`}
                 >
                   <span className="score-stat-title">
                     <ScoreIcon kind="hand" />
-                    手牌
+                    <span className="score-stat-label">手牌</span>
                   </span>
                   <strong>
                     {player.hand.length}
@@ -115,29 +136,58 @@ export function PlayerScores({
                       : `得分 ${score.total} 卢比`
                   }
                 >
-                  <span className="score-stat-title">
-                    <ScoreIcon kind={score.hidden ? "private" : "income"} />
-                    得分
-                  </span>
-                  <strong
-                    className={score.hidden ? "score-private" : undefined}
-                  >
-                    {score.hidden ? "保密" : score.total}
-                  </strong>
+                  {selectedActor !== undefined ? (
+                    <MoneyPile amount={score.total} actor={actor} />
+                  ) : (
+                    <>
+                      <span className="score-stat-title">
+                        <ScoreIcon kind={score.hidden ? "private" : "income"} />
+                        <span className="score-stat-label">得分</span>
+                      </span>
+                      <strong
+                        className={score.hidden ? "score-private" : undefined}
+                      >
+                        {score.hidden ? (
+                          <span className="score-private-label">保密</span>
+                        ) : (
+                          score.total
+                        )}
+                      </strong>
+                    </>
+                  )}
                 </span>
                 <span
                   className="score-stat score-stat-herd"
-                  data-motion-anchor={own ? "your-herd" : "opponent-herd"}
+                  data-motion-anchor={
+                    own
+                      ? selectedActor === 0
+                        ? undefined
+                        : "your-herd"
+                      : selectedActor === 1
+                        ? undefined
+                        : "opponent-herd"
+                  }
                   aria-label={
                     revealHerd ? `骆驼 ${player.camels} 头` : "驼队数量保密"
                   }
                 >
                   <span className="score-stat-title">
                     <ScoreIcon kind="herd" />
-                    骆驼
+                    <span className="score-stat-label">骆驼</span>
                   </span>
                   <strong className={!revealHerd ? "score-private" : undefined}>
-                    {revealHerd ? player.camels : "保密"}
+                    {revealHerd ? (
+                      player.camels
+                    ) : (
+                      <>
+                        <span className="score-private-label">保密</span>
+                        <LockKeyhole
+                          className="score-private-glyph"
+                          size={12}
+                          aria-hidden="true"
+                        />
+                      </>
+                    )}
                   </strong>
                 </span>
               </span>
@@ -157,6 +207,22 @@ export function PlayerScores({
                   ),
                 )}
             </button>
+            {selectedActor === 1 && (
+              <div className="opponent-cards-and-herd">
+                <OpponentHandFan
+                  hand={
+                    revealOpponent || state.phase !== "playing"
+                      ? player.hand
+                      : null
+                  }
+                  count={player.hand.length}
+                />
+                <CamelPile
+                  count={revealHerd ? player.camels : null}
+                  motionAnchor="opponent-herd"
+                />
+              </div>
+            )}
             {sale && (
               <SaleFeedback
                 key={sale.id}
@@ -168,6 +234,54 @@ export function PlayerScores({
         );
       })}
     </section>
+  );
+}
+
+function OpponentHandFan({
+  hand,
+  count,
+}: {
+  hand: readonly Good[] | null;
+  count: number;
+}) {
+  return (
+    <span
+      className="opponent-hand-fan"
+      data-motion-anchor="opponent-hand"
+      role="group"
+      aria-label={`米拉的手牌，共 ${count} 张${hand === null ? "，内容保密" : "，已公开"}`}
+      style={{ "--fan-count": count } as CSSProperties}
+    >
+      {count === 0 ? (
+        <span className="opponent-hand-empty">暂无手牌</span>
+      ) : (
+        Array.from({ length: count }, (_, index) => {
+          const good = hand?.[index];
+          return (
+            <span
+              key={index}
+              className={`opponent-hand-card${good === undefined ? " card-back" : ` ${good}`}`}
+              role="img"
+              aria-label={good === undefined ? "背面朝上的手牌" : LABEL[good]}
+              style={
+                {
+                  "--fan-index": index,
+                  "--fan-count": count,
+                } as CSSProperties
+              }
+            >
+              {good === undefined ? (
+                <span className="opponent-card-back-mark" aria-hidden="true">
+                  <JaipurMark />
+                </span>
+              ) : (
+                <GoodsArt good={good} cardFace />
+              )}
+            </span>
+          );
+        })
+      )}
+    </span>
   );
 }
 

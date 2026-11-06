@@ -358,7 +358,7 @@ export function Tutorial({
               正式开市
               <ArrowRight size={16} />
             </button>
-          ) : reading || guide.kind === "select" ? (
+          ) : reading || guide.kind === "select" || guide.kind === "mode" ? (
             <button
               className="primary"
               onClick={onNext}
