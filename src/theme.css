@@ -1,16 +1,18 @@
-/* Shared visual language: pink sandstone, ivory paper and one UI font.
+/* Jaipur palette: terracotta plaster, cream stone, deep brown shadows.
    Goods keep their own colors; interface text and controls use these tokens. */
 :root {
   --font-ui: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-  --text: #49372f;
-  --text-secondary: #806d61;
-  --accent: #a45640;
-  --accent-hover: #8c4432;
-  --accent-soft: #f1dfd4;
-  --surface: #fffbf5;
-  --surface-sand: #f3e8dc;
-  --page: #f8f0e7;
-  --border: #ddcbbc;
+  --text: #33251f;
+  --text-secondary: #6a4d3c;
+  --accent: #963e2c;
+  --accent-hover: #743024;
+  --accent-soft: #dfad91;
+  --surface: #f4e5ce;
+  --surface-sand: #dfbd99;
+  --page: #f7f4ed;
+  --border: #b48668;
+  --action-you-bg: #eee0bf;
+  --action-opponent-bg: #eacbb4;
   --ink: var(--text);
   --muted: var(--text-secondary);
   --coral: var(--accent);
@@ -120,13 +122,18 @@ select:focus-visible,
 .menu-copy h1 span {
   color: var(--accent);
 }
+.menu-copy :is(.menu-intro, .menu-meta, .menu-footer, .eyebrow),
+.menu-buttons > .text-button,
+.game-shell :is(.header-round, .market-count, .game-footer) {
+  color: #472e23;
+}
 .menu-shortcuts button,
 .menu-meta,
 .menu-footer {
   color: var(--text-secondary);
 }
 .menu-art {
-  background: #efdfcd;
+  background: #dfb791;
   border-color: var(--border);
 }
 .menu-buttons > .menu-action {
@@ -191,7 +198,7 @@ select:focus-visible,
 .game-shell .mobile-game-menu > nav {
   background: var(--surface);
   border-color: var(--border);
-  box-shadow: 0 8px 24px #49372f18;
+  box-shadow: 0 8px 24px #33251f18;
 }
 .game-shell .game-overview {
   background: var(--surface);
@@ -250,16 +257,16 @@ select:focus-visible,
 .card-back {
   background: repeating-linear-gradient(
     45deg,
-    #ad6b54,
-    #ad6b54 3px,
-    #b7785f 3px,
-    #b7785f 5px
+    #91452f,
+    #91452f 3px,
+    #a6573b 3px,
+    #a6573b 5px
   );
   color: #fff4e8;
   border-color: #f0ddc8;
   box-shadow:
-    -2px 2px 0 #c89d83,
-    -4px 4px 0 #e2c6ae;
+    -2px 2px 0 #a56d4f,
+    -4px 4px 0 #c99670;
 }
 .market-deck-symbol > svg {
   width: 26px;
@@ -442,32 +449,32 @@ select:focus-visible,
 
 /* One type treatment for all card faces; their illustrations carry the color. */
 .diamond {
-  --card-color: #b2594e;
-  --card-bg: #f1dcd3;
+  --card-color: #923b2e;
+  --card-bg: #eec8b5;
 }
 .gold {
-  --card-color: #a27c30;
-  --card-bg: #f1e4bf;
+  --card-color: #7a560e;
+  --card-bg: #f1d373;
 }
 .silver {
-  --card-color: #6f8184;
-  --card-bg: #e4e7df;
+  --card-color: #3f595e;
+  --card-bg: #c7cfbe;
 }
 .cloth {
-  --card-color: #927189;
-  --card-bg: #e8dce4;
+  --card-color: #6b4058;
+  --card-bg: #d7bdd0;
 }
 .spice {
-  --card-color: #71866a;
-  --card-bg: #e2e7d7;
+  --card-color: #345437;
+  --card-bg: #b9c6a0;
 }
 .leather {
-  --card-color: #ac7a51;
-  --card-bg: #edddc5;
+  --card-color: #773d1e;
+  --card-bg: #e0b68c;
 }
 .camel {
-  --card-color: #a78443;
-  --card-bg: #f0e5c9;
+  --card-color: #674c35;
+  --card-bg: #d6c1a6;
 }
 .card,
 .premium-card {
@@ -783,6 +790,105 @@ select:focus-visible,
 .rules h3 {
   color: var(--text);
   font-size: var(--type-heading);
+}
+.rules section {
+  margin-top: 24px;
+}
+.rules h3,
+.rules h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.rules :is(h3, h4) > svg,
+.rule-goal > svg {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  color: var(--accent);
+}
+.rules p {
+  margin: 0 0 12px;
+}
+.rules :is(ul, ol) {
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+.rules li + li {
+  margin-top: 8px;
+}
+.rule-goal {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: var(--surface-sand);
+  border-radius: 7px;
+}
+.rule-goal > svg {
+  margin-top: 3px;
+}
+.rules .rule-grid article {
+  padding: 12px;
+  background: var(--surface-sand);
+  border: 1px solid var(--border);
+}
+.rules .rule-grid h4 {
+  font-size: var(--type-body);
+}
+.rules .rule-grid p {
+  font-size: 13px;
+  line-height: 1.75;
+}
+.rules .rule-grid p:last-child {
+  margin-bottom: 0;
+}
+.rules .rule-grid .rule-operation {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: var(--type-label);
+}
+.rules .rule-action-note {
+  margin-top: 12px;
+}
+.rules .rule-note {
+  color: var(--text-secondary);
+  font-size: var(--type-label);
+}
+.rule-bonuses {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.rule-bonuses > div {
+  display: grid;
+  gap: 4px;
+  padding: 10px 3px;
+  text-align: center;
+  background: var(--surface-sand);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: var(--type-label);
+}
+.rules .rule-credits {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.rule-credits a {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+}
+@media (max-width: 540px) {
+  .rules .rule-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .tutorial-popover p {
   color: var(--text);

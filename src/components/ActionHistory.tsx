@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import type { ActionRecord } from "../game/receipts.ts";
 import type { RoundResult } from "../game/types.ts";
-import { ActionColumns, ActionRow } from "./LastActions.tsx";
+import { ActionRow } from "./LastActions.tsx";
 
 export function ActionHistory({
   records,
@@ -20,9 +20,6 @@ export function ActionHistory({
     );
   return (
     <ol className="action-history" ref={list} aria-label="按时间排列的行动记录">
-      <li className="history-column-head">
-        <ActionColumns />
-      </li>
       {records.map((record, i) => {
         const start = i === 0 || records[i - 1].round !== record.round;
         const result =

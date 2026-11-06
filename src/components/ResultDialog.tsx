@@ -148,7 +148,7 @@ export function ResultDialog({
           </button>
         ) : finished && onNew ? (
           <button className="primary" autoFocus onClick={onNew}>
-            再来一场
+            {state.targetSeals === 1 ? "再来一局" : "再来一场"}
             <ArrowRight size={17} />
           </button>
         ) : (

@@ -1,0 +1,165 @@
+/* Fit the visible browser area by reducing gaps and card widths, never stretching cards. */
+@media (max-width: 860px) {
+  .viewport-table {
+    min-height: 0;
+    margin-block: 0;
+  }
+  .viewport-table .market-row {
+    --market-card-width: min(
+      108px,
+      var(--fit-market-width, 108px),
+      calc((100cqw - 30px) / 6)
+    );
+    display: grid;
+    grid-template-columns: var(--market-card-width) calc(
+        var(--market-card-width) * 5 + 24px
+      );
+    align-items: start;
+    justify-content: center;
+    gap: 6px;
+  }
+  .viewport-table .market-row .market-cards {
+    width: 100%;
+    max-width: none;
+    gap: 6px;
+    align-items: start;
+  }
+  .viewport-table .market-row .market-cards .card,
+  .viewport-table .market-row .market-deck {
+    width: var(--market-card-width);
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: 2 / 3;
+  }
+  .viewport-table .hand-and-herd {
+    --hand-card-width: min(
+      var(--fit-hand-width, 60px),
+      calc((100% - 36px) / 7)
+    );
+  }
+  .viewport-table .ledger-heading .ledger-caption {
+    display: inline;
+  }
+  .viewport-table .action-panel {
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+  .viewport-table:is([data-density="compact"], [data-density="tight"]) {
+    --board-gap: 4px;
+    padding-top: 2px;
+  }
+  .viewport-table:is([data-density="compact"], [data-density="tight"])
+    .game-header {
+    padding-bottom: 2px;
+  }
+  .viewport-table:is([data-density="compact"], [data-density="tight"])
+    .game-overview {
+    padding: 4px;
+  }
+  .viewport-table:is([data-density="compact"], [data-density="tight"])
+    .compact-ledger-table
+    tbody
+    tr {
+    height: 26px;
+  }
+  .viewport-table:is([data-density="compact"], [data-density="tight"])
+    .player-score-card {
+    height: 70px;
+    min-height: 70px;
+    padding: 4px 8px;
+    gap: 2px;
+  }
+  .viewport-table:is([data-density="compact"], [data-density="tight"])
+    :is(.market-table, .hand-panel) {
+    padding-block: 6px;
+  }
+  .viewport-table:is([data-density="compact"], [data-density="tight"])
+    :is(.market-heading, .hand-heading) {
+    margin-bottom: 3px;
+  }
+  .viewport-table[data-density="tight"] {
+    --board-gap: 3px;
+  }
+  .viewport-table[data-density="tight"] .supply-heading {
+    margin-bottom: 3px;
+  }
+  .viewport-table[data-density="tight"] :is(.market-table, .hand-panel) {
+    padding-block: 4px;
+  }
+  .viewport-table[data-density="tight"] .supply-counter {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    padding-block: 0;
+  }
+  .viewport-table[data-density="tight"] .counter-name {
+    grid-column: 1 / -1;
+    min-height: 18px;
+    font-size: 11px;
+    gap: 2px;
+  }
+  .viewport-table[data-density="tight"] :is(.counter-remaining, .counter-next) {
+    gap: 1px;
+    line-height: 18px;
+  }
+  .viewport-table[data-density="tight"] .counter-next-suffix {
+    display: none;
+  }
+  .viewport-table[data-density="tight"]
+    :is(.market-heading h2, .hand-heading h2) {
+    font-size: 14px;
+    line-height: 18px;
+  }
+  .viewport-table[data-density="tight"] .game-header {
+    min-height: 34px;
+  }
+  .viewport-table[data-density="tight"] .mobile-game-menu > summary {
+    min-height: 32px;
+  }
+  .viewport-table[data-density="tight"] .counter-name > .goods-art {
+    width: 15px;
+    height: 15px;
+  }
+  .viewport-table[data-density="tight"] .supply-bonuses {
+    margin-top: 3px;
+    padding-top: 3px;
+  }
+  .viewport-table[data-density="tight"] .compact-ledger-table tbody tr {
+    height: 22px;
+  }
+  .viewport-table[data-density="tight"] .compact-ledger-table :is(th, td) {
+    padding-block: 1px;
+  }
+  .viewport-table[data-density="tight"] .ledger-good > .goods-art {
+    width: 18px;
+    height: 18px;
+  }
+  .viewport-table[data-density="tight"] .player-score-card {
+    height: 66px;
+    min-height: 66px;
+    grid-template-rows: 15px minmax(0, 1fr);
+  }
+  .viewport-table[data-density="tight"] .score-card-stats strong {
+    font-size: 17px;
+    line-height: 21px;
+  }
+  .viewport-table[data-density="tight"] .hand-cards .card-sale-rule {
+    display: none;
+  }
+  .viewport-table[data-fit="scroll"] .action-panel {
+    position: fixed;
+    top: calc(
+      var(--game-viewport-height, 100dvh) - var(--action-panel-height) -
+        env(safe-area-inset-bottom)
+    );
+    bottom: auto;
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    z-index: 9;
+  }
+  .viewport-table[data-fit="scroll"] .table-column::after {
+    content: "";
+    height: calc(var(--action-panel-height) + env(safe-area-inset-bottom));
+    flex: none;
+  }
+}

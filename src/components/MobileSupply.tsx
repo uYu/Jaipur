@@ -73,7 +73,9 @@ export function MobileSupply({
               <span className="counter-next">
                 {state.tokens[g].length ? (
                   <>
-                    <small>下枚</small>
+                    <small>
+                      下<span className="counter-next-suffix">枚</span>
+                    </small>
                     <b>{state.tokens[g][0]}</b>
                     {state.tokens[g].map((_, i) => (
                       <i

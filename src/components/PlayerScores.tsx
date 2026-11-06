@@ -119,7 +119,11 @@ export function PlayerScores({
                     <ScoreIcon kind={score.hidden ? "private" : "income"} />
                     得分
                   </span>
-                  <strong>{score.hidden ? "保密" : score.total}</strong>
+                  <strong
+                    className={score.hidden ? "score-private" : undefined}
+                  >
+                    {score.hidden ? "保密" : score.total}
+                  </strong>
                 </span>
                 <span
                   className="score-stat score-stat-herd"
@@ -132,7 +136,9 @@ export function PlayerScores({
                     <ScoreIcon kind="herd" />
                     骆驼
                   </span>
-                  <strong>{revealHerd ? player.camels : "保密"}</strong>
+                  <strong className={!revealHerd ? "score-private" : undefined}>
+                    {revealHerd ? player.camels : "保密"}
+                  </strong>
                 </span>
               </span>
               {receipt &&

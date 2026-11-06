@@ -5,6 +5,7 @@ import type { Card } from "../game/types.ts";
 import { LABEL, sum } from "../game/data.ts";
 import { lastActionOrder } from "../game/receipts.ts";
 import { GoodsArt } from "./Art.tsx";
+import { useFeedbackLifetime } from "../hooks/useFeedbackLifetime.ts";
 import {
   Coins,
   Award,
@@ -31,59 +32,60 @@ function GoodsText({ cards }: { cards: Card[] }) {
   ));
 }
 
-function ActionText({
-  action,
-  compact = false,
-}: {
-  action: Presentation;
-  compact?: boolean;
-}) {
-  const Cell = compact ? "td" : "span";
-  const verb = { take: "拿取", camels: "收驼", exchange: "交换", sell: "卖出" }[
-    action.type
-  ];
-  const Icon = {
-    take: Hand,
-    camels: ArrowDownToLine,
-    exchange: ArrowLeftRight,
-    sell: Coins,
-  }[action.type];
+function Income({ action }: { action: Presentation }) {
   return (
     <>
-      <Cell className="ledger-verb">
-        <Icon aria-hidden="true" />
-        {verb}
-      </Cell>
-      <Cell className="ledger-goods ledger-paid" aria-label="付出">
+      <span className="ledger-income">
+        <Coins aria-hidden="true" />
+        <b className="ledger-item-name">{sum(action.coins)}</b>
+        <span className="ledger-item-value">卢比</span>
+      </span>
+      {action.bonus !== null && (
+        <span className="ledger-bonus">
+          <Award aria-hidden="true" />
+          <span className="ledger-item-name">
+            {Math.min(action.outgoing.length, 5)} 张
+          </span>
+          <span className="ledger-item-value">奖励</span>
+        </span>
+      )}
+    </>
+  );
+}
+
+function TradeFlow({ action }: { action: Presentation }) {
+  return (
+    <div className="ledger-trade-flow">
+      <span
+        className="ledger-trade-paid"
+        aria-label={action.outgoing.length ? "付出" : "行动"}
+      >
         {action.outgoing.length ? (
-          <GoodsText cards={action.outgoing} />
-        ) : (
-          <span className="ledger-none">—</span>
-        )}
-      </Cell>
-      <Cell className="ledger-goods ledger-received" aria-label="收获">
-        {action.type === "sell" ? (
           <>
-            <span className="ledger-income">
-              <Coins aria-hidden="true" />
-              <b className="ledger-item-name">{sum(action.coins)}</b>
-              <span className="ledger-item-value">卢比</span>
+            <span className="ledger-simple-verb">
+              {action.type === "sell" ? "卖货" : "换牌"}
             </span>
-            {action.bonus !== null && (
-              <span className="ledger-bonus">
-                <Award aria-hidden="true" />
-                <span className="ledger-item-name">
-                  {Math.min(action.outgoing.length, 5)} 张
-                </span>
-                <span className="ledger-item-value">奖励</span>
-              </span>
-            )}
+            <GoodsText cards={action.outgoing} />
           </>
+        ) : (
+          <span className="ledger-simple-verb">
+            {action.type === "camels" ? "收驼" : "拿取"}
+          </span>
+        )}
+      </span>
+      <span className="ledger-trade-direction" aria-hidden="true">
+        {action.outgoing.length > 0 && (
+          <ArrowRight className="ledger-trade-arrow" size={14} />
+        )}
+      </span>
+      <span className="ledger-trade-received" aria-label="收获">
+        {action.type === "sell" ? (
+          <Income action={action} />
         ) : (
           <GoodsText cards={action.incoming} />
         )}
-      </Cell>
-    </>
+      </span>
+    </div>
   );
 }
 
@@ -146,27 +148,6 @@ export function ActionSummary({ action }: { action: Presentation }) {
   );
 }
 
-export function ActionColumns({ compact = false }: { compact?: boolean }) {
-  if (compact)
-    return (
-      <thead>
-        <tr>
-          <th aria-label="玩家与行动编号" />
-          <th>行动</th>
-          <th>付出</th>
-          <th>收获</th>
-        </tr>
-      </thead>
-    );
-  return (
-    <div className="ledger-columns" aria-hidden="true">
-      <span>行动</span>
-      <span>付出</span>
-      <span>收获</span>
-    </div>
-  );
-}
-
 export function ActionRow({
   actor,
   action,
@@ -174,6 +155,8 @@ export function ActionRow({
   turn,
   notify = false,
   compact = false,
+  flash = false,
+  paused = false,
 }: {
   actor: number;
   action: Presentation | null;
@@ -181,7 +164,10 @@ export function ActionRow({
   turn?: number | null;
   notify?: boolean;
   compact?: boolean;
+  flash?: boolean;
+  paused?: boolean;
 }) {
+  const flashing = useFeedbackLifetime(paused || !flash) && flash;
   const Actor = compact ? "th" : "span";
   const actorLabel = (
     <Actor className="ledger-actor">
@@ -195,17 +181,17 @@ export function ActionRow({
   if (compact)
     return (
       <tr
-        className={`compact-action ${actor === 0 ? "ledger-you" : "ledger-opponent"} ${notify ? "action-notice" : ""}`}
+        className={`compact-action ${actor === 0 ? "ledger-you" : "ledger-opponent"} ${notify ? "action-notice" : ""} ${flashing ? "action-flash" : ""}`}
         aria-label={action ? actionCaption(action) : undefined}
         title={latest ? "最新行动" : undefined}
       >
         {actorLabel}
         {action ? (
-          <ActionText action={action} compact />
-        ) : (
-          <td colSpan={3} className="ledger-empty">
-            尚未行动
+          <td className="ledger-trade">
+            <TradeFlow action={action} />
           </td>
+        ) : (
+          <td className="ledger-empty">尚未行动</td>
         )}
       </tr>
     );
@@ -218,7 +204,7 @@ export function ActionRow({
         className={`ledger-description ${action ? "" : "ledger-empty"}`}
         aria-label={action ? actionCaption(action) : undefined}
       >
-        {action ? <ActionText action={action} /> : "尚未行动"}
+        {action ? <TradeFlow action={action} /> : "尚未行动"}
       </span>
     </div>
   );
@@ -230,12 +216,20 @@ export function LastActions({
   turns,
   settled = true,
   onHistory,
+  status,
+  turnNumber,
+  active = false,
+  paused = false,
 }: {
   actions: [Presentation | null, Presentation | null];
   latestActor: number | null;
   turns: [number | null, number | null];
   settled?: boolean;
   onHistory: () => void;
+  status?: string;
+  turnNumber?: number;
+  active?: boolean;
+  paused?: boolean;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const measure = useRef<HTMLTableElement>(null);
@@ -245,14 +239,20 @@ export function LastActions({
   useLayoutEffect(() => {
     const update = () => {
       if (container.current && measure.current) {
-        setIconsOnly(
-          measure.current.getBoundingClientRect().width >
-            container.current.clientWidth + 1,
-        );
-        setDense(
-          (iconMeasure.current?.getBoundingClientRect().width ?? 0) >
-            container.current.clientWidth + 1,
-        );
+        const columnWidth =
+          container.current.querySelector<HTMLElement>(".ledger-trade-received")
+            ?.clientWidth ?? container.current.clientWidth;
+        const widestGroup = (table: HTMLTableElement | null) =>
+          Math.max(
+            0,
+            ...Array.from(
+              table?.querySelectorAll<HTMLElement>(
+                ".ledger-trade-paid, .ledger-trade-received",
+              ) ?? [],
+            ).map((group) => group.getBoundingClientRect().width),
+          );
+        setIconsOnly(widestGroup(measure.current) > columnWidth + 1);
+        setDense(widestGroup(iconMeasure.current) > columnWidth + 1);
       }
     };
     update();
@@ -264,18 +264,32 @@ export function LastActions({
   }, [actions, turns]);
   const rows = lastActionOrder(latestActor).map((actor) => (
     <ActionRow
-      key={actor}
+      key={`${actor}:${turns[actor] ?? 0}`}
       actor={actor}
       action={actions[actor]}
       latest={latestActor === actor}
       turn={turns[actor]}
       notify={settled && latestActor === 1 && actor === 1}
       compact
+      flash={
+        settled && latestActor === actor && actions[actor]?.type !== "sell"
+      }
+      paused={paused}
     />
   ));
   return (
     <section className="action-ledger" aria-label="双方上步行动">
-      <span className="ledger-caption">上次行动</span>
+      <div className="ledger-heading">
+        {status && (
+          <span className="ledger-status" role="status">
+            <i className={`status-dot ${active ? "your-turn" : ""}`} />
+            {status}
+          </span>
+        )}
+        {turnNumber !== undefined && (
+          <span className="ledger-turn-number">第 {turnNumber} 手</span>
+        )}
+      </div>
       <button
         className="ledger-open"
         aria-label="查看完整行动记录"
@@ -289,33 +303,15 @@ export function LastActions({
         <table
           className={`compact-ledger-table ${iconsOnly ? "icons-only" : ""} ${dense ? "dense-icons" : ""}`}
         >
-          <ActionColumns compact />
           <tbody>{rows}</tbody>
         </table>
         <div className="ledger-measure" aria-hidden="true">
           <table ref={measure} className="compact-ledger-table">
-            <ActionColumns compact />
             <tbody>{rows}</tbody>
           </table>
           <table ref={iconMeasure} className="compact-ledger-table icons-only">
-            <ActionColumns compact />
             <tbody>{rows}</tbody>
           </table>
-        </div>
-      </div>
-      <div className="desktop-ledger">
-        <ActionColumns />
-        <div className="ledger-players">
-          {lastActionOrder(latestActor).map((actor) => (
-            <ActionRow
-              key={actor}
-              actor={actor}
-              action={actions[actor]}
-              latest={latestActor === actor}
-              turn={turns[actor]}
-              notify={settled && latestActor === 1 && actor === 1}
-            />
-          ))}
         </div>
       </div>
     </section>

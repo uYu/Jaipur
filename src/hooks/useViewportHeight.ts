@@ -11,10 +11,47 @@ export function useViewportHeight(active: boolean) {
     const update = () => {
       // Pinch zoom should magnify the table, rather than compress its layout.
       if (viewport && Math.abs(viewport.scale - 1) > 0.01) return;
-      element.style.setProperty(
-        "--game-viewport-height",
-        `${Math.floor(Math.min(window.innerHeight, viewport?.height ?? window.innerHeight))}px`,
+      const available = Math.floor(
+        Math.min(window.innerHeight, viewport?.height ?? window.innerHeight),
       );
+      element.style.setProperty("--game-viewport-height", `${available}px`);
+      if (!element.classList.contains("viewport-table")) return;
+      element.dataset.fit = "ready";
+      element.dataset.density = available < 760 ? "compact" : "normal";
+      element.style.removeProperty("--fit-market-width");
+      element.style.removeProperty("--fit-hand-width");
+      const usedHeight = () =>
+        element.getBoundingClientRect().height + element.offsetTop;
+      if (usedHeight() > available) element.dataset.density = "tight";
+      const overflow = usedHeight() - available;
+      const market = element.querySelector<HTMLElement>(".market-cards .card");
+      const hand = element.querySelector<HTMLElement>(".hand-and-herd");
+      if (overflow > 0 && market && hand) {
+        const marketBox = market.getBoundingClientRect();
+        const handHeight =
+          parseFloat(getComputedStyle(hand, "::before").width) * 1.5;
+        const scale = Math.max(
+          0,
+          1 - (overflow + 4) / (marketBox.height + handHeight),
+        );
+        element.style.setProperty(
+          "--fit-market-width",
+          `${Math.min(marketBox.width, Math.max(44, marketBox.width * scale))}px`,
+        );
+        element.style.setProperty(
+          "--fit-hand-width",
+          `${Math.min(handHeight / 1.5, Math.max(32, (handHeight / 1.5) * scale))}px`,
+        );
+      }
+      // Extremely short/landscape screens keep readable cards and a visible toolbar.
+      const controls = element.querySelector<HTMLElement>(".action-panel");
+      if (usedHeight() > available + 1 && controls) {
+        element.style.setProperty(
+          "--action-panel-height",
+          `${Math.ceil(controls.getBoundingClientRect().height)}px`,
+        );
+        element.dataset.fit = "scroll";
+      }
     };
     const schedule = () => {
       cancelAnimationFrame(frame);
@@ -23,10 +60,18 @@ export function useViewportHeight(active: boolean) {
     update();
     window.addEventListener("resize", schedule);
     viewport?.addEventListener("resize", schedule);
+    const observer = new ResizeObserver(schedule);
+    observer.observe(element);
+    element
+      .querySelectorAll(
+        ".game-header, .game-overview, .table-column, .action-panel",
+      )
+      .forEach((node) => observer.observe(node));
     return () => {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", schedule);
       viewport?.removeEventListener("resize", schedule);
+      observer.disconnect();
     };
   }, [active]);
   return ref;

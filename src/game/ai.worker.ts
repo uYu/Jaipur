@@ -1,15 +1,13 @@
 import { chooseAction } from "./ai.ts";
-import {
-  chooseOriginalWasmAction,
-  chooseTimedWasmActionWithStats,
-} from "./ai-wasm.ts";
-import { MCTS_TIME_BUDGET_MS } from "./ai-config.ts";
+import { chooseOriginalWasmAction } from "./ai-wasm.ts";
 import { chooseDouzeroAction } from "./douzero-browser.ts";
+import { opponentPolicy } from "./difficulty.ts";
 
 self.onmessage = async (event) => {
   try {
     const started = performance.now();
-    if (event.data.difficulty === "experimental") {
+    const policy = opponentPolicy(event.data.difficulty);
+    if (policy === "model") {
       const action = await chooseDouzeroAction(
         event.data.observation,
         event.data.history,
@@ -21,31 +19,14 @@ self.onmessage = async (event) => {
       });
       return;
     }
-    if (event.data.difficulty === "hard") {
-      const model = event.data.model === "neural" ? "neural" : "linear";
-      const decision = await chooseTimedWasmActionWithStats(
-        event.data.observation,
-        MCTS_TIME_BUDGET_MS,
-        model,
-      );
-      self.postMessage({
-        action: decision.action,
-        algorithm:
-          model === "neural"
-            ? "实验神经先验 MCTS · C++/Wasm"
-            : "自对弈引导 MCTS · C++/Wasm",
-        stats: decision.stats,
-      });
-      return;
-    }
     const action =
-      event.data.difficulty === "normal"
+      policy === "tactical"
         ? await chooseOriginalWasmAction(event.data.observation)
         : chooseAction(event.data.observation, "easy");
     self.postMessage({
       action,
       algorithm:
-        event.data.difficulty === "normal"
+        policy === "tactical"
           ? "战术穷举 · C++/Wasm"
           : "轻量启发式 · TypeScript",
       elapsedMs: Math.round(performance.now() - started),

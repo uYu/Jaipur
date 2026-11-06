@@ -5,23 +5,17 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
-  Download,
   History,
+  GraduationCap,
   Home,
   Pause,
   Play,
   Plus,
-  Settings2,
-  Upload,
   X,
 } from "lucide-react";
 import type { Action, Difficulty, Event, Save, State } from "./game/types.ts";
-import type { MctsStats } from "./game/ai-wasm.ts";
-import {
-  AI_MIN_THINKING_MS,
-  MCTS_TIME_BUDGET_MS,
-  MCTS_TREES,
-} from "./game/ai-config.ts";
+import { AI_MIN_THINKING_MS } from "./game/ai-config.ts";
+import { DIFFICULTY_NAME, opponentPolicy } from "./game/difficulty.ts";
 import { playerScoreDisplay } from "./game/score-display.ts";
 import { applyAction, newGame } from "./game/engine.ts";
 import {
@@ -32,20 +26,13 @@ import {
 } from "./game/selection.ts";
 import { observe } from "./game/ai.ts";
 import { dmcEventHistory } from "./game/dmc-history.ts";
-import {
-  advance,
-  downloadSave,
-  parseSave,
-  replay,
-  SAVE_KEY,
-} from "./game/storage.ts";
-import { JaipurMark, Palace } from "./components/Art.tsx";
+import { advance, parseSave, replay, SAVE_KEY } from "./game/storage.ts";
+import { JaipurMark } from "./components/Art.tsx";
 import { Card } from "./components/Card.tsx";
 import { MobileSupply, SupplyDetails } from "./components/MobileSupply.tsx";
 import { PlayerScores, ScoreDetails } from "./components/PlayerScores.tsx";
 import { ResultDialog, resultTitle } from "./components/ResultDialog.tsx";
 import { SaleReceipt } from "./components/SaleReceipt.tsx";
-import { TradeFeedback } from "./components/TradeFeedback.tsx";
 import { actionSummaries } from "./game/receipts.ts";
 import { LastActions } from "./components/LastActions.tsx";
 import { ActionHistory } from "./components/ActionHistory.tsx";
@@ -58,7 +45,6 @@ import {
 } from "./game/action-transition.ts";
 import type { ActionTransition } from "./game/action-transition.ts";
 import { initialMarketSlots, nextMarketSlots } from "./game/market-layout.ts";
-import { actionCaption } from "./game/presentation.ts";
 import type { Presentation } from "./game/presentation.ts";
 import { marketSlotsAt } from "./game/opponent-turn.ts";
 import type { BoardFeedback } from "./game/action-feedback.ts";
@@ -82,6 +68,11 @@ import type { Selection } from "./game/selection.ts";
 import { readPreferences, writePreferences } from "./game/preferences.ts";
 import { useReducedMotion } from "./hooks/useReducedMotion.ts";
 import { useMobileLayout } from "./hooks/useMobileLayout.ts";
+import { useViewportHeight } from "./hooks/useViewportHeight.ts";
+const menuIllustration = new URL(
+  "./assets/jaipur-palace-camel-v2.jpg",
+  import.meta.url,
+).href;
 function initialSave(): { save: Save | null; error: string } {
   try {
     const data = localStorage.getItem(SAVE_KEY);
@@ -93,18 +84,6 @@ function initialSave(): { save: Save | null; error: string } {
     };
   }
 }
-const DIFFICULTY_NAME: Record<Difficulty, string> = {
-  easy: "入门",
-  normal: "重度",
-  hard: "高难",
-  experimental: "实验",
-};
-type AiInsight = {
-  algorithm: string;
-  searching: boolean;
-  elapsedMs?: number;
-  stats?: MctsStats;
-};
 type ActionNotice = { id: string; action: Presentation };
 function DifficultySelect({
   value,
@@ -120,9 +99,8 @@ function DifficultySelect({
       onChange={(e) => onChange(e.target.value as Difficulty)}
     >
       <option value="easy">入门 · 学徒商人</option>
-      <option value="normal">重度 · 资深商人</option>
-      <option value="hard">高难 · 粉城大师</option>
-      <option value="experimental">实验 · 自博弈商人</option>
+      <option value="normal">中等 · 资深商人</option>
+      <option value="hard">高难 · 集市大师</option>
     </select>
   );
 }
@@ -137,6 +115,7 @@ export default function App() {
   const [screen, setScreen] = useState<"menu" | "game" | "replay" | "tutorial">(
     "menu",
   );
+  const boardRef = useViewportHeight(mobile && screen !== "menu");
   const [tutorialSave, setTutorialSave] = useState(createTutorialSave);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [tutorialSlots, setTutorialSlots] = useState(initialMarketSlots);
@@ -145,7 +124,7 @@ export default function App() {
   const tutorialGuide = TUTORIAL_STEPS[tutorialStep];
   const [dismissedResult, setDismissedResult] = useState("");
   const [inspectResult, setInspectResult] = useState(false);
-  const [menu, setMenu] = useState<"home" | "new" | "settings">("home");
+  const [menu, setMenu] = useState<"home" | "new">("home");
   const [modal, setModal] = useState<
     "rules" | "log" | "supply" | "scores" | null
   >(null);
@@ -162,13 +141,11 @@ export default function App() {
   const [error, setError] = useState(initial.error),
     [aiError, setAiError] = useState(""),
     [retry, setRetry] = useState(0);
-  const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
   const [transition, setTransition] = useState<ActionTransition | null>(null);
   const [marketNotice, setMarketNotice] = useState<BoardFeedback | null>(null);
   const [saleNotices, setSaleNotices] = useState<
     [ActionNotice | null, ActionNotice | null]
   >([null, null]);
-  const [tradeNotice, setTradeNotice] = useState<ActionNotice | null>(null);
   const [marketSlots, setMarketSlots] = useState(() =>
     marketSlotsAt(initial.save),
   );
@@ -200,7 +177,7 @@ export default function App() {
             next[transition.action.actor] = notice;
             return next;
           });
-        } else setTradeNotice(notice);
+        }
       }
     }, transitionRemaining.current);
     return () => {
@@ -240,7 +217,7 @@ export default function App() {
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify(save));
     } catch {
-      setError("自动保存失败，请在菜单中导出存档备份。");
+      setError("自动保存失败，请保持页面打开，以免丢失进度。");
     }
   }, [save]);
   const clear = () => setSelection(emptySelection());
@@ -286,21 +263,7 @@ export default function App() {
       type: "module",
     });
     const activeDifficulty = save?.difficulty ?? difficulty;
-    const neuralExperiment =
-      new URLSearchParams(window.location.search).get("ai") === "neural";
-    setAiInsight({
-      algorithm:
-        activeDifficulty === "hard"
-          ? neuralExperiment
-            ? "实验神经先验 MCTS · C++/Wasm"
-            : "自对弈引导 MCTS · C++/Wasm"
-          : activeDifficulty === "experimental"
-            ? "自博弈神经策略 · v147126"
-            : activeDifficulty === "normal"
-              ? "战术穷举 · C++/Wasm"
-              : "轻量启发式 · TypeScript",
-      searching: true,
-    });
+    const usesModel = opponentPolicy(activeDifficulty) === "model";
     let active = true;
     const started = Date.now();
     let timer: ReturnType<typeof setTimeout>;
@@ -310,19 +273,6 @@ export default function App() {
         setAiError(e.data.error);
         return;
       }
-      const insight: AiInsight = {
-        algorithm: e.data.algorithm,
-        searching: false,
-        elapsedMs: e.data.elapsedMs,
-        stats: e.data.stats,
-      };
-      setAiInsight(insight);
-      if (e.data.stats)
-        console.info("[Jaipur MCTS] 本手搜索统计", {
-          algorithm: e.data.algorithm,
-          ...e.data.stats,
-          pipeline: "selection → expansion → rollout → backpropagation",
-        });
       timer = setTimeout(
         () => {
           if (active) commit(e.data.action);
@@ -334,17 +284,12 @@ export default function App() {
       if (active) setAiError("米拉暂时无法完成思考，请重试。");
     };
     worker.postMessage({
-      observation: observe(
-        game,
-        save?.events,
-        activeDifficulty === "experimental" ? 0.75 : false,
-      ),
+      observation: observe(game, save?.events, usesModel ? 0.75 : false),
       history:
-        activeDifficulty === "experimental" && save
+        usesModel && save
           ? dmcEventHistory(save.seed, save.events, game.current)
           : undefined,
       difficulty: activeDifficulty,
-      model: neuralExperiment ? "neural" : "linear",
     });
     return () => {
       active = false;
@@ -438,6 +383,17 @@ export default function App() {
     setDismissedResult(resultKey);
     setInspectResult(false);
   };
+  const openPostGameMenu = (page: "home" | "new") => {
+    setInspectResult(false);
+    setReplayPlaying(false);
+    setReplayPaused(false);
+    setTransition(null);
+    setMarketNotice(null);
+    setSaleNotices([null, null]);
+    clear();
+    setMenu(page);
+    setScreen("menu");
+  };
   function beginTutorial() {
     setTutorialSave(createTutorialSave());
     setTutorialStep(0);
@@ -445,7 +401,6 @@ export default function App() {
     setTransition(null);
     setMarketNotice(null);
     setSaleNotices([null, null]);
-    setTradeNotice(null);
     setModal(null);
     clear();
     setScreen("tutorial");
@@ -521,7 +476,6 @@ export default function App() {
   function animateDeal(state: State, eventLimit = 0) {
     setMarketNotice(null);
     setSaleNotices([null, null]);
-    setTradeNotice(null);
     const nextTransition = dealTransition(state, eventLimit, {
       mobile,
       reduced: reducedMotion,
@@ -544,7 +498,6 @@ export default function App() {
     setMarketNotice(nextTransition.feedback ?? null);
     if (nextTransition.kind === "deal") {
       setSaleNotices([null, null]);
-      setTradeNotice(null);
     }
     setTransition(nextTransition);
   }
@@ -554,7 +507,6 @@ export default function App() {
     setTransition(null);
     setMarketNotice(null);
     setSaleNotices([null, null]);
-    setTradeNotice(null);
     setInspectResult(false);
     setReplayIndex(
       Math.max(0, Math.min(save?.events.length ?? 0, Math.trunc(index))),
@@ -589,29 +541,7 @@ export default function App() {
     setScreen("game");
     setMenu("home");
     setAiError("");
-    setAiInsight(null);
     clear();
-  }
-  async function importFile(file?: File) {
-    if (!file) return;
-    try {
-      if (file.size > 2000000) throw new Error("存档文件过大");
-      const imported = parseSave(await file.text());
-      setTransition(null);
-      setMarketNotice(null);
-      setSaleNotices([null, null]);
-      setTradeNotice(null);
-      setMarketSlots(marketSlotsAt(imported));
-      setDismissedResult("");
-      setSave(imported);
-      setGame(replay(imported));
-      setDifficulty(imported.difficulty);
-      setError("存档已导入，可以继续比赛。");
-      setAiError("");
-      clear();
-    } catch (e) {
-      setError((e as Error).message);
-    }
   }
   const p = viewed?.players[0],
     opponent = viewed?.players[1];
@@ -666,14 +596,29 @@ export default function App() {
   }
   const { action } =
     viewed && active ? selectedAction(viewed, selection) : { action: null };
+  const turnStatus =
+    screen === "replay"
+      ? transition
+        ? "正在重放…"
+        : "比赛回放"
+      : viewed?.phase !== "playing"
+        ? "本轮已收市"
+        : transition
+          ? transition.kind === "deal"
+            ? "正在发牌…"
+            : `${transition.action.actor === 0 ? "你" : "米拉"}正在行动…`
+          : aiError
+            ? "等待重试"
+            : viewed.current === 1
+              ? "米拉思考中…"
+              : "轮到你了";
+  const hasUnfinishedGame = !!game && game.phase !== "finished";
   const brand = (
     <div className="brand">
       <span className="brand-icon">
         <JaipurMark />
       </span>
-      <b>JAIPUR</b>
-      <span className="brand-divider" />
-      粉城商事
+      <b>斋普尔</b>
     </div>
   );
   const gameToolButtons = (
@@ -705,7 +650,6 @@ export default function App() {
             setTransition(null);
             setMarketNotice(null);
             setSaleNotices([null, null]);
-            setTradeNotice(null);
             clear();
           }
         }}
@@ -743,7 +687,7 @@ export default function App() {
                   收集货物、调度驼队，在恰好的时机出手。
                 </p>
                 <div className="menu-buttons">
-                  {save && (
+                  {hasUnfinishedGame && (
                     <button
                       className="primary menu-action"
                       onClick={() => {
@@ -756,32 +700,36 @@ export default function App() {
                     </button>
                   )}
                   <button
-                    className={`menu-action ${save ? "secondary" : "primary"}`}
+                    className={`menu-action ${hasUnfinishedGame ? "secondary" : "primary"}`}
                     onClick={() => setMenu("new")}
                   >
                     <Plus size={18} />
-                    <span>{save ? "开始新的比赛" : "走进斋普尔"}</span>
+                    <span>
+                      {hasUnfinishedGame
+                        ? "开始新的比赛"
+                        : save
+                          ? "再开一场"
+                          : "走进斋普尔"}
+                    </span>
                     <ArrowRight size={18} />
                   </button>
                   <button
                     className="secondary menu-action"
                     onClick={beginTutorial}
                   >
-                    <BookOpen size={18} />
+                    <GraduationCap size={18} />
                     <span>新手教程</span>
                     <ArrowRight size={18} />
                   </button>
-                  <div className="menu-shortcuts">
-                    <button onClick={() => setModal("rules")}>
-                      <BookOpen size={17} />
-                      游戏规则
-                    </button>
-                    <button onClick={() => setMenu("settings")}>
-                      <Settings2 size={17} />
-                      设置与存档
-                    </button>
-                  </div>
-                  {save && (
+                  <button
+                    className="secondary menu-action"
+                    onClick={() => setModal("rules")}
+                  >
+                    <BookOpen size={18} />
+                    <span>游戏规则</span>
+                    <ArrowRight size={18} />
+                  </button>
+                  {!!save?.events.length && (
                     <button
                       className="text-button"
                       onClick={() => {
@@ -791,7 +739,7 @@ export default function App() {
                       }}
                     >
                       <History size={16} />
-                      回看这场生意
+                      {hasUnfinishedGame ? "回看这场生意" : "回看上场比赛"}
                     </button>
                   )}
                 </div>
@@ -810,53 +758,37 @@ export default function App() {
                   <ArrowLeft size={16} />
                   返回主菜单
                 </button>
-                <p className="eyebrow">
-                  {menu === "new"
-                    ? "A NEW DAY AT THE BAZAAR"
-                    : "MAKE YOURSELF AT HOME"}
-                </p>
-                <h2>
-                  {menu === "new" ? "今日，开市。" : "你的集市，你的节奏。"}
-                </h2>
+                <p className="eyebrow">A NEW DAY AT THE BAZAAR</p>
+                <h2>今日，开市。</h2>
                 <p className="menu-intro">
-                  {menu === "new"
-                    ? "与商人米拉对弈，争夺大君的卓越印章。"
-                    : "比赛进度保存在此浏览器，也可以导出随身带走。"}
+                  与商人米拉对弈，争夺大君的卓越印章。
                 </p>
                 <div className="setup">
-                  {menu === "new" && (
-                    <>
-                      <fieldset className="match-format">
-                        <legend>比赛赛制</legend>
-                        <div className="format-options">
-                          {([1, 2] as const).map((wins) => (
-                            <label
-                              key={wins}
-                              className={targetSeals === wins ? "chosen" : ""}
-                            >
-                              <input
-                                type="radio"
-                                name="match-format"
-                                value={wins}
-                                checked={targetSeals === wins}
-                                onChange={() => setTargetSeals(wins)}
-                              />
-                              <span>
-                                <b>
-                                  {wins === 1 ? "1 局定胜负" : "标准三局两胜"}
-                                </b>
-                                <small>
-                                  {wins === 1
-                                    ? "轻松开一局"
-                                    : "先赢两轮，角逐印章"}
-                                </small>
-                              </span>
-                            </label>
-                          ))}
-                        </div>
-                      </fieldset>
-                    </>
-                  )}
+                  <fieldset className="match-format">
+                    <legend>比赛赛制</legend>
+                    <div className="format-options">
+                      {([1, 2] as const).map((wins) => (
+                        <label
+                          key={wins}
+                          className={targetSeals === wins ? "chosen" : ""}
+                        >
+                          <input
+                            type="radio"
+                            name="match-format"
+                            value={wins}
+                            checked={targetSeals === wins}
+                            onChange={() => setTargetSeals(wins)}
+                          />
+                          <span>
+                            <b>{wins === 1 ? "1 局定胜负" : "标准三局两胜"}</b>
+                            <small>
+                              {wins === 1 ? "轻松开一局" : "先赢两轮，角逐印章"}
+                            </small>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
                   <label>
                     对手难度
                     <DifficultySelect
@@ -864,48 +796,17 @@ export default function App() {
                       onChange={setDifficulty}
                     />
                   </label>
-                  {menu === "new" ? (
-                    <>
-                      {save && (
-                        <p className="muted">
-                          开始后将替换当前自动存档。需要保留时，可先到设置导出。
-                        </p>
-                      )}
-                      <button className="primary" onClick={start}>
-                        摆好货摊，开始游戏
-                        <ArrowRight size={18} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="save-controls">
-                        <button
-                          className="secondary"
-                          disabled={!save}
-                          onClick={() => save && downloadSave(save)}
-                        >
-                          <Download size={16} />
-                          导出存档
-                        </button>
-                        <label className="file-button">
-                          <Upload size={16} />
-                          导入存档
-                          <input
-                            aria-label="导入存档"
-                            type="file"
-                            accept=".json,application/json"
-                            onChange={(e) => {
-                              void importFile(e.target.files?.[0]);
-                              e.target.value = "";
-                            }}
-                          />
-                        </label>
-                      </div>
-                      <p className="muted">
-                        导入会替换当前进度。文件将在本地逐步验证，不上传数据。
-                      </p>
-                    </>
+                  {save && (
+                    <p className="muted">
+                      {hasUnfinishedGame
+                        ? "开始新比赛会替换当前进度。"
+                        : "开始新比赛后，上场比赛的回放会被替换。"}
+                    </p>
                   )}
+                  <button className="primary" onClick={start}>
+                    摆好货摊，开始游戏
+                    <ArrowRight size={18} />
+                  </button>
                 </div>
               </>
             )}
@@ -913,28 +814,22 @@ export default function App() {
               一场关于取舍、眼光与时机的双人对决
             </footer>
           </section>
-          <section className="menu-art" aria-hidden="true">
-            <div className="art-label">
-              RAJASTHAN, INDIA <span>26.9124° N · 75.7873° E</span>
-            </div>
-            <Palace />
-            <div className="hero-cards">
-              <Card good="cloth" disabled />
-              <Card good="diamond" disabled />
-              <Card good="spice" disabled />
-            </div>
-            <div className="art-caption">
-              The Pink City Bazaar<span>买进风物，卖出眼光。</span>
-            </div>
-            <div className="art-stamp">
-              EST.
-              <br />
-              <b>1727</b>
-            </div>
+          <section className="menu-art menu-illustration" aria-hidden="true">
+            <img
+              className="menu-palace-image"
+              src={menuIllustration}
+              alt=""
+              width="1000"
+              height="1250"
+              fetchPriority="high"
+            />
+            <div className="menu-art-location">RAJASTHAN, INDIA</div>
+            <div className="menu-art-caption">买进风物，卖出眼光。</div>
           </section>
         </main>
       ) : viewed && p && opponent ? (
         <main
+          ref={boardRef}
           data-paused={animationPaused}
           className={`game-shell ${teaching ? "tutorial-game" : ""} ${(screen === "game" || screen === "replay" || teaching) && viewed.phase === "playing" ? "viewport-table" : ""} ${mobile && transition?.kind === "deal" ? "mobile-dealing" : ""}`}
         >
@@ -1000,7 +895,7 @@ export default function App() {
               className={`result-banner ${viewed.phase === "finished" ? "final-banner" : ""}`}
               role="status"
             >
-              <div>
+              <div className="result-banner-summary">
                 <strong>{resultTitle(viewed)}</strong>
                 <span>
                   印章 {viewed.seals[0]} : {viewed.seals[1]} ·{" "}
@@ -1009,16 +904,35 @@ export default function App() {
                     : `第 ${viewed.round} 轮已结束`}
                 </span>
               </div>
-              <button
-                className="primary"
-                onClick={() => {
-                  setDismissedResult("");
-                  setInspectResult(true);
-                  setReplayPlaying(false);
-                }}
-              >
-                查看结算
-              </button>
+              <div className="result-banner-actions">
+                {viewed.phase === "finished" && (
+                  <>
+                    <button
+                      className="secondary"
+                      onClick={() => openPostGameMenu("new")}
+                    >
+                      {viewed.targetSeals === 1 ? "再来一局" : "再来一场"}
+                    </button>
+                    <button
+                      className="secondary"
+                      aria-label="返回主菜单"
+                      onClick={() => openPostGameMenu("home")}
+                    >
+                      主菜单
+                    </button>
+                  </>
+                )}
+                <button
+                  className="primary"
+                  onClick={() => {
+                    setDismissedResult("");
+                    setInspectResult(true);
+                    setReplayPlaying(false);
+                  }}
+                >
+                  查看结算
+                </button>
+              </div>
             </div>
           )}
           <div className="game-grid">
@@ -1033,6 +947,12 @@ export default function App() {
                 turns={lastTurns}
                 latestActor={latestActor}
                 settled={!transition}
+                status={turnStatus}
+                turnNumber={
+                  viewed.phase === "playing" ? viewed.turn + 1 : viewed.turn
+                }
+                active={active}
+                paused={animationPaused}
                 onHistory={() => setModal("log")}
               />
             </section>
@@ -1099,7 +1019,7 @@ export default function App() {
               <section className="market-table">
                 <div className="market-heading">
                   <div>
-                    <p className="eyebrow">斋普尔 · 粉城集市</p>
+                    <p className="eyebrow">斋普尔集市</p>
                     <h2>中央集市</h2>
                   </div>
                   <span className="market-count">始终补至 5 张</span>
@@ -1149,104 +1069,6 @@ export default function App() {
                   aria-hidden="true"
                 />
               </section>
-              <div
-                className={`turn-line ${mobile ? "with-trade-feedback" : ""}`}
-                aria-live="polite"
-              >
-                {mobile && tradeNotice && (
-                  <TradeFeedback
-                    key={tradeNotice.id}
-                    action={tradeNotice.action}
-                    paused={animationPaused}
-                  />
-                )}
-                <span className="turn-message">
-                  <span className={`status-dot ${active ? "your-turn" : ""}`} />
-                  {screen === "replay"
-                    ? transition
-                      ? `${transition.action.actor === 0 ? "你" : "米拉"}：${actionCaption(transition.action)}，正在重放…`
-                      : "正在回看已发生的交易"
-                    : viewed.phase !== "playing"
-                      ? "本轮集市已收市"
-                      : transition
-                        ? (transition.caption ??
-                          `${transition.action.actor === 0 ? "你" : "米拉"}：${actionCaption(transition.action)}，正在结算…`)
-                        : aiError
-                          ? "AI 等待重试"
-                          : viewed.current === 1
-                            ? "米拉正在盘算下一笔生意…"
-                            : lastActions[1]
-                              ? "米拉行动结束，轮到你了"
-                              : "轮到你了，今天想做哪笔生意？"}
-                </span>
-                <span>第 {viewed.turn + 1} 手</span>
-              </div>
-              {screen === "game" &&
-                (save?.difficulty ?? difficulty) === "hard" && (
-                  <section className="mcts-proof" aria-live="polite">
-                    <div className="mcts-proof-title">
-                      <strong>MCTS 搜索证据</strong>
-                      <span>
-                        {aiInsight?.algorithm ?? "自对弈引导 MCTS · C++/Wasm"}
-                      </span>
-                    </div>
-                    {aiInsight?.stats ? (
-                      <div className="mcts-proof-stats">
-                        <span>
-                          <b>{aiInsight.stats.trees}</b> 棵确定化树
-                        </span>
-                        <span>
-                          <b>{aiInsight.stats.simulations.toLocaleString()}</b>{" "}
-                          次模拟
-                        </span>
-                        <span>
-                          根行动 <b>{aiInsight.stats.rootActionFamilies}</b>
-                        </span>
-                        <span>
-                          访问支持率{" "}
-                          <b>
-                            {(aiInsight.stats.selectedVisitShare * 100).toFixed(
-                              1,
-                            )}
-                            %
-                          </b>
-                        </span>
-                        <span>
-                          交换候选 <b>{aiInsight.stats.exchangeCandidates}</b>
-                        </span>
-                        <span>
-                          模拟到终局{" "}
-                          <b>
-                            {aiInsight.stats.terminalSimulations.toLocaleString()}
-                          </b>
-                          {" / "}
-                          {aiInsight.stats.simulations.toLocaleString()}
-                        </span>
-                        <span>
-                          搜索深度 <b>{aiInsight.stats.maxTreeDepth}</b> 手
-                        </span>
-                        <span>
-                          <b>{aiInsight.stats.elapsedMs}</b> ms
-                        </span>
-                      </div>
-                    ) : aiInsight?.searching && viewed.current === 1 ? (
-                      <div className="mcts-proof-stats searching">
-                        <span>
-                          <b>{MCTS_TREES} 棵树</b> · 约{" "}
-                          <b>{MCTS_TIME_BUDGET_MS / 1000} 秒</b>搜索中
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="mcts-proof-stats">
-                        <span>米拉行动后显示本手真实搜索统计</span>
-                      </div>
-                    )}
-                    <small>
-                      自对弈先验 + PUCT → 执行完整行动 → 模拟至终局 →
-                      反向传播；每棵树独立采样隐藏牌。
-                    </small>
-                  </section>
-                )}
               <section className="hand-panel">
                 <div className="hand-heading">
                   <div className="you-label">
@@ -1363,7 +1185,7 @@ export default function App() {
             </section>
           </div>
           <footer className="game-footer">
-            <span>JAIPUR · 每一笔交易，都是一次取舍。</span>
+            <span>斋普尔 · 每一笔交易，都是一次取舍。</span>
             <span>
               {screen === "replay"
                 ? "回放不会改变存档"
@@ -1418,21 +1240,9 @@ export default function App() {
                 }
               : undefined
           }
-          onNew={
-            screen === "game"
-              ? () => {
-                  setScreen("menu");
-                  setMenu("new");
-                }
-              : undefined
-          }
+          onNew={screen === "game" ? () => openPostGameMenu("new") : undefined}
           onMenu={
-            screen === "game"
-              ? () => {
-                  setScreen("menu");
-                  setMenu("home");
-                }
-              : undefined
+            screen === "game" ? () => openPostGameMenu("home") : undefined
           }
         />
       )}

@@ -1,5 +1,6 @@
 import type { Event, Save, State } from "./types.ts";
 import { applyAction, newGame, nextRound } from "./engine.ts";
+import { parseDifficulty } from "./difficulty.ts";
 export const SAVE_KEY = "jaipur.save.v1";
 export function advance(s: State, event: Event): State {
   return event.type === "next" ? nextRound(s) : applyAction(s, event);
@@ -21,7 +22,7 @@ export function parseSave(text: string): Save {
     (value.targetSeals !== undefined &&
       value.targetSeals !== 1 &&
       value.targetSeals !== 2) ||
-    !["easy", "normal", "hard", "experimental"].includes(value.difficulty) ||
+    !parseDifficulty(value.difficulty) ||
     !Array.isArray(value.events) ||
     value.events.length > 4000
   )
@@ -29,7 +30,7 @@ export function parseSave(text: string): Save {
   const save: Save = {
     version: 1,
     seed: value.seed,
-    difficulty: value.difficulty,
+    difficulty: parseDifficulty(value.difficulty)!,
     events: value.events,
     ...(value.targetSeals === undefined
       ? {}

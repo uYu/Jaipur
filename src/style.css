@@ -2549,10 +2549,25 @@ select {
   padding: 15px 20px;
   margin: 18px 0;
 }
-.result-banner > div {
+.result-banner-summary {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
+}
+.result-banner > .result-banner-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  gap: 8px;
+}
+.result-banner-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
 }
 .result-banner strong {
   font-size: 19px;
@@ -2612,6 +2627,21 @@ select {
   }
   .result-banner span {
     font-size: 9px;
+  }
+}
+@media (max-width: 420px) {
+  .final-banner {
+    gap: 8px;
+  }
+  .final-banner > .result-banner-actions {
+    gap: 4px;
+  }
+  .final-banner .result-banner-actions > button {
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+  .final-banner strong {
+    font-size: 14px;
   }
 }
 .mobile-supply {
