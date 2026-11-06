@@ -18,6 +18,7 @@ import {
   tutorialAccepts,
   tutorialSelectionReady,
   tutorialStepAfterSelection,
+  tutorialStepAfterNext,
   normalizeTutorialSelection,
 } from "../src/game/tutorial.ts";
 
@@ -139,6 +140,91 @@ test("every player confirmation is followed by one scripted opponent move and a 
     assert.equal(TUTORIAL_STEPS[index + 2].kind, "opponent-result");
   }
   assert.equal(TUTORIAL_STEPS.at(-1)!.kind, "finish");
+});
+
+test("bulk sale lesson pauses on the real bonus and beats selling the same cards singly", () => {
+  let before = createTutorialState();
+  for (const action of TUTORIAL_ACTIONS.slice(0, 2))
+    before = applyAction(before, action);
+  let bulk = before;
+  for (const action of TUTORIAL_ACTIONS.slice(2, 4))
+    bulk = applyAction(bulk, action);
+  let singles = before;
+  for (let i = 0; i < 3; i++) {
+    singles = applyAction(singles, { type: "sell", good: "spice", count: 1 });
+    if (i < 2)
+      singles = applyAction(singles, {
+        type: "take",
+        index: singles.market.findIndex((good) => good !== "camel"),
+      });
+  }
+  assert.deepEqual(singles.players[0].goods, bulk.players[0].goods);
+  assert.deepEqual(singles.players[0].bonuses, []);
+  assert.deepEqual(bulk.players[0].bonuses, [2]);
+  assert.equal(
+    bulk.players[0].goods.reduce((a, b) => a + b, 0),
+    11,
+  );
+  assert.equal(step("bulk-bonus"), step("history-2") + 1);
+  assert.equal(
+    tutorialStepAfterSelection(step("bulk-bonus"), emptySelection(), bulk),
+    step("bulk-bonus"),
+  );
+  assert.equal(
+    tutorialStepAfterNext(step("bulk-bonus"), emptySelection(), bulk),
+    step("camel-select"),
+  );
+});
+
+test("completed selections wait for Next and incomplete selections cannot advance", () => {
+  let state = createTutorialState();
+  const take = selectMarket(
+    state,
+    emptySelection(),
+    state.market.indexOf("spice"),
+  );
+  assert.equal(
+    tutorialStepAfterSelection(step("take-select"), take, state),
+    step("take-select"),
+  );
+  assert.equal(
+    tutorialStepAfterNext(step("take-select"), take, state),
+    step("take-cancel"),
+  );
+  assert.equal(
+    tutorialStepAfterNext(step("take-cancel"), take, state),
+    step("take-cancel"),
+  );
+  assert.equal(
+    tutorialStepAfterNext(step("take-cancel"), emptySelection(), state),
+    step("take-reselect"),
+  );
+
+  for (const action of TUTORIAL_ACTIONS.slice(0, 2))
+    state = applyAction(state, action);
+  let selection = emptySelection();
+  const spices = state.players[0].hand.flatMap((good, i) =>
+    good === "spice" ? [i] : [],
+  );
+  for (const [n, i] of spices.entries()) {
+    selection = selectHand(state, selection, i);
+    assert.equal(
+      tutorialStepAfterSelection(step("sell-select"), selection, state),
+      step("sell-select"),
+    );
+    assert.equal(
+      tutorialStepAfterNext(step("sell-select"), selection, state),
+      n === 2 ? step("sell-confirm") : step("sell-select"),
+    );
+  }
+  assert.equal(
+    tutorialStepAfterNext(step("sell-confirm"), selection, state),
+    step("sell-confirm"),
+  );
+  assert.equal(
+    tutorialStepAfterNext(step("history-1"), emptySelection(), state),
+    step("sell-select"),
+  );
 });
 
 test("clearing or changing exchange payment returns the guide to the missing input", () => {

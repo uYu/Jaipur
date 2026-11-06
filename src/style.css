@@ -5387,8 +5387,9 @@ select {
 .home-tutorial-entry small {
   font-size: 11px;
 }
-.tutorial-game {
-  padding-bottom: 320px;
+.tutorial-game,
+.tutorial-overlay {
+  overflow-anchor: none;
 }
 .tutorial-overlay {
   position: fixed;
@@ -5400,15 +5401,11 @@ select {
   position: absolute;
   inset: 0;
 }
-.tutorial-spotlight-frame {
-  position: fixed;
-  border: 3px solid #e3b555;
-  border-radius: 10px;
-  box-shadow: 0 0 0 3px #fff2c54d, 0 0 20px #e3b55555;
-}
 .tutorial-popover {
   position: fixed;
   width: min(360px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
   padding: 18px;
   border: 1px solid #e4c279;
   border-radius: 12px;
@@ -5418,11 +5415,15 @@ select {
   pointer-events: auto;
 }
 .tutorial-popover-top {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 10px;
+  background: #fffcf3;
 }
 .tutorial-popover-top > span {
   display: inline-flex;
@@ -5431,11 +5432,103 @@ select {
   color: #9a6a23;
   font-size: 11px;
 }
-.tutorial-popover-top > button {
-  width: 30px;
-  height: 30px;
+.tutorial-window-controls {
+  display: flex;
+  flex: none;
+  gap: 5px;
+}
+.tutorial-window-controls > button {
+  width: 36px;
+  height: 36px;
   border-radius: 5px;
   background: #efece1;
+}
+.tutorial-restore {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  min-height: 44px;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #d6b76f;
+  border-radius: 22px;
+  background: #fffcf3;
+  color: #76551e;
+  box-shadow: 0 3px 12px #10281d25;
+  font-size: 12px;
+  pointer-events: auto;
+}
+.tutorial-sale-example {
+  margin-bottom: 14px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f1ead7;
+  font-size: 12px;
+}
+.tutorial-sale-example > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0;
+}
+.tutorial-sale-example strong {
+  flex: none;
+  font-size: 20px;
+}
+.tutorial-sale-example strong small {
+  font-size: 11px;
+  font-weight: 500;
+}
+.tutorial-bulk-income {
+  color: #865d1e;
+  font-weight: 600;
+}
+.tutorial-sale-example > p {
+  margin: 5px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.tutorial-bonus-tiers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 10px 0;
+  padding-top: 10px;
+  border-top: 1px solid #d8cba6;
+  text-align: center;
+  font-size: 10px;
+}
+.tutorial-bonus-tiers dd {
+  margin: 3px 0 0;
+  color: #865d1e;
+  font-size: 16px;
+  font-weight: 600;
+}
+.tutorial-sale-example > small {
+  display: block;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #746c57;
+}
+.tutorial-tradeoff {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-left: 3px solid #b49a68;
+  border-radius: 0 6px 6px 0;
+  background: #f2eee3;
+}
+.tutorial-tradeoff > strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #7d6337;
+  font-size: 11px;
+}
+.tutorial-tradeoff > p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.7;
 }
 .tutorial-popover h2 {
   font-size: 19px;
@@ -5500,4 +5593,1062 @@ select {
   margin: -4px 0 10px;
   min-height: 32px;
   font-size: 12px;
+}
+
+.mobile-game-menu {
+  display: none;
+}
+@media (max-width: 860px) {
+  .game-shell .game-tools {
+    display: none;
+  }
+  .mobile-game-menu {
+    display: block;
+    position: relative;
+    flex: none;
+  }
+  .mobile-game-menu > summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 52px;
+    min-height: 36px;
+    padding: 5px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--paper);
+    color: #63725e;
+    font-size: 11px;
+    list-style: none;
+    cursor: pointer;
+  }
+  .mobile-game-menu > summary::-webkit-details-marker {
+    display: none;
+  }
+  .mobile-game-menu > summary:focus-visible {
+    outline: 3px solid #bd8d47;
+    outline-offset: 2px;
+  }
+  .mobile-game-menu > nav {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: 0;
+    z-index: 12;
+    display: grid;
+    gap: 3px;
+    width: 156px;
+    padding: 5px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--paper);
+    box-shadow: 0 6px 24px #304e4426;
+  }
+  .mobile-game-menu nav button {
+    justify-content: flex-start;
+    width: 100%;
+    height: auto;
+    min-height: 44px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 5px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .mobile-game-menu nav button > svg {
+    flex: none;
+  }
+}
+
+/* Share the phone's visible height between both card rows. Keep natural
+   minimum sizes so very short screens and expanded details can still scroll. */
+@media (max-width: 860px) {
+  .viewport-table {
+    --board-gap: clamp(
+      2px,
+      calc((var(--game-viewport-height, 100dvh) - 560px) / 30),
+      8px
+    );
+    height: var(--game-viewport-height, 100vh);
+    height: var(--game-viewport-height, 100dvh);
+    padding: 4px max(10px, env(safe-area-inset-right))
+      max(4px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .viewport-table .game-header {
+    min-height: 30px;
+    padding-bottom: 4px;
+  }
+  .viewport-table .game-tools {
+    padding-bottom: var(--board-gap);
+  }
+  .viewport-table .game-tools button {
+    min-height: 36px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .viewport-table .game-grid {
+    min-height: 0;
+    align-self: stretch;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(min-content, 1fr);
+    gap: var(--board-gap);
+    margin-top: var(--board-gap);
+  }
+  .viewport-table .game-overview {
+    padding: 6px;
+  }
+  .viewport-table .mobile-supply {
+    position: static;
+  }
+  .viewport-table .mobile-supply > summary {
+    padding: 5px 7px;
+  }
+  .viewport-table .supply-counter {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+  .viewport-table .game-overview .action-ledger {
+    padding-top: 4px;
+  }
+  .viewport-table .ledger-caption {
+    margin-bottom: 0;
+  }
+  .viewport-table .compact-ledger-table th,
+  .viewport-table .compact-ledger-table td {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+  .viewport-table .compact-ledger-table tbody tr {
+    height: 30px;
+  }
+  .viewport-table .table-column {
+    display: flex;
+    align-self: stretch;
+    flex-direction: column;
+    gap: var(--board-gap);
+    min-height: min-content;
+  }
+  .viewport-table .board-divider,
+  .viewport-table .recent-log,
+  .viewport-table .game-footer {
+    display: none;
+  }
+  .viewport-table .opponent-panel {
+    flex: none;
+    min-height: 46px;
+    padding: 3px 6px;
+    margin: 0;
+  }
+  .viewport-table .player-name h2 {
+    margin-bottom: 2px;
+  }
+  .viewport-table .opponent-score > small {
+    margin-top: 0;
+    font-size: 10px;
+  }
+  .viewport-table .market-table,
+  .viewport-table .hand-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 108px;
+    min-height: 108px;
+    padding: 6px 8px;
+  }
+  .viewport-table .market-heading {
+    flex: none;
+    margin-bottom: 5px;
+  }
+  .viewport-table .market-heading .eyebrow {
+    display: none;
+  }
+  .viewport-table .market-row {
+    flex: 1;
+    min-height: 64px;
+  }
+  .viewport-table .market-deck {
+    height: 100%;
+    min-height: 64px;
+    max-height: 110px;
+  }
+  .viewport-table .market-cards {
+    height: 100%;
+    min-height: 64px;
+    max-height: 120px;
+    align-items: stretch;
+  }
+  .viewport-table .market-cards .card {
+    height: 100%;
+    min-height: 64px;
+    max-height: 120px;
+    aspect-ratio: auto;
+    padding: 5px 2px;
+  }
+  .viewport-table .turn-line {
+    flex: none;
+    padding: 2px 1px;
+    min-height: 20px;
+  }
+  .viewport-table .hand-panel {
+    flex-basis: 126px;
+    min-height: 126px;
+  }
+  .viewport-table .hand-heading {
+    flex: none;
+    margin-bottom: 4px;
+  }
+  .viewport-table .hand-and-herd {
+    display: flex;
+    flex: 1;
+    min-height: 70px;
+    align-items: stretch;
+  }
+  .viewport-table .hand-cards {
+    align-items: stretch;
+    align-content: stretch;
+    flex-wrap: nowrap;
+    padding: 3px 0;
+    max-height: 120px;
+  }
+  .viewport-table .hand-cards > .card.small {
+    height: auto;
+    align-self: stretch;
+    min-height: 64px;
+    max-height: 114px;
+    aspect-ratio: auto;
+  }
+  .viewport-table .action-panel {
+    flex: none;
+    position: static;
+    gap: 4px;
+    min-height: 0;
+    margin: 0;
+    padding: 6px 8px;
+    box-shadow: 0 -3px 14px #304e440c;
+  }
+}
+
+@media (max-width: 860px) and (max-height: 700px) {
+  .viewport-table {
+    --board-gap: 2px;
+  }
+  .viewport-table .ledger-caption {
+    display: none;
+  }
+  .viewport-table .compact-ledger-table thead th:first-child::before {
+    content: "上步";
+  }
+  .viewport-table .market-table {
+    flex-basis: 102px;
+    min-height: 102px;
+  }
+}
+
+.mobile-player-scores,
+.ledger-open {
+  display: none;
+}
+.supply-reward-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+.supply-reward-summary > section {
+  display: grid;
+  gap: 4px;
+  padding: 9px 5px;
+  border: 1px solid #ded3b8;
+  border-radius: 7px;
+  background: #f4eddd;
+  text-align: center;
+  color: #866f42;
+  font-size: 12px;
+}
+.supply-reward-summary small {
+  font-size: 11px;
+}
+.supply-dialog .supply-details {
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  padding: 0;
+}
+.supply-dialog .supply-details > p {
+  font-size: 12px;
+  color: #7c826f;
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.supply-dialog .supply-detail-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.supply-dialog .supply-detail-row > span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.supply-dialog .supply-detail-row .coin {
+  width: 27px;
+  height: 27px;
+  font-size: 13px;
+  font-style: normal;
+  flex: none;
+}
+.player-score-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.player-score-details > section {
+  padding: 14px;
+  border: 1px solid #d6ddcb;
+  border-top: 3px solid #668263;
+  border-radius: 9px;
+  background: #f2f4e9;
+}
+.player-score-details > .score-opponent {
+  border-color: #dfcdbf;
+  border-top-color: #ad7057;
+  background: #f7eee5;
+}
+.player-score-details h3 {
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+.player-score-details dl {
+  margin: 0;
+  font-size: 12px;
+}
+.player-score-details dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 10px 0;
+}
+.player-score-details dd {
+  margin: 0;
+  font-weight: 600;
+}
+.score-detail-total {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.score-last-sale {
+  margin: 16px 0 6px;
+  color: #81846f;
+  font-size: 11px;
+}
+.player-score-details .sale-receipt {
+  min-height: 0;
+  max-width: none;
+  margin-top: 0;
+}
+.player-score-details .receipt-label {
+  display: none;
+}
+.player-score-details .receipt-coins {
+  justify-content: flex-start;
+  gap: 5px;
+}
+.player-score-details .receipt-coin {
+  width: 25px;
+  height: 25px;
+  font-size: 13px;
+}
+.score-no-sale,
+.score-privacy-note {
+  color: #7c826f;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 0;
+}
+.score-privacy-note {
+  grid-column: 1 / -1;
+}
+@media (max-width: 860px) {
+  .game-overview .action-ledger {
+    position: relative;
+  }
+  .ledger-open {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    width: 100%;
+    padding: 2px 0;
+    border-radius: 4px;
+    color: #68795f;
+  }
+  .mobile-player-scores {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    flex: none;
+  }
+  .player-score-card {
+    position: relative;
+    display: grid;
+    justify-content: stretch;
+    justify-items: stretch;
+    gap: 3px;
+    min-width: 0;
+    padding: 6px 8px;
+    border: 1px solid #d0dac8;
+    border-top: 2px solid #668263;
+    border-radius: 8px;
+    background: #f0f3e8;
+    color: #456147;
+    text-align: left;
+  }
+  .player-score-card.score-opponent {
+    border-color: #dfcdbf;
+    border-top-color: #ad7057;
+    background: #f6eee5;
+    color: #98644e;
+  }
+  .player-score-card.score-active {
+    box-shadow: inset 0 0 0 1px currentColor;
+  }
+  .score-card-heading {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: 12px;
+    line-height: 15px;
+  }
+  .score-card-heading small {
+    font-size: 9px;
+    opacity: 0.8;
+  }
+  .score-card-heading > span {
+    margin-left: auto;
+    font-size: 10px;
+  }
+  .score-card-value {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 3px;
+  }
+  .score-card-value strong {
+    font:
+      26px/28px Georgia,
+      serif;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-card-value > small {
+    font-size: 9px;
+  }
+  .score-card-value > span {
+    align-self: center;
+    color: #7b806e;
+    font-size: 10px;
+    line-height: 13px;
+    text-align: right;
+  }
+  .score-card-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 3px;
+    color: #7b806e;
+    font-size: 9px;
+    line-height: 12px;
+    white-space: nowrap;
+  }
+  .score-payment-target {
+    position: absolute;
+    top: 24px;
+    left: 10px;
+    width: 26px;
+    height: 26px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .game-shell .opponent-panel,
+  .game-shell .hand-heading .your-score,
+  .game-shell .hand-heading .seals {
+    display: none;
+  }
+  .game-shell .hand-heading .you-label .avatar {
+    display: none;
+  }
+  .game-shell .hand-heading h2 {
+    margin-bottom: 0;
+  }
+  .viewport-table .hand-panel {
+    flex-basis: 108px;
+    min-height: 108px;
+  }
+  .modal {
+    max-height: calc(100dvh - 24px);
+  }
+  .supply-dialog,
+  .scores-dialog {
+    padding: 24px 18px 18px;
+  }
+  .supply-dialog h2,
+  .scores-dialog h2 {
+    margin-bottom: 10px;
+    font-size: 22px;
+  }
+  .supply-dialog .modal-close,
+  .scores-dialog .modal-close {
+    width: 36px;
+    height: 36px;
+    margin-top: -12px;
+    margin-right: -6px;
+  }
+}
+@media (max-width: 400px) {
+  .player-score-details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .player-score-details > section {
+    padding: 12px;
+  }
+}
+
+/* One readable opponent transaction remains on the table until her next turn. */
+.game-overview .opponent-turn {
+  min-height: 144px;
+  margin-top: 12px;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+}
+.opponent-turn-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.opponent-turn-heading h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  color: #98644e;
+  font-size: 13px;
+}
+.opponent-turn-heading h3 > span {
+  font-size: 11px;
+  font-weight: 400;
+  color: #6e7563;
+}
+.turn-history {
+  flex: none;
+  gap: 2px;
+  min-height: 30px;
+  padding: 2px;
+  font-size: 11px;
+  color: #6e7563;
+}
+.action-summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 6px;
+  color: #566750;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.action-summary-verb {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  gap: 4px;
+}
+.action-summary-goods {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+}
+.action-summary .ledger-good {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 22px;
+  padding: 1px 4px;
+  font-size: 11px;
+}
+.action-summary .ledger-good > .goods-art {
+  width: 20px;
+  height: 21px;
+}
+.action-summary .ledger-item-name,
+.action-summary .ledger-item-value {
+  display: inline;
+  font-size: 11px;
+}
+.action-summary-arrow {
+  flex: none;
+  color: #8b8268;
+}
+.action-summary-income,
+.action-summary-bonus {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  color: #8c6d31;
+  font-size: 11px;
+}
+.action-summary-bonus > small {
+  color: #7c806e;
+  font-size: 10px;
+}
+.turn-market-comparison {
+  display: grid;
+  gap: 4px;
+}
+.turn-market-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+}
+.turn-market-row > span {
+  color: #7a806e;
+  font-size: 11px;
+}
+.turn-market-cards {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+.turn-market-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 36px;
+  padding: 2px 0;
+  border-radius: 4px;
+  color: var(--card-color);
+  background: #e7e8dc;
+  font-size: 11px;
+  line-height: 14px;
+}
+.turn-market-card > .goods-art {
+  width: 22px;
+  height: 21px;
+}
+.turn-market-card.market-removed {
+  background: #efdece;
+}
+.turn-market-card.market-added {
+  background: #dce7d4;
+}
+.turn-market-card.empty {
+  color: #8e9380;
+}
+.market-change-mark {
+  position: absolute;
+  top: 1px;
+  right: 3px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.turn-value-arrived {
+  animation: turn-value-arrival 650ms ease-out both;
+}
+@keyframes turn-value-arrival {
+  from {
+    background-color: #d6e1b8;
+  }
+  to {
+    background-color: transparent;
+  }
+}
+@keyframes market-arrival {
+  from {
+    opacity: 0.45;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.card.market-arrived {
+  animation: market-arrival 220ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .turn-value-arrived,
+  .card.market-arrived {
+    animation: none;
+  }
+}
+.turn-public-changes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  color: #6b7560;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.turn-public-changes b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.turn-public-changes > small {
+  margin-left: auto;
+  font-size: 10px;
+  color: #8d8c78;
+}
+.opponent-turn-empty {
+  margin: 16px 0 10px;
+  color: #7c826f;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.result-last-action {
+  margin: 12px 0;
+  color: #66715f;
+  font-size: 12px;
+  line-height: 1.7;
+  text-align: center;
+}
+.turn-pending .opponent-turn-heading h3 {
+  color: #8d6a29;
+}
+.card .market-card-notice {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  border-radius: 6px 6px 0 0;
+  background: #5b7663;
+  color: #fffdf5;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+@media (max-width: 860px) {
+  .game-overview .opponent-turn {
+    min-height: 156px;
+    margin-top: 5px;
+    padding: 4px 2px 0;
+    border-top: 0;
+  }
+  .opponent-turn-heading {
+    margin-bottom: 2px;
+  }
+  .opponent-turn-heading h3 {
+    font-size: 12px;
+  }
+  .turn-history {
+    min-height: 26px;
+  }
+  .turn-public-changes {
+    gap: 3px 10px;
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+  .game-shell .turn-line {
+    flex-wrap: wrap;
+    column-gap: 5px;
+    line-height: 1.5;
+  }
+  .game-shell .turn-line > span:last-child {
+    margin-left: auto;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 860px) and (max-height: 780px) {
+  /* Remaining stock is essential for deciding when to sell and when the
+     round will end. Compact the bonus row instead of hiding stock counts. */
+  .viewport-table .mobile-supply > summary {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .viewport-table .supply-heading {
+    margin-bottom: 1px;
+  }
+  .viewport-table .supply-counter {
+    gap: 1px 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .viewport-table .counter-name {
+    line-height: 13px;
+  }
+  .viewport-table .supply-bonuses {
+    flex-wrap: nowrap;
+    gap: 3px 8px;
+    margin-top: 2px;
+    padding-top: 2px;
+  }
+  .viewport-table .supply-bonuses > span:first-child {
+    width: auto;
+  }
+  .viewport-table .supply-bonus {
+    white-space: nowrap;
+  }
+  .game-overview .opponent-turn {
+    min-height: 144px;
+  }
+  .turn-market-card {
+    min-height: 32px;
+    line-height: 13px;
+  }
+  .turn-market-card > .goods-art {
+    height: 17px;
+  }
+}
+
+/* Score cards keep readable information on phones without extra breakdown rows. */
+.player-score-details dl {
+  color: #485a4b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.player-score-details .score-opponent dl {
+  color: #744d3b;
+}
+.player-score-details dd {
+  font-variant-numeric: tabular-nums;
+}
+.player-score-details .score-last-sale,
+.player-score-details .score-no-sale,
+.player-score-details .score-privacy-note {
+  color: #55614f;
+  font-size: 12px;
+}
+@media (max-width: 860px) {
+  .mobile-player-scores {
+    gap: 7px;
+  }
+  .mobile-player-scores .player-score-card {
+    grid-template-rows: 17px 28px 17px;
+    gap: 3px;
+    height: 82px;
+    min-height: 82px;
+    padding: 5px 8px;
+    color: #304d3b;
+  }
+  .mobile-player-scores .score-opponent {
+    color: #784b38;
+  }
+  .score-card-heading {
+    justify-content: space-between;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    line-height: 17px;
+  }
+  .score-card-heading > span {
+    margin-left: 0;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .score-card-identity {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+  }
+  .score-card-heading small {
+    font-size: 12px;
+    opacity: 1;
+  }
+  .score-card-seals {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    font-variant-numeric: tabular-nums;
+  }
+  .score-card-seals b {
+    font-size: 13px;
+  }
+  .score-card-value {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .score-card-value > small {
+    font-size: 12px;
+    line-height: 17px;
+  }
+  .score-card-value .score-hidden-value {
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 28px;
+  }
+  .score-card-meta {
+    align-items: baseline;
+    gap: 5px;
+    color: inherit;
+    font-size: 12px;
+    line-height: 17px;
+  }
+  .score-card-meta b {
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}
+@media (max-width: 860px) and (max-height: 780px) {
+  .viewport-table {
+    --board-gap: clamp(
+      2px,
+      calc((var(--game-viewport-height, 100dvh) - 560px) / 40),
+      6px
+    );
+  }
+}
+
+/* Semantic icons keep statistics recognizable beside the player identity. */
+.score-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+.score-icon > svg {
+  width: 16px;
+  height: 16px;
+}
+.score-icon-hand {
+  color: #476c80;
+}
+.score-icon-herd {
+  color: #a47b35;
+}
+.score-icon-herd > .goods-art {
+  width: 19px;
+  height: 19px;
+}
+.score-icon-wins {
+  color: #a45e44;
+}
+.score-icon-income {
+  color: #997126;
+}
+.score-icon-bonus {
+  color: #84648c;
+}
+.score-icon-private {
+  color: #647b81;
+}
+.player-score-details dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+@media (max-width: 860px) {
+  .mobile-player-scores .player-score-card {
+    border-color: #d2dbc8;
+    border-top-color: #668263;
+    background: linear-gradient(115deg, #f8faf3, #eef3e6);
+    box-shadow: 0 1px 2px #314c3710;
+  }
+  .mobile-player-scores .player-score-card.score-opponent {
+    border-color: #dfcebe;
+    border-top-color: #ae7658;
+    background: linear-gradient(115deg, #fffaf4, #f5eade);
+  }
+  .mobile-player-scores .player-score-card.score-active {
+    border-color: #98ad86;
+    border-top-color: #526f4b;
+    box-shadow: 0 1px 4px #425c2a20;
+  }
+  .mobile-player-scores .score-opponent.score-active {
+    border-color: #c59a7b;
+    border-top-color: #9b6245;
+  }
+  .score-card-identity > b {
+    font-size: 13px;
+  }
+  .score-card-seals {
+    gap: 3px;
+    color: #76513e;
+  }
+  .score-card-seals .score-icon {
+    width: 14px;
+    height: 14px;
+  }
+  .score-card-seals .score-icon > svg {
+    width: 14px;
+    height: 14px;
+  }
+  .score-card-value {
+    gap: 5px;
+  }
+  .score-value-emblem {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    align-self: center;
+    border-radius: 50%;
+    background: #f0e4c6;
+  }
+  .score-value-private {
+    background: #e5e9e5;
+  }
+  .score-card-value > strong {
+    color: #334e3b;
+  }
+  .score-card-value .score-hidden-value {
+    color: #6b5a50;
+    font-size: 17px;
+  }
+  .score-card-value > small {
+    color: #716a57;
+  }
+  .score-card-meta {
+    gap: 4px;
+  }
+  .score-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+  }
+  .score-stat-hand {
+    color: #466174;
+  }
+  .score-stat-herd {
+    color: #85632d;
+  }
+}
+@media (max-width: 370px) {
+  .score-card-heading {
+    gap: 3px;
+  }
+  .score-card-identity {
+    gap: 2px;
+  }
+  .score-stat-herd .score-stat-label,
+  .score-card-value .score-reveal-note {
+    display: none;
+  }
 }

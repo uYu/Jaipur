@@ -34,19 +34,20 @@ type GuideStep = {
   target: string;
   kind?: "select" | "confirm" | "opponent" | "opponent-result" | "finish";
   lesson?: number;
+  tradeoff?: string;
 };
 export const TUTORIAL_STEPS: GuideStep[] = [
   {
     id: "take-select",
     title: "先点集市里的这张香料",
-    text: "中间这 5 张是双方共用的市场。点亮框里的香料，卡牌会高亮并出现 ✓；选牌还不算成交。",
+    text: "中间这 5 张是双方共用的市场。点击亮起的香料，卡牌会高亮并出现 ✓；选牌还不算成交。教程会为练规则安排一些交易，遇到实战需要权衡的地方会提醒你。",
     target: ".market-table .spice",
     kind: "select",
   },
   {
     id: "take-cancel",
     title: "再点一次，取消选中",
-    text: "再点同一张香料，✓ 就会消失。也可以点亮框里的「重选」清空选择，确认前都能改。",
+    text: "再点同一张香料，✓ 就会消失。也可以点击亮起的「重选」清空选择，确认前都能改。",
     target: ".market-table .spice",
     kind: "select",
   },
@@ -75,21 +76,21 @@ export const TUTORIAL_STEPS: GuideStep[] = [
   {
     id: "history-1",
     title: "先看记录：米拉卖出了黄金",
-    text: "「最近行动」里米拉这一行，从左到右是行动、付出、收获：卖出 → 黄金 ×2 → 12 卢比。黄金至少 2 张起售；两枚 6 卢比筹码已被她拿走。",
+    text: "「米拉 · 本手」显示她卖出黄金 ×2，这一笔拿到 12 卢比，货物筹码从 0 变为 2 枚、手牌从 4 变为 2 张；市场没有变化。每笔货物收入可见，但对手累计分和奖励面值不会直接展示，收市才揭晓总分。",
     target: ".action-ledger",
     kind: "opponent-result",
   },
   {
     id: "sell-select",
-    title: "点选你手里的 3 张香料",
-    text: "下方「你的货摊」是自己的手牌，最多 7 张。逐张点亮 3 张香料，就会组成出售；这一步其他货物暂时不能选。",
+    title: "凑满 3 张香料，多拿一枚奖励",
+    text: "现在轮到你。逐张点选「你的货摊」里的 3 张香料：只卖 1 或 2 张没有批量奖励，一次卖同种货物至少 3 张才有。这一步其他货物暂时不能选。",
     target: ".hand-cards .spice",
     kind: "select",
   },
   {
     id: "sell-confirm",
     title: "确认出售这 3 张香料",
-    text: "预览显示货物收入 11 卢比；卖 3 张还会拿一枚奖励。点「确认出售」，留意筹码飞进你右侧的收入区。",
+    text: "这笔有两份收入：货物筹码 11 卢比，另加一枚 3 张奖励（1–3 卢比，成交后揭晓）。点「确认出售」，留意你的收入增加、手牌减少。",
     target: ".action-panel",
     kind: "confirm",
     lesson: 1,
@@ -104,9 +105,15 @@ export const TUTORIAL_STEPS: GuideStep[] = [
   {
     id: "history-2",
     title: "记录更新了：丝绸换到 5 卢比",
-    text: "米拉最新一行是「卖出 → 丝绸 ×1 → 5 卢比」。普通货物可以单卖，3 / 4 / 5 张及以上成组出售才有批量奖励。你刚才卖香料得到了 11 + 2 = 13 卢比。",
+    text: "米拉本手卖出丝绸 ×1，拿到 5 卢比、货物筹码多了 1 枚。她没有批量奖励，却先抢走了最高价的丝绸筹码：单卖也可能值得。接下来看看你刚才成组出售多赚了多少。",
     target: ".action-ledger",
     kind: "opponent-result",
+  },
+  {
+    id: "bulk-bonus",
+    title: "你多赚了 2 卢比！",
+    text: "你的收入已变成 13 卢比：11 来自香料，2 来自刚领到的批量奖励。是同一种货物在一次交易里卖够张数，才有这份额外收入；分几次累计不算。",
+    target: ".your-score, .mobile-player-scores .score-you",
   },
   {
     id: "camel-select",
@@ -122,6 +129,8 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     target: ".action-panel",
     kind: "confirm",
     lesson: 2,
+    tradeoff:
+      "收骆驼会翻出新货，但接下来是米拉先挑。你扩充了驼队，也让出了挑新货的先机；实战要考虑会不会替对手补出好牌。",
   },
   {
     id: "opponent-3",
@@ -133,7 +142,7 @@ export const TUTORIAL_STEPS: GuideStep[] = [
   {
     id: "history-3",
     title: "记录告诉你，她拿走了白银",
-    text: "米拉一行显示「拿取 → 无付出 → 白银 ×1」。她刚拿的牌是公开信息，会保留在这里；她整手牌的内容仍然保密。",
+    text: "米拉本手拿走白银 ×1。对照上下两排市场，可以看到白银被拿走、新牌补入；她的手牌也从 1 变为 2。你收骆驼后翻出的白银被她先拿走了，这是补货让先手的代价。整手牌仍保密。",
     target: ".action-ledger",
     kind: "opponent-result",
   },
@@ -158,6 +167,8 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     target: ".action-panel",
     kind: "confirm",
     lesson: 3,
+    tradeoff:
+      "这步练骆驼付款，但你会从 4 头降到 2 头。米拉若收走这 2 头，就会以 3 比 2 反超，可能抢走收市时的 5 卢比驼队奖励。",
   },
   {
     id: "opponent-4",
@@ -169,14 +180,14 @@ export const TUTORIAL_STEPS: GuideStep[] = [
   {
     id: "history-4",
     title: "你付出的骆驼，被米拉收走了",
-    text: "记录里米拉收下了 2 头骆驼。交换付出的牌会留在市场，对手也能拿；骆驼不是弃掉的。",
+    text: "记录里米拉收下了你付出的 2 头骆驼。现在她有 3 头、你有 2 头，驼队优势已经反转。交换付出的牌会留在市场，对手也能拿；实战别只看换进了什么。",
     target: ".action-ledger",
     kind: "opponent-result",
   },
   {
     id: "goods-exchange-select",
     title: "再试手牌换货：选 2 张皮革",
-    text: "不必用骆驼。先从亮框中的 3 张皮革里任选 2 张，再用自己的两张丝绸等量支付。",
+    text: "不必用骆驼。先从亮起的 3 张皮革里任选 2 张，再用自己的两张丝绸等量支付。",
     target: ".market-table .leather",
     kind: "select",
   },
@@ -194,6 +205,8 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     target: ".action-panel",
     kind: "confirm",
     lesson: 4,
+    tradeoff:
+      "这笔主要练手牌付款，并不是见到皮革就该换。按当前筹码，两张丝绸可卖 6、两张皮革可卖 7，但交换本身不加分，还要花一回合出售，并把丝绸留给对手取用。",
   },
   {
     id: "opponent-5",
@@ -237,6 +250,8 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     target: ".action-panel",
     kind: "confirm",
     lesson: 5,
+    tradeoff:
+      "为演示混合付款，我们又换回上一笔送出的丝绸，还要再花一头骆驼。实战反复倒货会耗掉回合和资源，应围绕凑组或抢高价来换，别照搬这段操作。",
   },
   {
     id: "opponent-6",
@@ -255,7 +270,7 @@ export const TUTORIAL_STEPS: GuideStep[] = [
   {
     id: "end-tokens",
     title: "什么时候收市？先看这里",
-    text: "「0/3 类售罄即收市」是本轮结束进度。任意三种货物的筹码全部领完，立刻收市；只售罄一类或两类还不会结束。点面板可展开每类的余量和后续价格。",
+    text: "「0/3 类售罄即收市」是本轮结束进度。任意三种货物的筹码全部领完，立刻收市；只售罄一类或两类还不会结束。点筹码面板可查看每类的余量和后续价格。",
     target: ".mobile-supply > summary",
   },
   {
@@ -268,19 +283,19 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     id: "end-score",
     title: "收市后，怎样算赢？",
     text: "货物收入 + 批量奖励 + 驼队奖励，合计更多者赢本轮。驼队更多者加 5 卢比，数量相同不加；留在手里的货物一分不算。同分先比奖励枚数，再比货物筹码枚数。",
-    target: ".your-score",
+    target: ".your-score, .mobile-player-scores .score-you",
   },
   {
     id: "end-match",
     title: "赢下一轮，才会点亮印章",
     text: "当前是「1 局定胜负」，赢本轮就赢比赛。标准赛则先赢两轮、集齐两枚印章获胜。结束时会弹出结算；完全平局会加赛。",
-    target: ".hand-panel .seals",
+    target: ".hand-panel .seals, .mobile-player-scores .score-card-seals",
   },
   {
     id: "finish",
     title: "准备好，正式开市",
-    text: "你已练过四种行动和三种交换付款。忘记细节时，顶部「游戏规则」可以查；「行动记录」能回看完整交易。「返回菜单」可以离开，正式比赛每笔确认后的进度会自动保存。",
-    target: ".game-tools",
+    text: "你已练过四种行动和三种交换付款。忘记细节时，打开顶部菜单可查看「游戏规则」或「行动记录」，也可以返回主菜单。正式比赛每笔确认后的进度会自动保存。",
+    target: ".game-tools, .mobile-game-menu > summary",
     kind: "finish",
   },
 ];
@@ -404,7 +419,8 @@ export function tutorialStepAfterSelection(
   selection: Selection,
   state: State,
 ) {
-  if (tutorialSelectionReady(step, selection, state)) return step + 1;
+  // Finishing an input enables Next; it never advances the guide by itself.
+  if (tutorialSelectionReady(step, selection, state)) return step;
   const id = TUTORIAL_STEPS[step].id;
   const go = (id: string) => TUTORIAL_STEPS.findIndex((s) => s.id === id);
   const g = group(step);
@@ -439,6 +455,19 @@ export function tutorialStepAfterSelection(
   }
   return step;
 }
+
+export function tutorialStepAfterNext(
+  step: number,
+  selection: Selection,
+  state: State,
+) {
+  const guide = TUTORIAL_STEPS[step];
+  if (guide.kind === "select")
+    return tutorialSelectionReady(step, selection, state) ? step + 1 : step;
+  if (!guide.kind || guide.kind === "opponent-result") return step + 1;
+  return step;
+}
+
 export function tutorialFeedback(step: number, selection: Selection) {
   const id = TUTORIAL_STEPS[step].id;
   if (id === "sell-select") return `香料已选 ${selection.hand.length} / 3 张`;

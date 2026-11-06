@@ -11,6 +11,8 @@ import {
   Hand,
   ArrowLeftRight,
   ArrowDownToLine,
+  ChevronRight,
+  ArrowRight,
 } from "lucide-react";
 
 function GoodsText({ cards }: { cards: Card[] }) {
@@ -82,6 +84,65 @@ function ActionText({
         )}
       </Cell>
     </>
+  );
+}
+
+export function ActionSummary({ action }: { action: Presentation }) {
+  const Icon = {
+    take: Hand,
+    camels: ArrowDownToLine,
+    exchange: ArrowLeftRight,
+    sell: Coins,
+  }[action.type];
+  const verb = { take: "拿取", camels: "收驼", exchange: "交换", sell: "卖出" }[
+    action.type
+  ];
+  return (
+    <div className="action-summary" aria-label={actionCaption(action)}>
+      <span className="action-summary-verb">
+        <Icon size={17} aria-hidden="true" />
+        {verb}
+      </span>
+      <span className="action-summary-goods">
+        <GoodsText
+          cards={action.outgoing.length ? action.outgoing : action.incoming}
+        />
+        {action.type === "exchange" && (
+          <>
+            <ArrowRight
+              className="action-summary-arrow"
+              size={15}
+              aria-hidden="true"
+            />
+            <GoodsText cards={action.incoming} />
+          </>
+        )}
+        {action.type === "sell" && (
+          <>
+            <ArrowRight
+              className="action-summary-arrow"
+              size={15}
+              aria-hidden="true"
+            />
+            <span className="action-summary-income">
+              <Coins size={16} aria-hidden="true" />
+              <b>{sum(action.coins)}</b> 卢比
+            </span>
+            {action.bonus !== null && (
+              <span className="action-summary-bonus">
+                <Award size={15} aria-hidden="true" />
+                奖励 ×1{" "}
+                <small>
+                  {action.bonus === "hidden"
+                    ? "面值保密"
+                    : `+${action.bonus} 卢比`}
+                </small>
+              </span>
+            )}
+          </>
+        )}
+      </span>
+    </div>
   );
 }
 
@@ -168,11 +229,13 @@ export function LastActions({
   latestActor,
   turns,
   settled = true,
+  onHistory,
 }: {
   actions: [Presentation | null, Presentation | null];
   latestActor: number | null;
   turns: [number | null, number | null];
   settled?: boolean;
+  onHistory: () => void;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const measure = useRef<HTMLTableElement>(null);
@@ -213,6 +276,15 @@ export function LastActions({
   return (
     <section className="action-ledger" aria-label="双方上步行动">
       <span className="ledger-caption">最近行动</span>
+      <button
+        className="ledger-open"
+        aria-label="查看完整行动记录"
+        aria-haspopup="dialog"
+        title="点击查看全部历史行动"
+        onClick={onHistory}
+      >
+        <ChevronRight size={15} aria-hidden="true" />
+      </button>
       <div className="compact-ledger" ref={container}>
         <table
           className={`compact-ledger-table ${iconsOnly ? "icons-only" : ""} ${dense ? "dense-icons" : ""}`}

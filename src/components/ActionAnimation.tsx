@@ -8,11 +8,13 @@ export function ActionAnimation({
   duration,
   paused,
   elapsed,
+  settling = false,
 }: {
   flights: Flight[];
   duration: number;
   paused: boolean;
   elapsed: number;
+  settling?: boolean;
 }) {
   const reduced = useReducedMotion();
   const layer = useRef<HTMLDivElement>(null),
@@ -142,6 +144,10 @@ export function ActionAnimation({
           end = Math.min(0.99, flight.end),
           middle = (start + end) / 2;
         const landing = `translate(${tx - x}px, ${ty - y}px) scale(${targetWidth / width}, ${targetHeight / height})`;
+        // The real hand is compacted once on settlement. Let incoming sprites
+        // fade at the edge so they cannot cover retained cards in old slots.
+        const vanishAtEnd =
+          flight.to === "sale" || (settling && flight.to === "your-hand");
         const frames =
           reduced || flight.from === flight.to
             ? [
@@ -149,12 +155,12 @@ export function ActionAnimation({
                 { offset: start, opacity: 0, transform: landing },
                 {
                   offset: Math.min(start + 0.16, end),
-                  opacity: flight.to === "sale" ? 0 : 1,
+                  opacity: vanishAtEnd ? 0 : 1,
                   transform: landing,
                 },
                 {
                   offset: 1,
-                  opacity: flight.to === "sale" ? 0 : 1,
+                  opacity: vanishAtEnd ? 0 : 1,
                   transform: landing,
                 },
               ]
@@ -172,12 +178,12 @@ export function ActionAnimation({
                 },
                 {
                   offset: end,
-                  opacity: flight.to === "sale" ? 0 : 1,
+                  opacity: vanishAtEnd ? 0 : 1,
                   transform: landing,
                 },
                 {
                   offset: 1,
-                  opacity: flight.to === "sale" ? 0 : 1,
+                  opacity: vanishAtEnd ? 0 : 1,
                   transform: landing,
                 },
               ];
@@ -185,7 +191,7 @@ export function ActionAnimation({
         if (typeof sprite.animate !== "function") {
           Object.assign(sprite.style, {
             transform: landing,
-            opacity: flight.to === "sale" ? "0" : "1",
+            opacity: vanishAtEnd ? "0" : "1",
           });
           if (back) back.style.opacity = flight.toBack ? "1" : "0";
           return;
@@ -242,7 +248,7 @@ export function ActionAnimation({
         element.style.visibility = visibility;
       });
     };
-  }, [flights, duration, reduced]);
+  }, [flights, duration, reduced, settling]);
   useLayoutEffect(() => {
     animations.current.forEach((a) => (paused ? a.pause() : a.play()));
   }, [paused]);

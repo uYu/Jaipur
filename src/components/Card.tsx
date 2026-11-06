@@ -8,9 +8,11 @@ export function Card({
   disabled = false,
   small = false,
   motionId,
+  notice,
 }: {
   good: CardType;
   motionId?: string;
+  notice?: string;
   selected?: boolean;
   onClick?: () => void;
   disabled?: boolean;
@@ -20,7 +22,7 @@ export function Card({
   return (
     <button
       data-motion-anchor={motionId}
-      className={`card ${good} ${selected ? "selected" : ""} ${small ? "small" : ""} ${premium ? "premium-card" : ""}`}
+      className={`card ${good} ${selected ? "selected" : ""} ${small ? "small" : ""} ${premium ? "premium-card" : ""} ${notice && notice !== "取走" ? "market-arrived" : ""}`}
       disabled={disabled}
       onClick={onClick}
       title={
@@ -30,7 +32,7 @@ export function Card({
             ? "骆驼 · 不占手牌"
             : "普通货物 · 1 张起售"
       }
-      aria-label={`${LABEL[good]}${premium ? "，高级货物，至少 2 张起售" : ""}${selected ? "，已选中" : ""}`}
+      aria-label={`${LABEL[good]}${premium ? "，高级货物，至少 2 张起售" : ""}${selected ? "，已选中" : ""}${notice ? `，${notice}` : ""}`}
       aria-pressed={selected}
     >
       {premium ? (
@@ -46,6 +48,7 @@ export function Card({
         <span className="card-en">{ENGLISH[good]}</span>
       )}
       {selected && <span className="selected-check">✓</span>}
+      {notice && <span className="market-card-notice">{notice}</span>}
     </button>
   );
 }

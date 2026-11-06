@@ -17,7 +17,7 @@ import {
 import type { Action, Difficulty, Event, Save, State } from "./game/types.ts";
 import type { MctsStats } from "./game/ai-wasm.ts";
 import { MCTS_TIME_BUDGET_MS, MCTS_TREES } from "./game/ai-config.ts";
-import { sum } from "./game/data.ts";
+import { playerScoreDisplay } from "./game/score-display.ts";
 import { applyAction, newGame } from "./game/engine.ts";
 import {
   emptySelection,
@@ -36,27 +36,41 @@ import {
 } from "./game/storage.ts";
 import { Palace } from "./components/Art.tsx";
 import { Card } from "./components/Card.tsx";
-import { MobileSupply } from "./components/MobileSupply.tsx";
+import { MobileSupply, SupplyDetails } from "./components/MobileSupply.tsx";
+import { PlayerScores, ScoreDetails } from "./components/PlayerScores.tsx";
 import { ResultDialog, resultTitle } from "./components/ResultDialog.tsx";
 import { SaleReceipt } from "./components/SaleReceipt.tsx";
 import { actionSummaries } from "./game/receipts.ts";
-import { LastActions } from "./components/LastActions.tsx";
+import { OpponentTurn } from "./components/OpponentTurn.tsx";
 import { ActionHistory } from "./components/ActionHistory.tsx";
 import { ActionAnimation } from "./components/ActionAnimation.tsx";
-import { actionFlights, dealFlights } from "./game/flights.ts";
+import { dealFlights } from "./game/flights.ts";
+import { settlementFlights } from "./game/settlement-flights.ts";
 import type { Flight } from "./game/flights.ts";
-import { initialMarketSlots, nextMarketSlots } from "./game/market-layout.ts";
-import { presentAction } from "./game/presentation.ts";
+import {
+  initialMarketSlots,
+  nextMarketSlots,
+  takenMarketIndices,
+} from "./game/market-layout.ts";
+import { presentAction, actionCaption } from "./game/presentation.ts";
 import type { Presentation } from "./game/presentation.ts";
+import {
+  lastOpponentTurn,
+  presentOpponentTurn,
+  marketSlotsAt,
+} from "./game/opponent-turn.ts";
+import type { OpponentTurnDetails } from "./game/opponent-turn.ts";
 import { Rules } from "./components/Rules.tsx";
 import { Tutorial } from "./components/Tutorial.tsx";
 import { ActionPanel } from "./components/ActionPanel.tsx";
+import { GameMenu } from "./components/GameMenu.tsx";
 import {
   createTutorialSave,
   TUTORIAL_ACTIONS,
   TUTORIAL_STEPS,
   tutorialAccepts,
   tutorialStepAfterSelection,
+  tutorialStepAfterNext,
   normalizeTutorialSelection,
   tutorialAllowsMarket,
   tutorialAllowsHand,
@@ -65,6 +79,7 @@ import {
 import type { Selection } from "./game/selection.ts";
 import { readPreferences, writePreferences } from "./game/preferences.ts";
 import { useReducedMotion } from "./hooks/useReducedMotion.ts";
+import { useViewportHeight } from "./hooks/useViewportHeight.ts";
 function initialSave(): { save: Save | null; error: string } {
   try {
     const data = localStorage.getItem(SAVE_KEY);
@@ -118,6 +133,7 @@ export default function App() {
   const [screen, setScreen] = useState<"menu" | "game" | "replay" | "tutorial">(
     "menu",
   );
+  const tableViewport = useViewportHeight(screen !== "menu");
   const [tutorialSave, setTutorialSave] = useState(createTutorialSave);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [tutorialSlots, setTutorialSlots] = useState(initialMarketSlots);
@@ -127,7 +143,9 @@ export default function App() {
   const [dismissedResult, setDismissedResult] = useState("");
   const [inspectResult, setInspectResult] = useState(false);
   const [menu, setMenu] = useState<"home" | "new" | "settings">("home");
-  const [modal, setModal] = useState<"rules" | "log" | null>(null);
+  const [modal, setModal] = useState<
+    "rules" | "log" | "supply" | "scores" | null
+  >(null);
   const [preferences] = useState(readPreferences);
   const [difficulty, setDifficulty] = useState<Difficulty>(
       preferences.difficulty,
@@ -144,14 +162,26 @@ export default function App() {
     [retry, setRetry] = useState(0);
   const [aiInsight, setAiInsight] = useState<AiInsight | null>(null);
   const [transition, setTransition] = useState<{
+    kind: "action" | "deal";
+    eventLimit: number;
     before: State;
     marketSlots: number[];
     action: Presentation;
     caption?: string;
     flights: Flight[];
     duration: number;
+    opponentTurn?: OpponentTurnDetails;
   } | null>(null);
-  const [marketSlots, setMarketSlots] = useState(initialMarketSlots);
+  const [marketNotice, setMarketNotice] = useState<{
+    round: number;
+    turn: number;
+    removedSlots: number[];
+    addedSlots: number[];
+    addedLabel: string;
+  } | null>(null);
+  const [marketSlots, setMarketSlots] = useState(() =>
+    marketSlotsAt(initial.save),
+  );
   const transitionRemaining = useRef(0);
   useEffect(() => {
     if (!transition || (screen !== "game" && screen !== "tutorial") || modal)
@@ -173,13 +203,20 @@ export default function App() {
   const { market, hand } = selection;
   const [replayIndex, setReplayIndex] = useState(0),
     [replayPlaying, setReplayPlaying] = useState(false);
-  const { receipts, lastActions, lastTurns, latestActor, history } = useMemo(
-    () =>
-      actionSummaries(
-        screen === "tutorial" ? tutorialSave : save,
-        screen === "replay" ? replayIndex : undefined,
-      ),
-    [save, screen, replayIndex, tutorialSave],
+  const shownSave = teaching ? tutorialSave : save;
+  const shownEventLimit =
+    screen === "replay"
+      ? replayIndex
+      : (screen === "game" || teaching) && transition
+        ? transition.eventLimit
+        : (shownSave?.events.length ?? 0);
+  const { receipts, history } = useMemo(
+    () => actionSummaries(shownSave, shownEventLimit),
+    [shownSave, shownEventLimit],
+  );
+  const settledOpponentTurn = useMemo(
+    () => lastOpponentTurn(shownSave, shownEventLimit),
+    [shownSave, shownEventLimit],
   );
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -201,24 +238,32 @@ export default function App() {
       const next = advance(game, event);
       if (event.type !== "next") {
         const duration = reducedMotion
-          ? event.type === "sell"
-            ? 900
-            : event.type === "exchange"
+          ? 180
+          : game.current === 0
+            ? 500
+            : speed === 350
               ? 650
-              : 500
-          : (speed === 350 ? 650 : speed === 2000 ? 1400 : 950) +
-            (event.type === "exchange" ? 200 : event.type === "sell" ? 550 : 0);
+              : speed === 2000
+                ? 1100
+                : 850;
         transitionRemaining.current = duration;
         setTransition({
+          kind: "action",
+          eventLimit: save.events.length,
           before: game,
           marketSlots,
           action: presentAction(game, event, next),
-          flights: actionFlights(game, event, next, marketSlots),
+          flights: settlementFlights(game, event, next, marketSlots),
           duration,
+          opponentTurn:
+            game.current === 1
+              ? presentOpponentTurn(game, event, next, marketSlots)
+              : undefined,
         });
+        noteMarketChange(game, event, next, marketSlots);
         setMarketSlots(nextMarketSlots(game, event, next, marketSlots));
       } else {
-        animateDeal(next);
+        animateDeal(next, save.events.length + 1);
       }
       setGame(next);
       setSave({ ...save, events: [...save.events, event] });
@@ -322,6 +367,8 @@ export default function App() {
   useEffect(() => {
     if (!modal) return;
     const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     closeRef.current?.focus();
     const listener = (e: KeyboardEvent) => {
       if (e.key === "Escape") setModal(null);
@@ -344,6 +391,7 @@ export default function App() {
     document.addEventListener("keydown", listener);
     return () => {
       document.removeEventListener("keydown", listener);
+      document.body.style.overflow = overflow;
       previous?.focus();
     };
   }, [modal]);
@@ -364,7 +412,7 @@ export default function App() {
   const showResult =
     !!viewed &&
     viewed.phase !== "playing" &&
-    !transition &&
+    (screen === "replay" || !transition) &&
     !modal &&
     ((screen === "game" && dismissedResult !== resultKey) ||
       (screen === "replay" && inspectResult));
@@ -377,11 +425,13 @@ export default function App() {
     setTutorialStep(0);
     setTutorialSlots(initialMarketSlots());
     setTransition(null);
+    setMarketNotice(null);
     setModal(null);
     clear();
     setScreen("tutorial");
   }
   function selectCards(next: Selection) {
+    setMarketNotice(null);
     if (teaching) {
       let clean = normalizeTutorialSelection(tutorialStep, next, tutorialState);
       const nextStep = tutorialStepAfterSelection(
@@ -420,15 +470,22 @@ export default function App() {
     )
       return;
     const next = applyAction(before, action);
-    const duration = reducedMotion ? 650 : action.type === "sell" ? 1800 : 1300;
+    const duration = reducedMotion ? 180 : before.current === 0 ? 500 : 850;
     transitionRemaining.current = duration;
     setTransition({
+      kind: "action",
+      eventLimit: tutorialSave.events.length,
       before,
       marketSlots: tutorialSlots,
       action: presentAction(before, action, next),
-      flights: actionFlights(before, action, next, tutorialSlots),
+      flights: settlementFlights(before, action, next, tutorialSlots),
       duration,
+      opponentTurn:
+        before.current === 1
+          ? presentOpponentTurn(before, action, next, tutorialSlots)
+          : undefined,
     });
+    noteMarketChange(before, action, next, tutorialSlots);
     setTutorialSlots(nextMarketSlots(before, action, next, tutorialSlots));
     setTutorialSave((previous) => ({
       ...previous,
@@ -446,7 +503,28 @@ export default function App() {
     );
     return () => clearTimeout(timer);
   }, [teaching, transition, modal, tutorialStep, tutorialSave]);
-  function animateDeal(state: State) {
+  function noteMarketChange(
+    before: State,
+    action: Action,
+    after: State,
+    slots: number[],
+  ) {
+    if (before.current !== 1) {
+      setMarketNotice(null);
+      return;
+    }
+    const taken = takenMarketIndices(before, action);
+    const nextSlots = nextMarketSlots(before, action, after, slots);
+    setMarketNotice({
+      round: before.round,
+      turn: before.turn + 1,
+      removedSlots: taken.map((i) => slots[i]),
+      addedSlots: nextSlots.slice(before.market.length - taken.length),
+      addedLabel: action.type === "exchange" ? "放回" : "新补",
+    });
+  }
+  function animateDeal(state: State, eventLimit = 0) {
+    setMarketNotice(null);
     const duration = reducedMotion
       ? 500
       : speed === 350
@@ -456,6 +534,8 @@ export default function App() {
           : 2700;
     transitionRemaining.current = duration;
     setTransition({
+      kind: "deal",
+      eventLimit,
       before: state,
       marketSlots: initialMarketSlots(),
       action: {
@@ -498,7 +578,8 @@ export default function App() {
       if (file.size > 2000000) throw new Error("存档文件过大");
       const imported = parseSave(await file.text());
       setTransition(null);
-      setMarketSlots(initialMarketSlots());
+      setMarketNotice(null);
+      setMarketSlots(marketSlotsAt(imported));
       setDismissedResult("");
       setSave(imported);
       setGame(replay(imported));
@@ -512,9 +593,15 @@ export default function App() {
   }
   const p = viewed?.players[0],
     opponent = viewed?.players[1];
+  const ownScore = viewed ? playerScoreDisplay(viewed, 0) : null;
+  const opponentScore = viewed ? playerScoreDisplay(viewed, 1) : null;
+  const replayMarketSlots = useMemo(
+    () => (screen === "replay" ? marketSlotsAt(save, replayIndex) : []),
+    [screen, save, replayIndex],
+  );
   const visibleMarketSlots =
     screen === "replay"
-      ? initialMarketSlots()
+      ? replayMarketSlots
       : (transition?.marketSlots ?? (teaching ? tutorialSlots : marketSlots));
   const active =
     (screen === "game" ||
@@ -525,6 +612,11 @@ export default function App() {
     viewed.current === 0 &&
     !modal &&
     !transition;
+  const pendingOpponentTurn =
+    screen !== "replay" && transition?.kind === "action"
+      ? transition.opponentTurn
+      : undefined;
+  const focusedOpponentTurn = pendingOpponentTurn ?? settledOpponentTurn;
   const { action } =
     viewed && active ? selectedAction(viewed, selection) : { action: null };
   const brand = (
@@ -534,6 +626,42 @@ export default function App() {
       <span className="brand-divider" />
       粉城商事
     </div>
+  );
+  const gameToolButtons = (
+    <>
+      <button
+        title="游戏规则"
+        aria-label="游戏规则"
+        onClick={() => setModal("rules")}
+      >
+        <BookOpen size={19} />
+        <span>游戏规则</span>
+      </button>
+      <button
+        title="行动记录"
+        aria-label="行动记录"
+        onClick={() => setModal("log")}
+      >
+        <History size={19} />
+        <span>行动记录</span>
+      </button>
+      <button
+        title="返回菜单"
+        aria-label="返回菜单"
+        onClick={() => {
+          setScreen("menu");
+          setMenu("home");
+          setReplayPlaying(false);
+          if (teaching) {
+            setTransition(null);
+            clear();
+          }
+        }}
+      >
+        <Home size={19} />
+        <span>返回菜单</span>
+      </button>
+    </>
   );
   return (
     <>
@@ -727,7 +855,7 @@ export default function App() {
                         <BookOpen size={21} />
                         <span>
                           <b>第一次玩？跟着做一笔生意</b>
-                          <small>跟着亮框操作 · 不影响存档</small>
+                          <small>跟着提示操作 · 不影响存档</small>
                         </span>
                         <ArrowRight size={18} />
                       </button>
@@ -790,41 +918,13 @@ export default function App() {
           </section>
         </main>
       ) : viewed && p && opponent ? (
-        <main className={`game-shell ${teaching ? "tutorial-game" : ""}`}>
+        <main
+          ref={tableViewport}
+          className={`game-shell ${teaching ? "tutorial-game" : ""} ${(screen === "game" || teaching) && viewed.phase === "playing" ? "viewport-table" : ""}`}
+        >
           <nav className="game-tools" aria-label="游戏功能">
             <span className="game-tools-label">牌桌功能</span>
-            <button
-              title="游戏规则"
-              aria-label="游戏规则"
-              onClick={() => setModal("rules")}
-            >
-              <BookOpen size={19} />
-              <span>游戏规则</span>
-            </button>
-            <button
-              title="行动记录"
-              aria-label="行动记录"
-              onClick={() => setModal("log")}
-            >
-              <History size={19} />
-              <span>行动记录</span>
-            </button>
-            <button
-              title="返回菜单"
-              aria-label="返回菜单"
-              onClick={() => {
-                setScreen("menu");
-                setMenu("home");
-                setReplayPlaying(false);
-                if (teaching) {
-                  setTransition(null);
-                  clear();
-                }
-              }}
-            >
-              <Home size={19} />
-              <span>返回菜单</span>
-            </button>
+            {gameToolButtons}
           </nav>
           <header className="game-header">
             {brand}
@@ -832,6 +932,7 @@ export default function App() {
               第 {viewed.round} 轮 <span>·</span>{" "}
               {viewed.targetSeals === 1 ? "1 局定胜负" : "三局两胜"}
             </div>
+            <GameMenu>{gameToolButtons}</GameMenu>
           </header>
           {screen === "replay" && (
             <div className="replay-bar">
@@ -907,18 +1008,31 @@ export default function App() {
           <div className="game-grid">
             <section className="game-overview" aria-label="统计信息">
               <h2 className="overview-title">局势概览</h2>
-              <MobileSupply state={viewed} />
-              <LastActions
-                actions={lastActions}
-                turns={lastTurns}
-                latestActor={latestActor}
-                settled={!transition}
+              <MobileSupply
+                state={viewed}
+                onInspect={() => setModal("supply")}
+              />
+              <OpponentTurn
+                details={focusedOpponentTurn}
+                pending={!!pendingOpponentTurn}
+                thinking={
+                  viewed.current === 1 &&
+                  !transition &&
+                  viewed.phase === "playing" &&
+                  screen !== "replay"
+                }
+                onHistory={() => setModal("log")}
               />
             </section>
             <section className="table-column">
               <div className="board-divider" aria-hidden="true">
                 牌桌
               </div>
+              <PlayerScores
+                state={viewed}
+                receipts={receipts}
+                onInspect={() => setModal("scores")}
+              />
               <div
                 className={`opponent-panel ${viewed.current === 1 && viewed.phase === "playing" ? "turn-active" : ""}`}
               >
@@ -953,9 +1067,14 @@ export default function App() {
                   className="opponent-score"
                   data-motion-anchor="opponent-score"
                 >
-                  <b>{sum(opponent.goods)}</b>
-                  <span>货物卢比</span>
-                  <small>+ {opponent.bonuses.length} 枚秘密奖励</small>
+                  <b>{opponentScore?.hidden ? "保密" : opponentScore?.total}</b>
+                  <span>
+                    {opponentScore?.hidden ? "收市揭晓得分" : "本轮总分"}
+                  </span>
+                  <small>
+                    货物筹码 {opponent.goods.length} 枚 · 奖励{" "}
+                    {opponent.bonuses.length} 枚
+                  </small>
                   <SaleReceipt receipt={receipts[1]} actor={1} />
                 </div>
               </div>
@@ -992,6 +1111,19 @@ export default function App() {
                           key={slot}
                           motionId={`market-${slot}`}
                           good={good}
+                          notice={
+                            screen !== "replay" &&
+                            marketNotice?.round === viewed.round
+                              ? pendingOpponentTurn &&
+                                marketNotice.removedSlots.includes(slot)
+                                ? "取走"
+                                : !transition &&
+                                    marketNotice.turn === viewed.turn &&
+                                    marketNotice.addedSlots.includes(slot)
+                                  ? marketNotice.addedLabel
+                                  : undefined
+                              : undefined
+                          }
                           selected={market.includes(i)}
                           disabled={
                             !active ||
@@ -1019,12 +1151,14 @@ export default function App() {
                     ? "本轮集市已收市"
                     : transition
                       ? (transition.caption ??
-                        `${transition.action.actor === 0 ? "你" : "米拉"}正在${{ take: "拿取货物", camels: "收下骆驼", sell: "出售货物", exchange: "交换货物" }[transition.action.type]}…`)
+                        `${transition.action.actor === 0 ? "你" : "米拉"}：${actionCaption(transition.action)}，正在结算…`)
                       : aiError
                         ? "AI 等待重试"
                         : viewed.current === 1
                           ? "米拉正在盘算下一笔生意…"
-                          : "轮到你了，今天想做哪笔生意？"}
+                          : settledOpponentTurn
+                            ? "米拉行动结束，轮到你了"
+                            : "轮到你了，今天想做哪笔生意？"}
                 <span>第 {viewed.turn + 1} 手</span>
               </div>
               {screen === "game" &&
@@ -1123,10 +1257,10 @@ export default function App() {
                     </div>
                   </div>
                   <div className="your-score" data-motion-anchor="your-score">
-                    <b>{sum(p.goods) + sum(p.bonuses)}</b>
+                    <b>{ownScore?.total}</b>
                     <span>卢比</span>
                     <small>
-                      货物 {sum(p.goods)} + 奖励 {sum(p.bonuses)}
+                      货物 {ownScore?.goods} + 奖励 {ownScore?.bonus}
                     </small>
                     <SaleReceipt receipt={receipts[0]} actor={0} />
                   </div>
@@ -1222,10 +1356,21 @@ export default function App() {
       {teaching && (
         <Tutorial
           step={tutorialStep}
+          spicePrices={tutorialState.tokens.spice.slice(0, 3)}
+          saleReceipt={receipts[0]}
           feedback={tutorialFeedback(tutorialStep, selection)}
+          canContinue={
+            tutorialStepAfterNext(tutorialStep, selection, tutorialState) !==
+            tutorialStep
+          }
           onHistory={() => setModal("log")}
           paused={!!transition || !!modal}
-          onNext={() => setTutorialStep((step) => step + 1)}
+          onNext={() => {
+            if (!transition && !modal)
+              setTutorialStep(
+                tutorialStepAfterNext(tutorialStep, selection, tutorialState),
+              );
+          }}
           onExit={() => {
             setScreen("menu");
             setMenu("home");
@@ -1243,6 +1388,7 @@ export default function App() {
       {showResult && viewed && (
         <ResultDialog
           state={viewed}
+          lastAction={history.at(-1)?.action}
           onClose={closeResult}
           onNext={
             screen === "game"
@@ -1271,6 +1417,7 @@ export default function App() {
       )}
       {transition && (screen === "game" || teaching) && (
         <ActionAnimation
+          settling={transition.kind === "action"}
           flights={transition.flights}
           elapsed={transition.duration - transitionRemaining.current}
           duration={transition.duration}
@@ -1280,11 +1427,19 @@ export default function App() {
       {modal && (
         <div className="modal-backdrop" onClick={() => setModal(null)}>
           <div
-            className="modal"
+            className={`modal ${modal === "supply" ? "supply-dialog" : modal === "scores" ? "scores-dialog" : ""}`}
             ref={dialogRef}
             role="dialog"
             aria-modal="true"
-            aria-label={modal === "rules" ? "游戏规则" : "行动记录"}
+            aria-label={
+              modal === "rules"
+                ? "游戏规则"
+                : modal === "log"
+                  ? "行动记录"
+                  : modal === "supply"
+                    ? "筹码盘"
+                    : "得分明细"
+            }
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -1297,6 +1452,20 @@ export default function App() {
             </button>
             {modal === "rules" ? (
               <Rules />
+            ) : modal === "supply" && viewed ? (
+              <>
+                <h2>筹码盘</h2>
+                <SupplyDetails
+                  state={viewed}
+                  motionAnchors={false}
+                  showRewardCards
+                />
+              </>
+            ) : modal === "scores" && viewed ? (
+              <>
+                <h2>双方得分</h2>
+                <ScoreDetails state={viewed} receipts={receipts} />
+              </>
             ) : (
               <>
                 <p className="eyebrow">THE MERCHANT’S JOURNAL</p>

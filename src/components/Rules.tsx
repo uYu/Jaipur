@@ -52,7 +52,12 @@ export function Rules() {
         卢比，数量相同则无人获得。比较货物筹码、奖励筹码和骆驼奖励之和；同分时先比较奖励筹码枚数，再比较货物筹码枚数。
       </p>
       <p>
-        若仍完全相同，本实现视为平局，不颁发印章，轮换先手加赛。手中剩余货物不计分。对手的手牌、驼队数量和奖励面值隐藏，结算时揭晓总分。
+        若仍完全相同，本实现视为平局，不颁发印章，轮换先手加赛。手中剩余货物不计分。
+      </p>
+      <h3>哪些信息可见</h3>
+      <p>
+        每笔出售取得的货物筹码面值可见；筹码在玩家面前堆叠，收市后翻开并合计得分。奖励筹码面值对对手保密。
+        本实现不自动展示对手的累计货物分或总分，只显示筹码枚数、手牌张数和已经发生的交易；总分在收市时揭晓。对手的手牌内容和驼队数量也不公开。
       </p>
       <h3>如何操作</h3>
       <p>
@@ -62,7 +67,7 @@ export function Rules() {
         基于 Sébastien Pauchon 设计的 Jaipur
         规则制作的非官方练习实现。视觉为原创 SVG，未使用原作卡牌素材。
         <a
-          href="https://cdn.1j1ju.com/medias/04/3f/df-jaipur-rulebook.pdf"
+          href="https://cdn.svc.asmodee.net/production-spacecowboys/uploads/2025/11/Rules-JAIPUR-12x17-Version-EN_BD.pdf"
           target="_blank"
           rel="noreferrer"
         >

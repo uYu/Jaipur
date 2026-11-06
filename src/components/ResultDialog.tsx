@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Trophy, X, ArrowRight } from "lucide-react";
 import type { State } from "../game/types.ts";
+import { actionCaption, type Presentation } from "../game/presentation.ts";
 export function resultTitle(state: State) {
   if (state.phase === "finished")
     return state.seals[0] >= (state.targetSeals ?? 2)
@@ -19,12 +20,14 @@ export function ResultDialog({
   onNext,
   onNew,
   onMenu,
+  lastAction,
 }: {
   state: State;
   onClose: () => void;
   onNext?: () => void;
   onNew?: () => void;
   onMenu?: () => void;
+  lastAction?: Presentation;
 }) {
   const ref = useRef<HTMLDialogElement>(null),
     result = state.results.at(-1)!;
@@ -86,6 +89,12 @@ export function ResultDialog({
           {state.targetSeals === 1 ? "1 局定胜负" : "先得 2 枚获胜"}
         </small>
       </div>
+      {lastAction && (
+        <p className="result-last-action">
+          收市前最后一手 · {lastAction.actor === 0 ? "你" : "米拉"}
+          {actionCaption(lastAction)}
+        </p>
+      )}
       <div className="round-scorecards">
         {[0, 1].map((i) => (
           <section
