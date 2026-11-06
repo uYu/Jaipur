@@ -4,11 +4,11 @@ import { DouzeroNetwork } from "./douzero-network.ts";
 
 let network: Promise<DouzeroNetwork> | undefined;
 function loadNetwork() {
-  network ??= fetch(new URL("./models/legacy-round-075182.bin", import.meta.url))
+  network ??= fetch(new URL("./models/legacy-round-147126.bin", import.meta.url))
     .then(async (response) => {
       if (!response.ok) throw Error("实验模型下载失败，请重试");
       const model = new DouzeroNetwork(await response.arrayBuffer());
-      if (model.version !== 75182) throw Error("实验模型版本不匹配");
+      if (model.version !== 147126) throw Error("实验模型版本不匹配");
       return model;
     });
   return network;

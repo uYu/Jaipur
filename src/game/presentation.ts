@@ -8,11 +8,13 @@ export type Presentation = {
   coins: number[];
   bonus: number | "hidden" | null;
 };
-// Project only publicly revealed cards. Never pass the opponent's remaining hand or bonus value.
+// Live projections hide opponent rewards; replay can explicitly reveal their faces.
+// The opponent's remaining hand is never part of this projection.
 export function presentAction(
   before: State,
   action: Action,
   after: State,
+  revealOpponent = false,
 ): Presentation {
   const actor = before.current,
     player = before.players[actor];
@@ -39,7 +41,9 @@ export function presentAction(
     result.coins = after.players[actor].goods.slice(player.goods.length);
     if (after.players[actor].bonuses.length > player.bonuses.length)
       result.bonus =
-        actor === 0 ? after.players[actor].bonuses.at(-1)! : "hidden";
+        actor === 0 || revealOpponent
+          ? after.players[actor].bonuses.at(-1)!
+          : "hidden";
   }
   return result;
 }

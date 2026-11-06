@@ -1,7 +1,6 @@
 import type { Difficulty } from "./types.ts";
 export type Preferences = {
   difficulty: Difficulty;
-  speed: number;
   targetSeals: 1 | 2;
 };
 export function readPreferences(): Preferences {
@@ -15,11 +14,10 @@ export function readPreferences(): Preferences {
       )
         ? value.difficulty
         : "normal",
-      speed: [350, 1000, 2000].includes(value.speed) ? value.speed : 1000,
       targetSeals: value.targetSeals === 2 ? 2 : 1,
     };
   } catch {
-    return { difficulty: "normal", speed: 1000, targetSeals: 1 };
+    return { difficulty: "normal", targetSeals: 1 };
   }
 }
 export function writePreferences(preferences: Preferences) {

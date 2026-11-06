@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { GOODS } from "../game/types.ts";
 import type { State } from "../game/types.ts";
-import { LABEL, precious } from "../game/data.ts";
+import { LABEL } from "../game/data.ts";
+import { GoodsArt } from "./Art.tsx";
 export function MobileSupply({
   state,
   onInspect,
@@ -57,9 +58,13 @@ export function MobileSupply({
               key={g}
               aria-label={`${LABEL[g]}，剩余 ${state.tokens[g].length} 枚${state.tokens[g].length ? `，下一枚 ${state.tokens[g][0]} 卢比` : "，已售罄"}`}
             >
-              <span className="counter-name">
-                {LABEL[g]}
-                {precious(g) && <small>高</small>}
+              <span
+                className="counter-name"
+                title={LABEL[g]}
+                aria-hidden="true"
+              >
+                <GoodsArt good={g} cardFace />
+                <span>{LABEL[g]}</span>
               </span>
               <span className="counter-remaining">
                 <small>剩</small>
@@ -115,24 +120,30 @@ export function SupplyDetails({
 }) {
   return (
     <div className="supply-details">
-      <p>筹码从左到右领取；高级货物至少 2 张起售。</p>
-      {GOODS.map((g) => (
-        <div className={`supply-detail-row ${g}`} key={g}>
-          <b>{LABEL[g]}</b>
+      <p>左起领取 · 高级货物至少2张起售</p>
+      {GOODS.map((good) => (
+        <div
+          className={`supply-detail-row ${good} ${state.tokens[good].length ? "" : "supply-detail-empty"}`}
+          key={good}
+        >
+          <b>{LABEL[good]}</b>
           <span>
-            {state.tokens[g].length
-              ? state.tokens[g].map((v, i) => (
-                  <i
-                    className="coin"
-                    data-motion-anchor={
-                      motionAnchors ? `token-${g}-${i}` : undefined
-                    }
-                    key={i}
-                  >
-                    {v}
-                  </i>
-                ))
-              : "已售罄"}
+            {state.tokens[good].length ? (
+              state.tokens[good].map((value, i) => (
+                <i
+                  className={`coin ${i === 0 ? "supply-next-coin" : ""}`}
+                  key={i}
+                  title={i === 0 ? "下一枚" : undefined}
+                  data-motion-anchor={
+                    motionAnchors ? `token-${good}-${i}` : undefined
+                  }
+                >
+                  {value}
+                </i>
+              ))
+            ) : (
+              <span className="supply-sold-out">已售罄</span>
+            )}
           </span>
         </div>
       ))}
@@ -142,9 +153,11 @@ export function SupplyDetails({
             <section key={n}>
               <b>
                 {n}
-                {n === 5 ? "+" : ""} 张奖励
+                {n === 5 ? "+" : ""}张奖励
               </b>
-              <span>剩 {state.bonus[n].length} 枚</span>
+              <span>
+                剩 <strong>{state.bonus[n].length}</strong> 枚
+              </span>
               <small>{n === 3 ? "1–3" : n === 4 ? "4–6" : "8–10"} 卢比</small>
             </section>
           ))}
@@ -152,8 +165,8 @@ export function SupplyDetails({
       )}
       <p>
         {showRewardCards
-          ? "三类货物筹码售罄即收市。驼队更多者在收市时获得 5 卢比。"
-          : "批量奖励：3 张 1–3 卢比 · 4 张 4–6 卢比 · 5+ 张 8–10 卢比。驼队更多者在收市时获得 5 卢比。"}
+          ? "三类售罄收市 · 驼队领先 +5卢比"
+          : "批量奖励：3张 1–3 · 4张 4–6 · 5+张 8–10卢比。驼队领先 +5卢比。"}
       </p>
     </div>
   );

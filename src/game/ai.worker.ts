@@ -16,7 +16,7 @@ self.onmessage = async (event) => {
       );
       self.postMessage({
         action,
-        algorithm: "自博弈神经策略 · v75182",
+        algorithm: "自博弈神经策略 · v147126",
         elapsedMs: Math.round(performance.now() - started),
       });
       return;

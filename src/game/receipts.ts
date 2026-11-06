@@ -13,6 +13,7 @@ export const lastActionOrder = (latestActor: number | null) =>
 export function actionSummaries(
   save: Save | null,
   limit = save?.events.length ?? 0,
+  revealOpponent = false,
 ): {
   receipts: [Presentation | null, Presentation | null];
   lastActions: [Presentation | null, Presentation | null];
@@ -36,7 +37,7 @@ export function actionSummaries(
       lastTurns = [null, null];
       latestActor = null;
     } else {
-      const presentation = presentAction(state, event, next);
+      const presentation = presentAction(state, event, next, revealOpponent);
       lastActions[state.current] = presentation;
       lastTurns[state.current] = state.turn + 1;
       latestActor = state.current;

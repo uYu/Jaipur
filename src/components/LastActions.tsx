@@ -275,7 +275,7 @@ export function LastActions({
   ));
   return (
     <section className="action-ledger" aria-label="双方上步行动">
-      <span className="ledger-caption">最近行动</span>
+      <span className="ledger-caption">上次行动</span>
       <button
         className="ledger-open"
         aria-label="查看完整行动记录"

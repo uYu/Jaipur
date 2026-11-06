@@ -1,6 +1,5 @@
 :root {
-  font-family:
-    Inter, "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-ui);
   color: #34443e;
   background: #f7f3ea;
   font-synthesis: none;
@@ -127,7 +126,7 @@ select {
   white-space: nowrap;
 }
 .brand b {
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 22px;
   letter-spacing: 3px;
   font-weight: 400;
@@ -161,7 +160,7 @@ select {
   margin-bottom: 85px;
 }
 .menu-copy h1 {
-  font-family: "Songti SC", "STSong", Georgia, serif;
+  font-family: var(--font-ui);
   font-weight: 500;
   font-size: clamp(48px, 4.7vw, 72px);
   line-height: 1.36;
@@ -183,9 +182,20 @@ select {
   gap: 13px;
   width: 290px;
 }
-.menu-buttons > .primary,
-.menu-buttons > .secondary {
-  justify-content: space-between;
+.menu-buttons > .menu-action {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 18px;
+  gap: 12px;
+  height: 50px;
+  padding: 0 23px;
+  border: 1px solid #d7dacc;
+  border-radius: 6px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+}
+.menu-buttons > .menu-action.primary {
+  border-color: var(--ink);
 }
 .menu-shortcuts {
   display: flex;
@@ -272,7 +282,7 @@ select {
   transform: rotate(16deg) translate(-7px, 13px);
 }
 .art-caption {
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 26px;
   color: #967965;
   position: absolute;
@@ -281,7 +291,7 @@ select {
   font-style: italic;
 }
 .art-caption span {
-  font-family: "PingFang SC", sans-serif;
+  font-family: var(--font-ui);
   display: block;
   font-style: normal;
   font-size: 11px;
@@ -307,7 +317,7 @@ select {
 .art-stamp b {
   font-size: 14px;
   font-weight: 400;
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
 }
 .back {
   margin-top: -42px;
@@ -410,7 +420,7 @@ select {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  font-family: "Songti SC", serif;
+  font-family: var(--font-ui);
   font-size: 21px;
   border: 4px solid #f4eadd;
 }
@@ -478,7 +488,7 @@ select {
   min-width: 82px;
 }
 .opponent-score > b {
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 25px;
   font-weight: 400;
   margin-right: 5px;
@@ -494,6 +504,7 @@ select {
   margin-top: 4px;
 }
 .market-table {
+  container: market-table / inline-size;
   background: #eeeee1;
   border: 1px solid #dedfce;
   border-radius: 14px;
@@ -609,7 +620,7 @@ select {
   position: absolute;
   left: 13px;
   top: 10px;
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 12px;
   opacity: 0.7;
 }
@@ -621,7 +632,7 @@ select {
   min-height: 0;
 }
 .card-name {
-  font-family: "Songti SC", "STSong", serif;
+  font-family: var(--font-ui);
   font-size: 16px;
   letter-spacing: 2px;
   margin-top: 3px;
@@ -733,7 +744,7 @@ select {
   text-align: right;
 }
 .your-score b {
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 28px;
   font-weight: 400;
   margin-right: 6px;
@@ -809,14 +820,14 @@ select {
   height: 56px;
 }
 .herd strong {
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 25px;
   font-weight: 400;
   line-height: 1.1;
   margin: 2px 0 8px;
 }
 .herd strong small {
-  font-family: inherit;
+  font-family: var(--font-ui);
   font-size: 10px;
   margin-left: 5px;
 }
@@ -960,7 +971,7 @@ select {
   border: 1px solid color-mix(in srgb, var(--card-color) 55%, transparent);
   border-radius: 50%;
   background: var(--card-bg);
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 12px;
   box-shadow:
     inset 0 0 0 2px #fffcf645,
@@ -1022,7 +1033,7 @@ select {
   align-items: center;
   justify-content: center;
   color: #a08450;
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 20px;
   box-shadow: 0 2px 0 #d0bc88;
 }
@@ -1075,7 +1086,7 @@ select {
   font-weight: 500;
 }
 .camel-award b > span {
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
   font-size: 18px;
   margin-left: 8px;
 }
@@ -1129,7 +1140,7 @@ select {
   margin-top: -20px;
 }
 .rules h2 {
-  font-family: "Songti SC", serif;
+  font-family: var(--font-ui);
   font-size: 29px;
 }
 .rules h3 {
@@ -1236,7 +1247,7 @@ select {
   margin-bottom: 10px;
 }
 .result-panel > h2 {
-  font-family: "Songti SC", serif;
+  font-family: var(--font-ui);
   font-size: 29px;
 }
 .result-panel > p {
@@ -1270,7 +1281,7 @@ select {
 }
 .results-table td b {
   font-size: 22px;
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
   font-weight: 400;
 }
 .results-table td small {
@@ -2069,9 +2080,7 @@ select {
   border-radius: 50%;
   background: #efe1b5;
   color: #92713c;
-  font:
-    17px Georgia,
-    serif;
+  font: 17px var(--font-ui);
 }
 .sale-area {
   gap: 8px !important;
@@ -2179,9 +2188,7 @@ select {
   place-items: center;
   background: var(--card-bg, #efe1b5);
   color: var(--card-color, #92713c);
-  font:
-    17px Georgia,
-    serif;
+  font: 17px var(--font-ui);
   box-shadow: 0 2px 0 #bcae863d;
   position: relative;
 }
@@ -2462,16 +2469,12 @@ select {
   color: #947338;
 }
 .round-score {
-  font:
-    46px Georgia,
-    serif;
+  font: 46px var(--font-ui);
   margin: 12px 0;
   color: #3c5948;
 }
 .round-score small {
-  font:
-    11px "PingFang SC",
-    sans-serif;
+  font: 11px var(--font-ui);
   margin-left: 8px;
   color: #979b87;
 }
@@ -3256,32 +3259,16 @@ select {
   width: 15px;
   margin: 2px 0 0;
 }
-.format-options b,
-.tutorial-entry b {
+.format-options b {
   display: block;
   font-size: 13px;
 }
-.format-options small,
-.tutorial-entry small {
+.format-options small {
   display: block;
   color: #7b8475;
   font-size: 10px;
   margin-top: 5px;
   line-height: 1.5;
-}
-.setup .tutorial-entry {
-  display: flex;
-  width: 100%;
-  text-align: left;
-  justify-content: flex-start;
-  padding: 16px 0 0;
-  margin-top: 14px;
-  border-top: 1px solid var(--line);
-  border-radius: 0;
-  gap: 12px;
-}
-.tutorial-entry > span {
-  flex: 1;
 }
 .tutorial-shell {
   max-width: 1160px;
@@ -3335,7 +3322,7 @@ select {
   align-items: start;
 }
 .tutorial-coach h1 {
-  font-family: "Songti SC", "STSong", serif;
+  font-family: var(--font-ui);
   font-size: 28px;
   line-height: 1.5;
   margin: 0 0 18px;
@@ -3404,7 +3391,7 @@ select {
 }
 .tutorial-income b {
   font-size: 26px;
-  font-family: Georgia, serif;
+  font-family: var(--font-ui);
 }
 .tutorial-income small {
   display: block;
@@ -3457,7 +3444,7 @@ select {
   color: var(--coral);
 }
 .tutorial-finish > h1 {
-  font-family: "Songti SC", "STSong", serif;
+  font-family: var(--font-ui);
   font-size: 30px;
   outline: none;
 }
@@ -3775,9 +3762,7 @@ select {
   opacity: 0.65;
 }
 .market-deck > b {
-  font:
-    27px Georgia,
-    serif;
+  font: 27px var(--font-ui);
   line-height: 1.25;
 }
 .market-deck-label {
@@ -4205,9 +4190,7 @@ select {
 }
 .history-turn {
   color: #a5a793;
-  font:
-    11px Georgia,
-    serif;
+  font: 11px var(--font-ui);
   text-align: right;
 }
 .history-entry .ledger-row {
@@ -5371,22 +5354,6 @@ select {
 .menu-buttons {
   width: min(340px, 100%);
 }
-.home-tutorial-entry {
-  width: 100%;
-  padding: 15px 13px;
-  gap: 11px;
-  text-align: left;
-  background: #eeeee3;
-  border: 1px solid #d8d9c7;
-  border-radius: 8px;
-}
-.home-tutorial-entry > svg {
-  flex-shrink: 0;
-  color: var(--coral);
-}
-.home-tutorial-entry small {
-  font-size: 11px;
-}
 .tutorial-game,
 .tutorial-overlay {
   overflow-anchor: none;
@@ -5660,20 +5627,14 @@ select {
   }
 }
 
-/* Share the phone's visible height between both card rows. Keep natural
-   minimum sizes so very short screens and expanded details can still scroll. */
+/* Phone cards follow their width, not the remaining viewport height. */
 @media (max-width: 860px) {
   .viewport-table {
-    --board-gap: clamp(
-      2px,
-      calc((var(--game-viewport-height, 100dvh) - 560px) / 30),
-      8px
-    );
-    height: var(--game-viewport-height, 100vh);
-    height: var(--game-viewport-height, 100dvh);
+    --board-gap: 8px;
+    height: auto;
     padding: 4px max(10px, env(safe-area-inset-right))
       max(4px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
   }
   .viewport-table .game-header {
     min-height: 30px;
@@ -5689,9 +5650,9 @@ select {
   }
   .viewport-table .game-grid {
     min-height: 0;
-    align-self: stretch;
+    align-self: start;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(min-content, 1fr);
+    grid-template-rows: auto auto;
     gap: var(--board-gap);
     margin-top: var(--board-gap);
   }
@@ -5724,10 +5685,10 @@ select {
   }
   .viewport-table .table-column {
     display: flex;
-    align-self: stretch;
+    align-self: start;
     flex-direction: column;
     gap: var(--board-gap);
-    min-height: min-content;
+    min-height: 0;
   }
   .viewport-table .board-divider,
   .viewport-table .recent-log,
@@ -5749,11 +5710,10 @@ select {
   }
   .viewport-table .market-table,
   .viewport-table .hand-panel {
-    display: flex;
-    flex-direction: column;
-    flex: 1 0 108px;
-    min-height: 108px;
-    padding: 6px 8px;
+    display: block;
+    flex: none;
+    min-height: 0;
+    padding: 10px 8px;
   }
   .viewport-table .market-heading {
     flex: none;
@@ -5763,25 +5723,28 @@ select {
     display: none;
   }
   .viewport-table .market-row {
-    flex: 1;
-    min-height: 64px;
+    flex: none;
+    min-height: 0;
+    align-items: center;
   }
   .viewport-table .market-deck {
-    height: 100%;
-    min-height: 64px;
-    max-height: 110px;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: 2 / 3;
+    padding: 6px 0;
   }
   .viewport-table .market-cards {
-    height: 100%;
-    min-height: 64px;
-    max-height: 120px;
-    align-items: stretch;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    align-items: flex-start;
   }
   .viewport-table .market-cards .card {
-    height: 100%;
-    min-height: 64px;
-    max-height: 120px;
-    aspect-ratio: auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: 2 / 3;
     padding: 5px 2px;
   }
   .viewport-table .turn-line {
@@ -5789,33 +5752,52 @@ select {
     padding: 2px 1px;
     min-height: 20px;
   }
-  .viewport-table .hand-panel {
-    flex-basis: 126px;
-    min-height: 126px;
-  }
   .viewport-table .hand-heading {
     flex: none;
     margin-bottom: 4px;
   }
   .viewport-table .hand-and-herd {
-    display: flex;
-    flex: 1;
-    min-height: 70px;
-    align-items: stretch;
+    --hand-card-width: min(82px, calc((100% - 36px) / 7));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+  /* Reserve one naturally sized row even when its last card is sold. */
+  .viewport-table .hand-and-herd::before {
+    content: "";
+    grid-area: 1 / 1;
+    align-self: start;
+    width: var(--hand-card-width);
+    aspect-ratio: 2 / 3;
+    margin-block: 3px;
+    visibility: hidden;
+    pointer-events: none;
   }
   .viewport-table .hand-cards {
-    align-items: stretch;
-    align-content: stretch;
+    grid-area: 1 / 1;
+    align-self: stretch;
+    align-items: flex-start;
     flex-wrap: nowrap;
     padding: 3px 0;
-    max-height: 120px;
+    max-height: none;
   }
   .viewport-table .hand-cards > .card.small {
+    width: var(--hand-card-width);
+    min-width: 0;
+    max-width: none;
     height: auto;
+    align-self: flex-start;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: 2 / 3;
+  }
+  .viewport-table .empty-hand {
+    display: flex;
+    align-items: center;
     align-self: stretch;
-    min-height: 64px;
-    max-height: 114px;
-    aspect-ratio: auto;
+    flex: 1;
+    padding: 0 8px;
+    color: var(--text-secondary);
   }
   .viewport-table .action-panel {
     flex: none;
@@ -5828,6 +5810,12 @@ select {
   }
 }
 
+@media (max-width: 620px) {
+  .viewport-table .hand-and-herd {
+    --hand-card-width: clamp(44px, calc((100% - 24px) / 7), 60px);
+  }
+}
+
 @media (max-width: 860px) and (max-height: 700px) {
   .viewport-table {
     --board-gap: 2px;
@@ -5837,10 +5825,6 @@ select {
   }
   .viewport-table .compact-ledger-table thead th:first-child::before {
     content: "上步";
-  }
-  .viewport-table .market-table {
-    flex-basis: 102px;
-    min-height: 102px;
   }
 }
 
@@ -6041,9 +6025,7 @@ select {
     gap: 3px;
   }
   .score-card-value strong {
-    font:
-      26px/28px Georgia,
-      serif;
+    font: 26px/28px var(--font-ui);
     font-variant-numeric: tabular-nums;
   }
   .score-card-value > small {
@@ -6084,10 +6066,6 @@ select {
   }
   .game-shell .hand-heading h2 {
     margin-bottom: 0;
-  }
-  .viewport-table .hand-panel {
-    flex-basis: 108px;
-    min-height: 108px;
   }
   .modal {
     max-height: calc(100dvh - 24px);
@@ -6493,7 +6471,7 @@ select {
     line-height: 17px;
   }
   .score-card-value .score-hidden-value {
-    font-family: inherit;
+    font-family: var(--font-ui);
     font-size: 18px;
     font-weight: 600;
     line-height: 28px;
@@ -6509,15 +6487,6 @@ select {
     font-size: 13px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
-  }
-}
-@media (max-width: 860px) and (max-height: 780px) {
-  .viewport-table {
-    --board-gap: clamp(
-      2px,
-      calc((var(--game-viewport-height, 100dvh) - 560px) / 40),
-      6px
-    );
   }
 }
 
@@ -6650,5 +6619,44 @@ select {
   .score-stat-herd .score-stat-label,
   .score-card-value .score-reveal-note {
     display: none;
+  }
+}
+
+/* With room for six cards, the draw pile shares the goods' size and spacing. */
+@container market-table (min-width: 360px) {
+  .game-shell .market-row {
+    --market-card-width: min(108px, calc((100cqw - 40px) / 6));
+    display: grid;
+    grid-template-columns: var(--market-card-width) calc(
+        var(--market-card-width) * 5 + 32px
+      );
+    justify-content: center;
+    align-items: start;
+    gap: 8px;
+  }
+  .game-shell .market-row .market-deck {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: 2 / 3;
+  }
+  .game-shell .market-row .market-cards {
+    flex: none;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .game-shell .market-row .market-cards .card {
+    width: var(--market-card-width);
+    max-width: none;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: 2 / 3;
   }
 }

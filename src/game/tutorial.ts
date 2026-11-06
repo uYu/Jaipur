@@ -76,7 +76,7 @@ export const TUTORIAL_STEPS: GuideStep[] = [
   {
     id: "history-1",
     title: "先看记录：米拉卖出了黄金",
-    text: "「米拉 · 本手」显示她卖出黄金 ×2，这一笔拿到 12 卢比，货物筹码从 0 变为 2 枚、手牌从 4 变为 2 张；市场没有变化。每笔货物收入可见，但对手累计分和奖励面值不会直接展示，收市才揭晓总分。",
+    text: "上次行动用图标显示双方的行动、付出与收获。米拉这一行是「卖出 → 黄金 ×2 → 12 卢比」。每笔货物收入可见，但对手累计分和奖励面值不会直接展示，收市才揭晓总分。",
     target: ".action-ledger",
     kind: "opponent-result",
   },
@@ -142,7 +142,7 @@ export const TUTORIAL_STEPS: GuideStep[] = [
   {
     id: "history-3",
     title: "记录告诉你，她拿走了白银",
-    text: "米拉本手拿走白银 ×1。对照上下两排市场，可以看到白银被拿走、新牌补入；她的手牌也从 1 变为 2。你收骆驼后翻出的白银被她先拿走了，这是补货让先手的代价。整手牌仍保密。",
+    text: "米拉这一行显示「拿取 → 无付出 → 白银 ×1」。你收骆驼后翻出的白银被她先拿走了，这是补货让先手的代价。她的整手牌仍保密。",
     target: ".action-ledger",
     kind: "opponent-result",
   },
@@ -163,7 +163,7 @@ export const TUTORIAL_STEPS: GuideStep[] = [
   {
     id: "camel-exchange-confirm",
     title: "确认这笔 2 换 2",
-    text: "预览应显示换入 2 张、付出 0 张货物 + 2 头骆驼。点「确认交换」，看货物和骆驼双向移动。",
+    text: "预览应显示换入 2 张、付出 0 张货物 + 2 头骆驼。点「确认交换」，留意哪些牌换入、哪些牌付出。",
     target: ".action-panel",
     kind: "confirm",
     lesson: 3,

@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { applyAction, newGame } from "../src/game/engine.ts";
-import { playerScoreDisplay } from "../src/game/score-display.ts";
+import {
+  playerCardsDisplay,
+  playerScoreDisplay,
+} from "../src/game/score-display.ts";
 
 test("playing opponents expose token counts but no accumulated score or bonus values", () => {
   const state = newGame(7);
@@ -114,4 +117,57 @@ test("only the current round result is used, and fallback settlement awards no c
   assert.equal(playerScoreDisplay(state, 1).total, 6);
   state.players[1].camels = 4;
   assert.equal(playerScoreDisplay(state, 1).total, 11);
+});
+
+test("live details show own cards while opponent faces and herd stay private", () => {
+  const state = newGame(7);
+  state.players[0].hand = ["cloth", "gold"];
+  state.players[0].camels = 2;
+  state.players[1].hand = ["diamond", "spice", "spice"];
+  state.players[1].camels = 4;
+  assert.deepEqual(playerCardsDisplay(state, 0), {
+    handCount: 2,
+    hand: ["cloth", "gold"],
+    camels: 2,
+  });
+  assert.deepEqual(playerCardsDisplay(state, 1), {
+    handCount: 3,
+    hand: null,
+    camels: null,
+  });
+  const revealed = playerCardsDisplay(state, 1, true);
+  assert.deepEqual(revealed, {
+    handCount: 3,
+    hand: ["diamond", "spice", "spice"],
+    camels: 4,
+  });
+  revealed.hand!.pop();
+  assert.deepEqual(state.players[1].hand, ["diamond", "spice", "spice"]);
+  assert.deepEqual(playerCardsDisplay(state, 1), {
+    handCount: 3,
+    hand: null,
+    camels: null,
+  });
+});
+
+test("an empty revealed hand is distinct from a private hand, including at settlement", () => {
+  const state = newGame(7);
+  state.players[1].hand = [];
+  state.players[1].camels = 0;
+  assert.deepEqual(playerCardsDisplay(state, 1), {
+    handCount: 0,
+    hand: null,
+    camels: null,
+  });
+  assert.deepEqual(playerCardsDisplay(state, 1, true), {
+    handCount: 0,
+    hand: [],
+    camels: 0,
+  });
+  state.phase = "roundEnd";
+  assert.deepEqual(playerCardsDisplay(state, 1), {
+    handCount: 0,
+    hand: null,
+    camels: 0,
+  });
 });

@@ -86,6 +86,8 @@ struct State {
   double value = 0;
   // Bounded final point difference, used only when every sampled root move loses.
   double score_margin = 0;
+  // Exact terminal points, including the camel award, before tiebreaks.
+  int raw_score_margin = 0;
 };
 
 enum class ActionKind : uint8_t { Take, Camels, Sell, Exchange };
@@ -114,7 +116,8 @@ void finish(State& state) {
   const int camel = a.camels == b.camels ? -1 : (a.camels > b.camels ? 0 : 1);
   const int score_a = a.goods + a.bonuses + (camel == 0 ? 5 : 0);
   const int score_b = b.goods + b.bonuses + (camel == 1 ? 5 : 0);
-  state.score_margin = std::tanh((score_a - score_b) / 20.0);
+  state.raw_score_margin = score_a - score_b;
+  state.score_margin = std::tanh(state.raw_score_margin / 20.0);
   int difference = score_a - score_b;
   if (difference == 0) difference = a.bonus_count - b.bonus_count;
   if (difference == 0) difference = a.goods_count - b.goods_count;

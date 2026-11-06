@@ -1,5 +1,25 @@
 import { sum } from "./data.ts";
-import type { State } from "./types.ts";
+import type { Good, State } from "./types.ts";
+
+export function playerCardsDisplay(
+  state: State,
+  actor: 0 | 1,
+  revealOpponent = false,
+): {
+  handCount: number;
+  hand: Good[] | null;
+  camels: number | null;
+} {
+  const player = state.players[actor];
+  return {
+    handCount: player.hand.length,
+    hand: actor === 0 || revealOpponent ? [...player.hand] : null,
+    camels:
+      actor === 0 || revealOpponent || state.phase !== "playing"
+        ? player.camels
+        : null,
+  };
+}
 
 export type PublicScoreView = {
   total: number | null;
@@ -11,17 +31,18 @@ export type PublicScoreView = {
 };
 
 // Token counts remain visible during play; the opponent's accumulated score
-// and bonus faces are revealed only when the round has been settled.
+// and bonus faces are revealed at settlement, or explicitly in replay.
 export function playerScoreDisplay(
   state: State,
   actor: 0 | 1,
+  revealOpponent = false,
 ): PublicScoreView {
   const player = state.players[actor];
   const counts = {
     goodsTokenCount: player.goods.length,
     bonusTokenCount: player.bonuses.length,
   };
-  if (state.phase === "playing" && actor === 1)
+  if (state.phase === "playing" && actor === 1 && !revealOpponent)
     return { ...counts, total: null, goods: null, bonus: null, hidden: true };
 
   const settled = state.phase !== "playing";

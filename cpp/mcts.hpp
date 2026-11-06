@@ -162,18 +162,22 @@ Action rollout_action(const State& state, Rng& rng) {
 #include "neural-policy.hpp"
 #include "belief-policy.hpp"
 #include "rollout-weights.hpp"
+#ifdef JAIPUR_NNUE_WEIGHTS_HEADER
+#include "nnue-policy.hpp"
+#endif
 
 struct RolloutResult {
   double outcome = 0;
   double margin = 0;
+  int raw_margin = 0;
 };
 
 RolloutResult rollout(State& state, Rng& rng, SearchStats& stats,
                       bool learned = false, bool neural = false,
                       const std::chrono::steady_clock::time_point* deadline = nullptr,
                       bool terminal_tactics = false) {
-  // Exchanges can cycle indefinitely. A cutoff is recorded separately and
-  // contributes neutral value, never a fabricated terminal win or hand score.
+  // Exchanges can cycle indefinitely. Callers must distinguish this missing
+  // evidence from a terminal draw (legacy mode still backs up zero).
   for (int turn = 0; turn < 256 && !state.terminal; ++turn) {
     if (deadline && std::chrono::steady_clock::now() >= *deadline) break;
     if (terminal_tactics && finish_winning_sale(state)) {
@@ -189,7 +193,7 @@ RolloutResult rollout(State& state, Rng& rng, SearchStats& stats,
   }
   if (state.terminal) {
     ++stats.terminal;
-    return {state.value, state.score_margin};
+    return {state.value, state.score_margin, state.raw_score_margin};
   }
   ++stats.truncated;
   return {};
@@ -282,6 +286,10 @@ int select_family_edge(const UctNode& node, int actor, double exploration) {
 }
 
 struct SearchOptions {
+  bool robust_search = true;
+  // Experimental fixed, zero-sum terminal utility. Zero preserves production.
+  double utility_margin_weight = 0;
+  bool paired_root = false;
   double exploration = std::sqrt(2.0);
   bool progressive_widening = false;
   int trees = TREES;
@@ -290,6 +298,9 @@ struct SearchOptions {
   double time_limit_ms = 0;
   bool learned_prior = true;
   bool neural_prior = false;
+#ifdef JAIPUR_NNUE_WEIGHTS_HEADER
+  bool nnue_prior = false;
+#endif
   bool neural_rollout = false;
   bool neural_root_only = false;
   bool stratified_hands = false;
@@ -307,6 +318,10 @@ struct SearchOptions {
 std::vector<UctEdge> terminal_tree(const State& root, int iterations,
                                   Rng& rng, SearchStats& stats,
                                   const SearchOptions& options = {}) {
+  bool has_model_prior = options.learned_prior || options.neural_prior;
+#ifdef JAIPUR_NNUE_WEIGHTS_HEADER
+  has_model_prior = has_model_prior || options.nnue_prior;
+#endif
   const auto started=std::chrono::steady_clock::now();
   const auto deadline = started + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
       std::chrono::duration<double, std::milli>(options.time_limit_ms));
@@ -335,11 +350,21 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
         for (const auto& a : actions) nodes[node].edges.push_back({a});
         const bool use_neural_prior = options.neural_prior &&
             (!options.neural_root_only || node == 0);
-        if(options.learned_prior || use_neural_prior) {
+        bool use_nnue_prior = false;
+#ifdef JAIPUR_NNUE_WEIGHTS_HEADER
+        use_nnue_prior = options.nnue_prior;
+        NnueAccumulator nnue_parent;
+        if (use_nnue_prior) nnue_parent = NnueAccumulator(nnue_features(state, state.current));
+#endif
+        if(options.learned_prior || use_neural_prior || use_nnue_prior) {
           double min_value=1,max_value=-1;
           for(auto& edge:nodes[node].edges) {
             State next=state;
             apply_action(next,edge.action);
+#ifdef JAIPUR_NNUE_WEIGHTS_HEADER
+            if (use_nnue_prior) edge.prior = nnue_child_value(next, state.current, nnue_parent);
+            else
+#endif
             edge.prior=(state.current==0?1:-1)*
                 (use_neural_prior ? neural_value(next) : policy_value(next,TRAINED_POLICY));
             min_value=std::min(min_value,edge.prior);
@@ -372,11 +397,11 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
           : int(nodes[node].edges.size());
       for (int i = 0; !options.factor_actions && i < width; ++i) {
         const auto& edge = nodes[node].edges[i];
-        if (!edge.visits && !options.learned_prior && !options.neural_prior) {
+        if (!edge.visits && !has_model_prior) {
           selected = i; break;
         }
         const double mean = edge.total / std::max(1,edge.visits);
-        const double exploration=(options.learned_prior || options.neural_prior)
+        const double exploration=has_model_prior
           ? edge.prior*std::sqrt(nodes[node].visits+1.0)/(1+edge.visits)
           : std::sqrt(std::log(nodes[node].visits+1.0)/edge.visits);
         const double ucb = (state.current == 0 ? mean : -mean) +
@@ -410,16 +435,19 @@ std::vector<UctEdge> terminal_tree(const State& root, int iterations,
     stats.max_depth = std::max(stats.max_depth, depth);
     const auto result = rollout(state, rng, stats, options.learned_rollout,
                                 options.neural_rollout, bounded, options.terminal_tactics);
+    // An interrupted rollout is missing evidence, not a draw. In a losing
+    // position backing up zero makes slow/cycling branches look better.
+    if (options.robust_search && !state.terminal) continue;
     for (const auto& [parent, index] : path) {
       ++nodes[parent].visits;
       auto& edge = nodes[parent].edges[index];
       ++edge.visits;
-      edge.total += result.outcome;
+      edge.total += result.outcome + options.utility_margin_weight * result.raw_margin;
       edge.margin_total += result.margin;
       if (options.factor_actions) {
         auto& family=nodes[parent].families[edge.family];
         ++family.visits;
-        family.total+=result.outcome;
+        family.total+=result.outcome + options.utility_margin_weight * result.raw_margin;
       }
     }
   }
@@ -435,13 +463,110 @@ struct SearchDecision {
   std::vector<std::pair<Action, double>> root_policy;
   // Per-tree-normalized visit mass and conditional mean, for diagnosis only.
   std::vector<std::pair<Action, std::array<double, 2>>> root_stats;
+  int paired_worlds = 0;
+  int paired_attempts = 0;
+  int paired_cap_rejections = 0;
+  bool paired_used = false;
+  // Root actions and committed worlds share this stable action ordering.
+  std::vector<Action> paired_actions;
+  std::vector<std::vector<std::array<double, 2>>> paired_samples;
 };
+
+SearchDecision choose(const Observation&, uint32_t, int, const SearchOptions&);
+
+// Experimental fixed-policy root Monte Carlo. Every legal root action receives
+// exactly one rollout in each committed world; no adaptive visit votes. The
+// independent MCTS stage is only a deterministic fallback for missing evidence.
+SearchDecision choose_paired(const Observation& observation, uint32_t seed,
+                             int worlds, const SearchOptions& options) {
+  const auto started = std::chrono::steady_clock::now();
+  const auto deadline = started + std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+      std::chrono::duration<double, std::milli>(options.time_limit_ms));
+  const auto* bounded = options.time_limit_ms > 0 ? &deadline : nullptr;
+  auto fallback_options = options;
+  fallback_options.paired_root = false;
+  fallback_options.time_limit_ms *= .25;
+  // Disable early exits based on lack of wins: this stage uses the same fixed
+  // utility as the paired stage, irrespective of advantage or disadvantage.
+  auto result = choose(observation, seed, std::max(1, worlds/4), fallback_options);
+  Rng sampling{seed ^ 0xd1b54a35u}, order_rng{seed ^ 0x94d049bbu};
+  Rng legal_rng{seed ^ 0x369dea0fu};
+  auto actions = atomic_actions(determinize(observation, legal_rng));
+  if (options.full_sale_root)
+    actions.erase(std::remove_if(actions.begin(), actions.end(), [&](const Action& a) {
+      return a.kind == ActionKind::Sell && a.count != observation.hand[a.good];
+    }), actions.end());
+  if (actions.empty()) return result;
+  std::vector<double> outcomes(actions.size()), margins(actions.size());
+  std::vector<int> order(actions.size());
+  std::iota(order.begin(), order.end(), 0);
+  for (int sample=0; sample<worlds; ++sample) {
+    if (bounded && std::chrono::steady_clock::now() >= deadline) break;
+    const State world = determinize(observation, sampling);
+    const uint32_t continuation_seed = sampling.next();
+    shuffle(order, order_rng);
+    std::vector<std::array<double, 2>> batch(actions.size());
+    bool complete=true;
+    ++result.paired_attempts;
+    for (int index : order) {
+      if (bounded && std::chrono::steady_clock::now() >= deadline) { complete=false; break; }
+      State state=world;
+      apply_action(state, actions[index]);
+      Rng continuation{continuation_seed};
+      ++result.stats.simulations;
+      const auto terminal=rollout(state, continuation, result.stats,
+          options.learned_rollout, options.neural_rollout, bounded, options.terminal_tactics);
+      if (!state.terminal) {
+        complete=false;
+        // Deadline censoring discards the final partial block. A turn-limit
+        // rejection invalidates this decision rather than silently selecting
+        // only the worlds in which every action happened to finish.
+        if (!bounded || std::chrono::steady_clock::now() < deadline)
+          ++result.paired_cap_rejections;
+        break;
+      }
+      batch[index]={terminal.outcome, double(terminal.raw_margin)};
+    }
+    if (!complete) break;
+    for (size_t i=0; i<actions.size(); ++i) {
+      outcomes[i]+=batch[i][0];
+      margins[i]+=batch[i][1];
+    }
+    ++result.paired_worlds;
+    if (options.record_root_stats) result.paired_samples.push_back(std::move(batch));
+  }
+  if (options.record_root_stats) result.paired_actions=actions;
+  // Four worlds is a coverage floor, not a statistical confidence guarantee.
+  if (result.paired_worlds < 4 || result.paired_cap_rejections) return result;
+  size_t best=0;
+  for (size_t i=1; i<actions.size(); ++i) {
+    const double value=outcomes[i]+options.utility_margin_weight*margins[i];
+    const double incumbent=outcomes[best]+options.utility_margin_weight*margins[best];
+    if (value>incumbent || (value==incumbent && actions[i]==result.action)) best=i;
+  }
+  result.action=actions[best];
+  result.paired_used=true;
+  // Visit-based policy/support belongs to the fallback, not this selection.
+  result.root_policy.clear();
+  result.selected_support=0;
+  if (options.record_root_stats) {
+    result.root_stats.clear();
+    for (size_t i=0; i<actions.size(); ++i)
+      result.root_stats.push_back({actions[i], {1.0/actions.size(),
+          (outcomes[i]+options.utility_margin_weight*margins[i])/result.paired_worlds}});
+  }
+  return result;
+}
 
 SearchDecision choose(const Observation& observation, uint32_t seed,
                       int iterations, const SearchOptions& options = {}) {
+  if (options.paired_root) return choose_paired(observation, seed, iterations, options);
   const auto decision_started = std::chrono::steady_clock::now();
   Rng sampling{seed}, search{seed ^ 0x9e3779b9u};
-  struct Vote { Action action; double visits=0, total=0, margin_total=0, close_loss=0; };
+  struct Vote {
+    Action action;
+    double visits=0, total=0, margin_total=0, close_loss=0;
+  };
   std::vector<Vote> aggregate;
   SearchStats stats;
   std::vector<std::pair<Action, double>> root_policy;
@@ -480,15 +605,14 @@ SearchDecision choose(const Observation& observation, uint32_t seed,
     for (const auto& edge : edges) {
       auto found = std::find_if(aggregate.begin(), aggregate.end(),
           [&](const Vote& other) { return other.action == edge.action; });
-      if (found == aggregate.end())
-        aggregate.push_back({edge.action,edge.visits/total_visits,
-                             edge.total/total_visits,
-                             edge.margin_total/total_visits});
-      else {
-        found->visits += edge.visits/total_visits;
-        found->total += edge.total/total_visits;
-        found->margin_total += edge.margin_total/total_visits;
+      if (found == aggregate.end()) {
+        aggregate.push_back({edge.action});
+        found = aggregate.end()-1;
       }
+      const double denominator = std::max(1.0,total_visits);
+      found->visits += edge.visits/denominator;
+      found->total += edge.total/denominator;
+      found->margin_total += edge.margin_total/denominator;
     }
   }
   if (options.close_risk_weight > 0 && !aggregate.empty() &&
@@ -525,16 +649,37 @@ SearchDecision choose(const Observation& observation, uint32_t seed,
   }
   // Pure win/loss search cannot rank moves once every sampled continuation
   // loses. In that case alone, prefer the smaller final point deficit.
-  const bool all_lost = !aggregate.empty() && std::all_of(
-      aggregate.begin(), aggregate.end(), [](const Vote& vote) {
-        return vote.visits > 0 &&
+  const bool all_lost = options.utility_margin_weight==0 && !aggregate.empty() && std::all_of(
+      aggregate.begin(), aggregate.end(), [&options](const Vote& vote) {
+        return (options.robust_search || vote.visits>0) &&
                std::abs(vote.total + vote.visits) < 1e-9;
       });
+  const auto visit_leader = std::max_element(aggregate.begin(),aggregate.end(),
+      [&options](const Vote& a,const Vote& b) {
+        const double a_score=a.visits/options.trees-options.close_risk_weight*a.close_loss;
+        const double b_score=b.visits/options.trees-options.close_risk_weight*b.close_loss;
+        if (a_score!=b_score) return a_score<b_score;
+        return a.total/std::max(1e-12,a.visits)<b.total/std::max(1e-12,b.visits);
+      });
+  // Change root voting only when the visit leader itself predicts a loss.
+  // Winning positions retain the usual robust-child (visit-count) decision.
+  const bool losing_root = options.utility_margin_weight==0 && options.robust_search &&
+      visit_leader!=aggregate.end() && visit_leader->total<0;
   const auto best = std::max_element(aggregate.begin(), aggregate.end(),
-      [all_lost, &options](const Vote& a, const Vote& b) {
+      [all_lost, losing_root, &options](const Vote& a, const Vote& b) {
+        if (losing_root) {
+          // Retain visit evidence, but losing simulations cannot vote a move
+          // above one with supported wins. Draws contribute half a win.
+          const double a_support = (a.visits+a.total)/2/options.trees -
+              options.close_risk_weight*a.close_loss;
+          const double b_support = (b.visits+b.total)/2/options.trees -
+              options.close_risk_weight*b.close_loss;
+          if (std::abs(a_support-b_support)>1e-12) return a_support < b_support;
+          if (a.visits==0 || b.visits==0) return a.visits < b.visits;
+        }
         if (all_lost) {
-          const double a_margin = a.margin_total / a.visits;
-          const double b_margin = b.margin_total / b.visits;
+          const double a_margin = a.visits>0 ? a.margin_total/a.visits : -1;
+          const double b_margin = b.visits>0 ? b.margin_total/b.visits : -1;
           if (a_margin != b_margin) return a_margin < b_margin;
         }
         const double a_score = a.visits / options.trees -

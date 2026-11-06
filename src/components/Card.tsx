@@ -1,5 +1,5 @@
 import type { Card as CardType } from "../game/types.ts";
-import { ENGLISH, LABEL, precious } from "../game/data.ts";
+import { LABEL, precious } from "../game/data.ts";
 import { GoodsArt } from "./Art.tsx";
 export function Card({
   good,
@@ -9,10 +9,14 @@ export function Card({
   small = false,
   motionId,
   notice,
+  arriving = false,
+  departing = false,
 }: {
   good: CardType;
   motionId?: string;
   notice?: string;
+  arriving?: boolean;
+  departing?: boolean;
   selected?: boolean;
   onClick?: () => void;
   disabled?: boolean;
@@ -22,7 +26,7 @@ export function Card({
   return (
     <button
       data-motion-anchor={motionId}
-      className={`card ${good} ${selected ? "selected" : ""} ${small ? "small" : ""} ${premium ? "premium-card" : ""} ${notice && notice !== "取走" ? "market-arrived" : ""}`}
+      className={`card ${good} ${selected ? "selected" : ""} ${small ? "small" : ""} ${premium ? "premium-card" : ""} ${arriving ? "market-arrived" : ""} ${departing ? "card-departing" : ""} ${notice ? "has-notice" : ""}`}
       disabled={disabled}
       onClick={onClick}
       title={
@@ -35,18 +39,12 @@ export function Card({
       aria-label={`${LABEL[good]}${premium ? "，高级货物，至少 2 张起售" : ""}${selected ? "，已选中" : ""}${notice ? `，${notice}` : ""}`}
       aria-pressed={selected}
     >
-      {premium ? (
-        <span className="premium-badge">高级</span>
-      ) : (
-        <span className="card-corner">{good === "camel" ? "∞" : "Ⅰ"}</span>
-      )}
+      {premium && <span className="premium-badge">高级</span>}
       <GoodsArt good={good} cardFace />
       <span className="card-name">{LABEL[good]}</span>
-      {premium ? (
-        <span className="card-sale-rule">2 张起售</span>
-      ) : (
-        <span className="card-en">{ENGLISH[good]}</span>
-      )}
+      <span className="card-sale-rule">
+        {good === "camel" ? "不占手牌" : premium ? "2张起售" : "1张起售"}
+      </span>
       {selected && <span className="selected-check">✓</span>}
       {notice && <span className="market-card-notice">{notice}</span>}
     </button>

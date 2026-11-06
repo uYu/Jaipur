@@ -108,10 +108,12 @@ int main() {
   tactical.players[1].bonus_count=1;
   State winning=tactical;
   assert(finish_winning_sale(winning) && winning.value==1);
+  assert(winning.raw_score_margin==0); // Won by the bonus-count tiebreak.
   State mirrored=tactical;
   std::swap(mirrored.players[0],mirrored.players[1]);
   mirrored.current=1;
   assert(finish_winning_sale(mirrored) && mirrored.value==-1);
+  assert(mirrored.raw_score_margin==-winning.raw_score_margin);
   State losing=tactical;
   losing.players[0].camels=4;
   assert(!finish_winning_sale(losing) && !losing.terminal);
@@ -144,6 +146,47 @@ int main() {
     }
   }
   assert(checked_take && checked_sale);
+  // Fixed terminal utility is applied identically for both actors, with no
+  // advantage/deficit gate. Terminal-only branches admit an exact check.
+  SearchOptions utility_options=reply_options;
+  utility_options.utility_margin_weight=.002;
+  Rng utility_rng{42}; SearchStats utility_stats;
+  const auto utility_edges=terminal_tree(reply_test,32,utility_rng,utility_stats,utility_options);
+  for(const auto& edge:utility_edges) if(edge.visits) {
+    State end=reply_test;
+    apply_action(end,edge.action);
+    if(!end.terminal) finish_winning_sale(end);
+    assert(end.terminal);
+    const double expected=end.value+.002*end.raw_score_margin;
+    assert(std::abs(edge.total-edge.visits*expected)<1e-9);
+  }
+  // A deadline is missing evidence, not a draw that improves losing branches.
+  State unfinished;
+  unfinished.market[3]=5;
+  unfinished.deck_count=20;
+  unfinished.deck.fill(3);
+  unfinished.token_count.fill(5);
+  SearchOptions interrupted;
+  interrupted.time_limit_ms=1e-9;
+  SearchStats interrupted_stats;
+  const auto interrupted_edges=terminal_tree(unfinished,1,tactical_rng,
+                                               interrupted_stats,interrupted);
+  assert(interrupted_stats.truncated==1);
+  for (const auto& edge:interrupted_edges)
+    assert(edge.visits==0 && edge.total==0 && edge.margin_total==0);
+  // Seed 2806 / event 45: failed worlds used to vote for camels over cashing
+  // out leather. Only the public observation and public hand belief are used.
+  const int32_t deficit_input[]={
+    4866377,1,0,0,1,0,0,1,0,17,57,4,2,5,2,1,15,51,0,0,1,0,0,2,
+    1,0,6,6,6,1,5,1,5,2,5,5,0,0,2,1,1,3,3,5,4,4,3,7,8,7,5,3,45,
+    1,0,0,1,0,0,2,1000000000};
+  Observation deficit;
+  constexpr int deficit_length=sizeof(deficit_input)/sizeof(deficit_input[0]);
+  assert(parse_observation(deficit_input,deficit_length,deficit));
+  const auto deficit_decision=choose(deficit,
+      hash_input(deficit_input,deficit_length),5000);
+  assert(deficit_decision.action.kind==ActionKind::Sell &&
+         deficit_decision.action.good==5 && deficit_decision.action.count==1);
   // Equal public beliefs must encode identically regardless of world order
   // or integer weight scale; preserve a rare but possible closing sale.
   Observation belief;
@@ -268,6 +311,33 @@ int main() {
   const auto late_decision = choose(late, 42, 100000);
   assert(late_decision.action.kind == ActionKind::Sell);
   assert(late_decision.action.good == 1 && late_decision.action.count == 2);
+  SearchOptions paired_options;
+  paired_options.paired_root=true;
+  paired_options.utility_margin_weight=.002;
+  paired_options.record_root_stats=true;
+  const auto paired_late=choose(late,42,32,paired_options);
+  const auto paired_again=choose(late,42,32,paired_options);
+  assert(paired_late.paired_used && paired_late.paired_worlds==32);
+  assert(paired_late.paired_samples==paired_again.paired_samples);
+  assert(paired_late.action==paired_again.action);
+  assert(paired_late.paired_actions.size()==paired_late.root_stats.size());
+  for(const auto& world:paired_late.paired_samples)
+    assert(world.size()==paired_late.paired_actions.size());
+  double highest=-std::numeric_limits<double>::infinity();
+  Action paired_best;
+  for(size_t a=0;a<paired_late.paired_actions.size();++a) {
+    double utility=0;
+    for(const auto& world:paired_late.paired_samples)
+      utility+=world[a][0]+.002*world[a][1];
+    if(utility>highest) {highest=utility;paired_best=paired_late.paired_actions[a];}
+  }
+  assert(paired_late.action==paired_best);
+  assert(paired_late.action.kind==ActionKind::Sell && paired_late.action.good==1);
+  const auto too_few=choose(late,42,3,paired_options);
+  assert(!too_few.paired_used && too_few.paired_worlds==3);
+  paired_options.time_limit_ms=1e-9;
+  const auto paired_expired=choose(late,42,32,paired_options);
+  assert(!paired_expired.paired_used && paired_expired.paired_worlds==0);
   // Earlier in the same round, taking all five camels keeps a realistic
   // comeback alive; selling two silver gives the entire herd to the opponent.
   Observation herd;

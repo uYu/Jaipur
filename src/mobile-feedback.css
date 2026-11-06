@@ -1,0 +1,230 @@
+/* In-place mobile feedback animates opacity only, never card geometry. */
+.player-score-slot {
+  position: relative;
+  min-width: 0;
+}
+.mobile-player-scores .player-score-card {
+  width: 100%;
+}
+.sale-feedback {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% - 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  gap: 3px;
+  width: max-content;
+  max-width: min(260px, 100%);
+  padding: 10px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 3px 12px #49372f18;
+  font-size: var(--type-label);
+  line-height: 1.5;
+  pointer-events: none;
+  animation-name: sale-feedback;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+.sale-feedback-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.sale-feedback-good {
+  display: inline-flex;
+  color: var(--card-color);
+}
+.sale-feedback-good > .goods-art {
+  width: 24px;
+  height: 24px;
+}
+.sale-feedback-coins {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 4px;
+  margin-top: 3px;
+}
+.sale-feedback-coin {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border: 1px solid color-mix(in srgb, var(--card-color) 50%, var(--border));
+  border-radius: 50%;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: var(--type-label);
+  font-variant-numeric: tabular-nums;
+}
+.sale-feedback-plus {
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 23px;
+}
+.sale-feedback-reward {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 4px 7px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.sale-feedback-tier {
+  font-size: 10px;
+  line-height: 1.3;
+}
+.sale-feedback-reward-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+}
+.sale-feedback-reward b {
+  font-size: var(--type-body);
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+.sale-feedback .sale-feedback-reward small {
+  font-size: 10px;
+  color: inherit;
+}
+.sale-feedback strong {
+  color: var(--accent);
+  font-size: var(--type-body);
+}
+.sale-feedback small {
+  color: var(--text-secondary);
+  font-size: var(--type-small);
+}
+.sale-feedback[data-paused="true"] {
+  animation-play-state: paused;
+}
+.turn-message {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.turn-message .status-dot {
+  flex: none;
+}
+.game-shell .turn-line.with-trade-feedback {
+  position: relative;
+  height: 52px;
+  min-height: 52px;
+  padding: 4px 1px;
+  flex-wrap: nowrap;
+}
+.trade-feedback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--type-label);
+  line-height: 1.3;
+  pointer-events: none;
+  animation: sale-feedback linear both;
+}
+.trade-feedback-title {
+  font-weight: 500;
+}
+.trade-feedback-flow {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.trade-feedback-flow > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.trade-feedback-flow > div > span:first-child:not(.trade-feedback-good) {
+  color: var(--text-secondary);
+  font-size: var(--type-small);
+}
+.trade-feedback-good {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+.trade-feedback-good .goods-art {
+  width: 18px;
+  height: 18px;
+  color: var(--card-color);
+}
+.trade-feedback-good b {
+  font-size: var(--type-small);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.trade-feedback ~ .turn-message,
+.trade-feedback ~ span:last-child {
+  visibility: hidden;
+}
+.trade-feedback[data-paused="true"] {
+  animation-play-state: paused;
+}
+@keyframes sale-feedback {
+  0%,
+  93% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes mobile-card-arrival {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 860px) {
+  .game-shell .card.market-arrived {
+    animation: mobile-card-arrival 200ms ease-out both;
+  }
+  .game-shell .card.card-departing {
+    will-change: opacity;
+  }
+  .game-shell .card.has-notice .premium-badge {
+    visibility: hidden;
+  }
+  .game-shell .card .market-card-notice {
+    font-size: 10px;
+    line-height: 17px;
+    white-space: nowrap;
+  }
+  .game-shell .card:not(:disabled):hover {
+    transform: none;
+  }
+  .game-shell.mobile-dealing :is(.market-cards, .hand-cards) {
+    animation: mobile-card-arrival 250ms ease-out both;
+  }
+  .game-shell[data-paused="true"]
+    :is(.card.market-arrived, .market-cards, .hand-cards) {
+    animation-play-state: paused;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sale-feedback,
+  .trade-feedback {
+    animation: none;
+  }
+}

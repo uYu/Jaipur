@@ -354,6 +354,30 @@ test("MCTS keeps collecting visible leather instead of cashing out three or four
   }
 });
 
+test("timed Wasm search cashes out a forced loss instead of buying unusable cards", async () => {
+  const names = ["diamond", "gold", "silver", "cloth", "spice", "leather"] as const;
+  const discarded = [6, 4, 4, 6, 7, 8];
+  // Public scores/counts match the native forced-loss regression. Every
+  // sampled world loses; two gold minimize the deficit before closing.
+  const decision = await chooseTimedWasmActionWithStats({
+    hand: ["gold", "gold", "silver"],
+    camels: 7,
+    goods: [5, 5, 5, 5, 5, 5, 5, 3, 3, 2, 2, 1, 1],
+    bonuses: [2, 6],
+    opponentGoods: [7, 7, ...Array<number>(19).fill(3)],
+    knownOpponentHand: ["leather"],
+    market: ["spice", "leather", "camel", "cloth", "silver"],
+    tokens: { diamond: [], gold: [5], silver: [5], cloth: [1], spice: [], leather: [1] },
+    bonusCounts: { 3: 5, 4: 4, 5: 4 },
+    discard: names.flatMap((good, i) => Array<Good>(discarded[i]).fill(good)),
+    deckCount: 1,
+    opponentHandCount: 1,
+    turn: 43,
+  }, 1_000);
+  assert.deepEqual(decision.action, { type: "sell", good: "gold", count: 2 });
+  assert.equal(decision.stats.truncatedSimulations, 0);
+});
+
 test("complete AI matches across all difficulties conserve cards and tokens and replay identically", async () => {
   for (const difficulty of ["easy", "normal", "hard"] as const)
     for (let seed = 1; seed <= 12; seed++) {
