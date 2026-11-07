@@ -54,12 +54,9 @@ export function handLayoutFlights(
   const nextCount = after.players[actor].hand.length;
   const retained = retainedHandSlots(transition, actor, count);
   return retained.flatMap((oldSlot, slot) => {
-    // Up to five cards fit without overlap on supported portrait widths.
-    if (
-      oldSlot === slot &&
-      (count === nextCount || Math.max(count, nextCount) < 6)
-    )
-      return [];
+    // Whether spacing changes depends on the measured lane, not a fixed count.
+    // Animate every possible shift; the renderer skips slots that stay put.
+    if (oldSlot === slot && count === nextCount) return [];
     return [
       {
         from: actor === 0 ? `hand-${oldSlot}` : `opponent-hand-${oldSlot}`,

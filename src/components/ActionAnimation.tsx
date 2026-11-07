@@ -30,25 +30,46 @@ export function ActionAnimation({
   frozen.current = paused;
   useLayoutEffect(() => {
     const hidden = new Map<HTMLElement, string>();
-    const find = (name: string) => {
-      const visible = (selector: string) =>
-        Array.from(document.querySelectorAll<HTMLElement>(selector)).find(
-          (element) => {
-            const rect = element.getBoundingClientRect();
-            return rect.width > 0 && rect.height > 0;
-          },
-        );
-      return (
-        visible(`[data-motion-anchor="${name}"]`) ??
-        visible(`[data-motion-fallback="${name}"]`)
-      );
-    };
     let time = elapsed;
     const build = () => {
       if (animations.current.length)
         time = Number(animations.current[0].currentTime ?? time);
       animations.current.forEach((a) => a.cancel());
       animations.current = [];
+      // Read the board once, before changing any sprite or starting animations.
+      // Interleaving these operations forces layout once per travelling card.
+      const boxes = new Map<HTMLElement, DOMRect>();
+      const styles = new Map<HTMLElement, CSSStyleDeclaration>();
+      const anchors = new Map<string, HTMLElement | undefined>();
+      const rect = (element: HTMLElement) => {
+        if (!boxes.has(element))
+          boxes.set(element, element.getBoundingClientRect());
+        return boxes.get(element)!;
+      };
+      const style = (element: HTMLElement) => {
+        if (!styles.has(element))
+          styles.set(element, getComputedStyle(element));
+        return styles.get(element)!;
+      };
+      const find = (name: string) => {
+        if (!anchors.has(name)) {
+          const visible = (selector: string) =>
+            Array.from(document.querySelectorAll<HTMLElement>(selector)).find(
+              (element) => rect(element).width > 0 && rect(element).height > 0,
+            );
+          anchors.set(
+            name,
+            visible(`[data-motion-anchor="${name}"]`) ??
+              visible(`[data-motion-fallback="${name}"]`),
+          );
+        }
+        return anchors.get(name);
+      };
+      const startMotions: (() => void)[] = [];
+      const destinationCounts = new Map<string, number>();
+      flights.forEach(({ to }) =>
+        destinationCounts.set(to, (destinationCounts.get(to) ?? 0) + 1),
+      );
       const usedOpponentCards = new Set<HTMLElement>();
       flights.forEach((flight, i) => {
         const sourceGroup = find(flight.from);
@@ -86,8 +107,8 @@ export function ActionAnimation({
             : flight.fromBack;
         const toBack =
           tabletop && flight.to.endsWith("-herd") ? false : flight.toBack;
-        const a = source.getBoundingClientRect(),
-          b = target.getBoundingClientRect();
+        const a = rect(source),
+          b = rect(target);
         const coin = flight.coin !== undefined;
         const handTarget =
           tabletop &&
@@ -109,10 +130,9 @@ export function ActionAnimation({
             ? Math.min(1.5, b.width * 0.03)
             : 0;
         const saleStackSpan =
-          saleStackStep *
-          Math.max(0, flights.filter((item) => item.to === "sale").length - 1);
+          saleStackStep * Math.max(0, (destinationCounts.get("sale") ?? 0) - 1);
         const measureElement = find("hand-measure");
-        const measure = measureElement?.getBoundingClientRect();
+        const measure = measureElement ? rect(measureElement) : undefined;
         const targetFanCards =
           tabletop && flight.to === "opponent-hand"
             ? target.querySelectorAll<HTMLElement>(".opponent-hand-card")
@@ -126,9 +146,11 @@ export function ActionAnimation({
         const targetWidth = coin
           ? b.width
           : handTarget
-            ? (measure?.width ?? objectTarget?.offsetWidth ?? a.width)
+            ? (measure?.width ??
+              (objectTarget ? rect(objectTarget).width : undefined) ??
+              a.width)
             : objectTarget
-              ? objectTarget.offsetWidth
+              ? rect(objectTarget).width
               : flight.to.startsWith("market-") || flight.to.startsWith("hand-")
                 ? b.width
                 : flight.to === "sale"
@@ -142,28 +164,26 @@ export function ActionAnimation({
             ? (flight.slot ?? 0) * saleStackStep - saleStackSpan / 2
             : tabletop && flight.to.endsWith("-herd")
               ? ((flight.slot ?? 0) -
-                  (flights.filter((item) => item.to === flight.to).length - 1) /
-                    2) *
+                  ((destinationCounts.get(flight.to) ?? 0) - 1) / 2) *
                 Math.min(1.2, b.width * 0.025)
               : (flight.slot ?? 0) * (flight.to === "sale" ? 3 : 7);
-        const gap = Number.parseFloat(getComputedStyle(target).columnGap) || 7;
+        const gap = Number.parseFloat(style(target).columnGap) || 7;
         const columns = Math.max(
           1,
           Math.floor((b.width + gap) / (targetWidth + gap)),
         );
         const singleRow =
-          flight.to === "your-hand" &&
-          getComputedStyle(target).flexWrap === "nowrap";
+          flight.to === "your-hand" && style(target).flexWrap === "nowrap";
         const overlap =
           singleRow && measureElement
-            ? Number.parseFloat(getComputedStyle(measureElement).marginLeft) ||
-              0
+            ? Number.parseFloat(style(measureElement).marginLeft) || 0
             : 0;
-        const targetStyle = getComputedStyle(target);
+        const targetStyle = style(target);
         const paddingLeft = Number.parseFloat(targetStyle.paddingLeft) || 0;
         const paddingTop = Number.parseFloat(targetStyle.paddingTop) || 0;
-        const lastFanCard =
-          targetFanCards?.[targetFanCards.length - 1]?.getBoundingClientRect();
+        const lastFanCard = targetFanCards?.length
+          ? rect(targetFanCards[targetFanCards.length - 1])
+          : undefined;
         const fanLanding = lastFanCard
           ? Math.min(
               b.right - targetWidth / 2,
@@ -213,38 +233,15 @@ export function ActionAnimation({
           y = a.top + window.scrollY + a.height / 2 - height / 2;
         const tx = targetX + window.scrollX - width / 2,
           ty = targetY + window.scrollY - height / 2;
-        Object.assign(sprite.style, {
-          left: `${x}px`,
-          top: `${y}px`,
-          width: `${width}px`,
-          height: `${height}px`,
-        });
-        // Match the travelling face to the physical card instead of switching
-        // padding, corner shape and glyph scale at take-off and landing.
-        const face = sprite.querySelector<HTMLElement>(":scope > .card");
-        if (tabletop && face) {
-          const style = getComputedStyle(source);
-          face.style.padding = source.classList.contains("card")
-            ? style.padding
-            : "3px";
-          face.style.borderRadius = style.borderRadius;
-          face.style.boxShadow = "0 2px 5px #102d2633";
-        }
-        if (!tabletop && flight.hideSource && !hidden.has(source)) {
-          hidden.set(source, source.style.visibility);
-          if (!reduced || typeof source.animate !== "function")
-            source.style.visibility = "hidden";
-        }
-        if (flight.hideTarget && !hidden.has(target)) {
-          hidden.set(target, target.style.visibility);
-          target.style.visibility = "hidden";
-        }
+        const sourceStyle = style(source);
+        const sourcePadding = sourceStyle.padding;
+        const sourceRadius = sourceStyle.borderRadius;
         const targetHeight = coin
           ? b.height
           : handTarget
             ? (measure?.height ?? targetWidth * 1.5)
             : objectTarget
-              ? objectTarget.offsetHeight
+              ? rect(objectTarget).height
               : flight.to.startsWith("market-") ||
                   flight.to.startsWith("hand-") ||
                   flight.to === "sale"
@@ -252,147 +249,236 @@ export function ActionAnimation({
                 : flight.to === "your-hand"
                   ? (measure?.height ?? targetWidth * 1.43)
                   : targetWidth * 1.43;
-        const start = Math.min(0.95, flight.start),
-          end = Math.min(0.99, flight.end),
-          middle =
-            tabletop && flight.from === "deck"
-              ? start + (end - start) * 0.75
-              : tabletop && fromBack
-                ? start + (end - start) * 0.2
-                : tabletop && toBack
-                  ? start + (end - start) * 0.8
-                  : (start + end) / 2;
-        const landing = `translate(${tx - x}px, ${ty - y}px) scale(${targetWidth / width}, ${targetHeight / height})`;
-        // Tabletop cards hold their final slots until the real board replaces
-        // them at exactly the same geometry. No fade-out / reappearance gap.
-        const vanishAtEnd =
-          (flight.to === "sale" && !saleTravel) ||
-          (!tabletop && settling && flight.to === "your-hand");
-        const fadeAtLanding = tabletop && vanishAtEnd;
-        const arrivalOpacity = fadeAtLanding ? 1 : vanishAtEnd ? 0 : 1;
-        const fadeEnd = Math.min(1, end + 110 / duration);
-        const frames =
-          reduced || flight.from === flight.to
-            ? [
-                { offset: 0, opacity: 0, transform: landing },
-                { offset: start, opacity: 0, transform: landing },
-                {
-                  offset: Math.min(start + 0.16, end),
-                  opacity: arrivalOpacity,
-                  transform: landing,
-                },
-                ...(fadeAtLanding
-                  ? [{ offset: end, opacity: 1, transform: landing }]
-                  : []),
-                ...(fadeAtLanding
-                  ? [{ offset: fadeEnd, opacity: 0, transform: landing }]
-                  : []),
-                {
-                  offset: 1,
-                  opacity: vanishAtEnd ? 0 : 1,
-                  transform: landing,
-                },
-              ]
-            : [
-                {
-                  offset: 0,
-                  opacity: start ? 0 : 1,
-                  transform: "translate(0,0) scale(1)",
-                },
-                ...(tabletop
-                  ? [
-                      {
-                        offset: Math.max(0, start - 0.001),
-                        opacity: 0,
-                        transform: "translate(0,0) scale(1)",
-                      },
-                    ]
-                  : []),
-                {
-                  offset: start,
-                  opacity: 1,
-                  transform: "translate(0,0) scale(1)",
-                  easing: "cubic-bezier(0.22, 0.68, 0, 1)",
-                },
-                {
-                  offset: end,
-                  opacity: arrivalOpacity,
-                  transform: landing,
-                },
-                ...(fadeAtLanding
-                  ? [{ offset: fadeEnd, opacity: 0, transform: landing }]
-                  : []),
-                {
-                  offset: 1,
-                  opacity: vanishAtEnd ? 0 : 1,
-                  transform: landing,
-                },
-              ];
-        const back = sprite.querySelector<HTMLElement>(".flight-back");
-        if (typeof sprite.animate !== "function") {
-          Object.assign(sprite.style, {
-            transform: landing,
-            opacity: vanishAtEnd ? "0" : "1",
+        // Sparse hands can keep the same positions even when their count changes.
+        // Do not replace a stationary real card with a redundant animated copy.
+        if (
+          flight.layout &&
+          Math.abs(tx - x) < 0.1 &&
+          Math.abs(ty - y) < 0.1 &&
+          Math.abs(targetWidth - width) < 0.1 &&
+          Math.abs(targetHeight - height) < 0.1
+        ) {
+          startMotions.push(() => {
+            sprite.style.opacity = "0";
           });
-          if (back) back.style.opacity = toBack ? "1" : "0";
           return;
         }
-        const hideDeparture = flight.hideSource || !!fanCards?.length;
-        if (
-          (tabletop && hideDeparture) ||
-          (!tabletop && reduced && flight.hideSource)
-        ) {
-          // Keep real cards readable during the hold, then remove each one
-          // exactly as its travelling copy leaves. Cancellation restores them.
-          const leaveAt = tabletop ? start : Math.min(0.2, end);
-          const departure = source.animate(
-            [
-              { offset: 0, opacity: 1 },
-              ...(tabletop
-                ? [{ offset: Math.max(0, leaveAt - 0.001), opacity: 1 }]
-                : []),
-              { offset: leaveAt, opacity: 0 },
-              { offset: 1, opacity: 0 },
-            ],
-            { duration, fill: "both" },
-          );
-          departure.currentTime = time;
-          if (frozen.current) departure.pause();
-          animations.current.push(departure);
+        if (flight.layout) {
+          // Move retained cards themselves: no duplicate SVG face, source fade,
+          // or layer swap is needed just to make room in the same hand.
+          startMotions.push(() => {
+            sprite.style.opacity = "0";
+            if (typeof source.animate !== "function") return;
+            const landing = `translate(${tx - x}px, ${ty - y}px) scale(${targetWidth / width}, ${targetHeight / height})`;
+            const start = Math.min(0.95, flight.start);
+            const motion = source.animate(
+              [
+                { offset: 0, transform: "none" },
+                {
+                  offset: start,
+                  transform: "none",
+                  easing: reduced
+                    ? "steps(1, end)"
+                    : "cubic-bezier(0.22, 0.68, 0, 1)",
+                },
+                {
+                  offset: reduced
+                    ? Math.min(start + 0.01, flight.end)
+                    : flight.end,
+                  transform: landing,
+                },
+                { offset: 1, transform: landing },
+              ],
+              { duration, fill: "both" },
+            );
+            motion.currentTime = time;
+            if (frozen.current) motion.pause();
+            animations.current.push(motion);
+          });
+          return;
         }
-        const motion = sprite.animate(frames, {
-          duration,
-          fill: "both",
-          easing: "linear",
-        });
-        motion.currentTime = time;
-        if (frozen.current) motion.pause();
-        animations.current.push(motion);
-        if (back) {
-          if (reduced) {
-            back.style.opacity = toBack ? "1" : "0";
+        startMotions.push(() => {
+          Object.assign(sprite.style, {
+            opacity: "",
+            left: `${x}px`,
+            top: `${y}px`,
+            width: `${width}px`,
+            height: `${height}px`,
+          });
+          // Match the travelling face to the physical card instead of switching
+          // padding, corner shape and glyph scale at take-off and landing.
+          const face = sprite.querySelector<HTMLElement>(":scope > .card");
+          if (tabletop && face) {
+            face.style.padding = source.classList.contains("card")
+              ? sourcePadding
+              : "3px";
+            face.style.borderRadius = sourceRadius;
+            face.style.boxShadow = "0 2px 5px #102d2633";
+          }
+          if (!tabletop && flight.hideSource && !hidden.has(source)) {
+            hidden.set(source, source.style.visibility);
+            if (!reduced || typeof source.animate !== "function")
+              source.style.visibility = "hidden";
+          }
+          if (flight.hideTarget && !hidden.has(target)) {
+            hidden.set(target, target.style.visibility);
+            target.style.visibility = "hidden";
+          }
+          const start = Math.min(0.95, flight.start),
+            end = Math.min(0.99, flight.end),
+            middle =
+              tabletop && flight.from === "deck"
+                ? start + (end - start) * 0.75
+                : tabletop && fromBack
+                  ? start + (end - start) * 0.2
+                  : tabletop && toBack
+                    ? start + (end - start) * 0.8
+                    : (start + end) / 2;
+          const landing = `translate(${tx - x}px, ${ty - y}px) scale(${targetWidth / width}, ${targetHeight / height})`;
+          // Tabletop cards hold their final slots until the real board replaces
+          // them at exactly the same geometry. No fade-out / reappearance gap.
+          const vanishAtEnd =
+            (flight.to === "sale" && !saleTravel) ||
+            (!tabletop && settling && flight.to === "your-hand");
+          const fadeAtLanding = tabletop && vanishAtEnd;
+          const arrivalOpacity = fadeAtLanding ? 1 : vanishAtEnd ? 0 : 1;
+          const fadeEnd = Math.min(1, end + 110 / duration);
+          const frames =
+            reduced || flight.from === flight.to
+              ? [
+                  { offset: 0, opacity: 0, transform: landing },
+                  { offset: start, opacity: 0, transform: landing },
+                  {
+                    offset: Math.min(start + 0.16, end),
+                    opacity: arrivalOpacity,
+                    transform: landing,
+                  },
+                  ...(fadeAtLanding
+                    ? [{ offset: end, opacity: 1, transform: landing }]
+                    : []),
+                  ...(fadeAtLanding
+                    ? [{ offset: fadeEnd, opacity: 0, transform: landing }]
+                    : []),
+                  {
+                    offset: 1,
+                    opacity: vanishAtEnd ? 0 : 1,
+                    transform: landing,
+                  },
+                ]
+              : [
+                  {
+                    offset: 0,
+                    opacity: start ? 0 : 1,
+                    transform: "translate(0,0) scale(1)",
+                  },
+                  ...(tabletop
+                    ? [
+                        {
+                          offset: Math.max(0, start - 0.001),
+                          opacity: 0,
+                          transform: "translate(0,0) scale(1)",
+                        },
+                      ]
+                    : []),
+                  {
+                    offset: start,
+                    opacity: 1,
+                    transform: "translate(0,0) scale(1)",
+                    easing: "cubic-bezier(0.22, 0.68, 0, 1)",
+                  },
+                  {
+                    offset: end,
+                    opacity: arrivalOpacity,
+                    transform: landing,
+                  },
+                  ...(fadeAtLanding
+                    ? [{ offset: fadeEnd, opacity: 0, transform: landing }]
+                    : []),
+                  {
+                    offset: 1,
+                    opacity: vanishAtEnd ? 0 : 1,
+                    transform: landing,
+                  },
+                ];
+          const back = sprite.querySelector<HTMLElement>(".flight-back");
+          if (typeof sprite.animate !== "function") {
+            Object.assign(sprite.style, {
+              transform: landing,
+              opacity: vanishAtEnd ? "0" : "1",
+            });
+            if (back) back.style.opacity = toBack ? "1" : "0";
             return;
           }
-          back.style.opacity = "";
-          const flip = back.animate(
-            [
-              { offset: 0, opacity: fromBack ? 1 : 0 },
-              { offset: middle - 0.01, opacity: fromBack ? 1 : 0 },
-              { offset: middle + 0.01, opacity: toBack ? 1 : 0 },
-              { offset: 1, opacity: toBack ? 1 : 0 },
-            ],
-            { duration, fill: "both" },
-          );
-          flip.currentTime = time;
-          if (frozen.current) flip.pause();
-          animations.current.push(flip);
-        }
+          const hideDeparture = flight.hideSource || !!fanCards?.length;
+          if (
+            (tabletop && hideDeparture) ||
+            (!tabletop && reduced && flight.hideSource)
+          ) {
+            // Keep real cards readable during the hold, then remove each one
+            // exactly as its travelling copy leaves. Cancellation restores them.
+            const leaveAt = tabletop ? start : Math.min(0.2, end);
+            const departure = source.animate(
+              [
+                { offset: 0, opacity: 1 },
+                ...(tabletop
+                  ? [{ offset: Math.max(0, leaveAt - 0.001), opacity: 1 }]
+                  : []),
+                { offset: leaveAt, opacity: 0 },
+                { offset: 1, opacity: 0 },
+              ],
+              { duration, fill: "both" },
+            );
+            departure.currentTime = time;
+            if (frozen.current) departure.pause();
+            animations.current.push(departure);
+          }
+          const motion = sprite.animate(frames, {
+            duration,
+            fill: "both",
+            easing: "linear",
+          });
+          motion.currentTime = time;
+          if (frozen.current) motion.pause();
+          animations.current.push(motion);
+          if (back) {
+            if (reduced) {
+              back.style.opacity = toBack ? "1" : "0";
+              return;
+            }
+            back.style.opacity = "";
+            const flip = back.animate(
+              [
+                { offset: 0, opacity: fromBack ? 1 : 0 },
+                { offset: middle - 0.01, opacity: fromBack ? 1 : 0 },
+                { offset: middle + 0.01, opacity: toBack ? 1 : 0 },
+                { offset: 1, opacity: toBack ? 1 : 0 },
+              ],
+              { duration, fill: "both" },
+            );
+            flip.currentTime = time;
+            if (frozen.current) flip.pause();
+            animations.current.push(flip);
+          }
+        });
       });
+      startMotions.forEach((start) => start());
+      // Share one clock for source hiding, travel and flips, including rebuilds.
+      const now = document.timeline.currentTime;
+      if (!frozen.current && typeof now === "number")
+        animations.current.forEach((animation) => {
+          animation.startTime = now - time;
+        });
     };
     build();
-    window.addEventListener("resize", build);
+    let resizeFrame = 0;
+    const resize = () => {
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(build);
+    };
+    window.addEventListener("resize", resize);
     return () => {
-      window.removeEventListener("resize", build);
+      cancelAnimationFrame(resizeFrame);
+      window.removeEventListener("resize", resize);
       animations.current.forEach((a) => a.cancel());
       animations.current = [];
       hidden.forEach((visibility, element) => {
@@ -414,7 +500,7 @@ export function ActionAnimation({
           key={i}
           className={`flight-sprite ${flight.good ?? flight.coinGood ?? ""} ${flight.coin !== undefined ? "flight-coin" : "flight-card"} ${tabletop && flight.from.startsWith("bonus-face-") ? `flight-bonus flight-bonus-${flight.from.slice(11)}` : ""} ${flight.from.startsWith("market-") || (tabletop && flight.from === "deck") ? "flight-market" : ""}`}
         >
-          {flight.good ? (
+          {flight.layout ? null : flight.good ? (
             <>
               <Card
                 good={flight.good}

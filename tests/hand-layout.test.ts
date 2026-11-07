@@ -127,3 +127,48 @@ test("opponent compaction uses identical back-only flights for different conceal
       .every((f) => f.fromBack && f.toBack && f.good === "camel"),
   );
 });
+
+test("taking a fifth card includes retained slots on narrow hand lanes", () => {
+  for (const actor of [0, 1] as const) {
+    const before = newGame(17);
+    before.current = actor;
+    before.players[actor].hand = ["cloth", "spice", "leather", "gold"];
+    before.market = ["diamond", "silver", "camel", "cloth", "leather"];
+    const action = { type: "take" as const, index: 0 };
+    const transition = actionTransition(
+      before,
+      action,
+      applyAction(before, action),
+      [0, 1, 2, 3, 4],
+      0,
+      { mobile: true, reduced: false },
+    );
+    const retained = transition.flights.filter((f) => f.layout);
+    assert.equal(retained.length, 4);
+    assert.deepEqual(
+      retained.map((f) => f.slot),
+      [0, 1, 2, 3],
+    );
+    assert.ok(retained.every((f) => f.handCount === 5));
+    const arrival = transition.flights.find((f) => f.from === "market-0")!;
+    assert.ok(
+      retained.every((f) => f.start === arrival.start && f.end === arrival.end),
+    );
+  }
+});
+
+test("exchange slides the retained hand together with the first incoming card", () => {
+  const transition = motion({
+    type: "exchange",
+    market: [0, 1],
+    hand: [1, 5],
+    camels: 0,
+  });
+  const incoming = transition.flights.find((f) => f.from === "market-0")!;
+  assert.ok(transition.flights.filter((f) => f.layout).length > 1);
+  assert.ok(
+    transition.flights
+      .filter((f) => f.layout)
+      .every((f) => f.start === incoming.start && f.end === incoming.end),
+  );
+});

@@ -7,9 +7,11 @@
 }
 @media (max-width: 860px) {
   .game-shell.portrait-table {
-    --felt: #edf0ec;
+    --felt: #e9ede5;
     --felt-line: #d7dfd6;
     --board-gap: 7px;
+    --reserve-score-width: 40px;
+    --reserve-gap: 6px;
     padding-inline: max(8px, env(safe-area-inset-left));
   }
   .portrait-table .game-header {
@@ -34,11 +36,15 @@
     --board-muted: #657169;
     --board-quiet: #89928c;
     --accent: var(--selection-gold);
-    /* One physical card size for the market, hands and herds. */
+    /* Reserve room for a camel pile, all seven hand cards, and the score.
+       The same physical size is used on the market and for both players. */
     --table-card-width: min(
       var(--fit-market-width, 64px),
       64px,
-      calc((100cqw - 24px - clamp(12px, 4cqw, 18px) * 2) / 7)
+      calc(
+        (100cqw - var(--reserve-score-width) - var(--reserve-gap) * 2 - 12px) /
+          8
+      )
     );
     container-type: inline-size;
     position: relative;
@@ -49,21 +55,36 @@
     border: 0;
     outline: 0;
     border-radius: 8px;
-    background: var(--felt);
+    /* Static, quiet linen: spare space reads as a physical playing surface. */
+    background:
+      radial-gradient(ellipse at 28% 0%, #fff8e660, transparent 64%),
+      radial-gradient(ellipse at 100% 100%, #6f816b0a, transparent 60%),
+      repeating-linear-gradient(0deg, #5d715705 0 1px, transparent 1px 5px),
+      repeating-linear-gradient(90deg, #ffffff10 0 1px, transparent 1px 3px),
+      var(--felt);
     color: var(--text);
     box-shadow: none;
   }
   .portrait-table .table-column::before {
     content: none;
   }
+  .game-shell.portrait-table.viewport-table[data-fit="ready"] .table-column {
+    min-height: var(--table-viewport-height, 0px);
+    justify-content: flex-start;
+  }
+  .game-shell.portrait-table.viewport-table[data-fit="ready"]
+    .table-column
+    > :is(.market-zone, .hand-panel) {
+    margin-top: auto;
+  }
   .portrait-table .market-zone {
     container-type: inline-size;
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 12px;
     margin-inline: -6px;
-    padding: 8px 6px;
+    padding: 12px 6px;
     border-radius: 5px;
     background-color: #f2e6e0;
     box-shadow: none;
@@ -196,9 +217,11 @@
   .portrait-table .opponent-cards-and-herd {
     display: grid;
     --hand-card-width: var(--table-card-width);
-    grid-template-columns: var(--table-card-width) minmax(0, 1fr) 64px;
+    grid-template-columns: var(--table-card-width) minmax(0, 1fr) var(
+        --reserve-score-width
+      );
     align-items: center;
-    gap: 8px;
+    gap: var(--reserve-gap);
     min-height: 60px;
     margin-top: 0;
   }
@@ -228,9 +251,9 @@
   .portrait-table .reserve-money {
     display: grid;
     place-items: center;
-    width: 64px;
-    height: 34px;
-    min-height: 34px;
+    width: var(--reserve-score-width);
+    height: 48px;
+    min-height: 48px;
     padding: 0;
     border: 0;
     border-radius: 4px;
@@ -382,7 +405,7 @@
   .game-shell.portrait-table .table-supply .mobile-supply > summary {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-    column-gap: 4px;
+    column-gap: 12px;
     padding: 0;
     background: transparent;
   }
@@ -400,13 +423,13 @@
     grid-column: 1;
     grid-row: 1;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 2px;
+    gap: 6px;
   }
   .game-shell.portrait-table .supply-counter,
   .game-shell.portrait-table[data-density] .supply-counter {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 52px;
+    grid-template-rows: 56px;
     justify-items: center;
     align-items: center;
     gap: 2px;
@@ -427,10 +450,11 @@
     flex-direction: column;
     gap: 0;
     min-width: 0;
-    width: 40px;
+    width: 34px;
     max-width: 100%;
-    height: 38px;
-    padding: 1px;
+    height: auto;
+    aspect-ratio: 1;
+    padding: 0;
     border: 1px solid color-mix(in srgb, var(--card-color) 45%, transparent);
     border-radius: 999px;
     background: var(--card-bg);
@@ -453,8 +477,8 @@
     min-height: 0;
   }
   .game-shell.portrait-table .counter-name > .goods-art {
-    width: 14px;
-    height: 14px;
+    width: 10px;
+    height: 10px;
     color: var(--card-color);
   }
   .portrait-table .counter-name > span,
@@ -463,8 +487,11 @@
   }
   .game-shell.portrait-table :is(.counter-remaining, .stock-bonus-count) {
     position: absolute;
-    right: -1px;
-    bottom: -14px;
+    left: 50%;
+    right: auto;
+    top: 40px;
+    bottom: auto;
+    transform: translateX(-50%);
     z-index: 1;
     display: inline-flex;
     align-items: center;
@@ -472,12 +499,12 @@
     gap: 0;
     width: max-content;
     min-width: 20px;
-    height: 16px;
+    height: 14px;
     min-height: 0;
-    padding: 0 3px;
-    border: 1px solid #c4d0c7;
-    border-radius: 7px;
-    background: #f7f9f4;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: #53645a;
     font-size: 11px;
     line-height: 14px;
@@ -510,7 +537,7 @@
     display: grid;
     place-items: center;
     min-width: 16px;
-    height: 20px;
+    height: 18px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -525,9 +552,9 @@
     border: 0;
     border-radius: 0;
     background: none;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
-    line-height: 20px;
+    line-height: 18px;
     color: var(--card-color);
   }
   .game-shell.portrait-table .supply-bonuses {
@@ -544,10 +571,19 @@
     grid-row: 1;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: center;
-    gap: 2px;
+    gap: 6px;
     margin: 0;
-    padding-left: 4px;
-    border-left: 1px solid #b48a7666;
+    position: relative;
+    padding-left: 3px;
+    border: 0;
+  }
+  .portrait-table .stock-bonus-bank::before {
+    content: "";
+    position: absolute;
+    left: -3px;
+    top: 0;
+    height: 34px;
+    border-left: 1px solid #b48a7640;
   }
   .portrait-table .stock-bonus-label {
     display: none;
@@ -555,7 +591,7 @@
   .portrait-table .stock-bonus-group {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 52px;
+    grid-template-rows: 56px;
     align-items: center;
     justify-items: center;
     gap: 2px;
@@ -570,14 +606,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 40px;
+    width: 34px;
     max-width: 100%;
     min-width: 0;
-    height: 38px;
-    min-height: 38px;
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 1;
     gap: 0;
     border: 1px solid #c2ac72;
-    padding: 1px;
+    padding: 0;
     border-radius: 999px;
     background: #e4dcc4;
     color: #71603c;
@@ -593,14 +630,14 @@
     pointer-events: none;
   }
   .portrait-table .stock-bonus-chip > svg {
-    width: 14px;
-    height: 14px;
+    width: 10px;
+    height: 10px;
   }
   .portrait-table .stock-bonus-tier {
     display: flex;
     align-items: baseline;
     gap: 0;
-    line-height: 20px;
+    line-height: 18px;
   }
   .portrait-table .stock-bonus-tier > b {
     font-size: 14px;
@@ -885,6 +922,10 @@
 }
 
 @media (max-width: 360px) {
+  .game-shell.portrait-table {
+    --reserve-score-width: 32px;
+    --reserve-gap: 4px;
+  }
   .game-shell.portrait-table .table-column {
     padding-inline: 7px;
   }
@@ -942,5 +983,26 @@
   }
   .flight-layer .card .premium-badge-minimum {
     display: inline;
+  }
+}
+
+@media (max-width: 360px) {
+  .game-shell.portrait-table .counter-name > .goods-art,
+  .portrait-table .stock-bonus-chip > svg {
+    width: 8px;
+    height: 8px;
+  }
+  .portrait-table .stock-chip-face {
+    height: 16px;
+  }
+  .game-shell.portrait-table .stock-chip-face > b {
+    font-size: 16px;
+    line-height: 16px;
+  }
+  .portrait-table .stock-bonus-tier {
+    line-height: 14px;
+  }
+  .portrait-table .stock-bonus-tier > b {
+    font-size: 12px;
   }
 }

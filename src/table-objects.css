@@ -266,24 +266,13 @@
   }
 }
 
-@keyframes portrait-card-land {
-  from {
-    filter: brightness(1.08);
-  }
-  to {
-    filter: brightness(1);
-  }
-}
 @media (max-width: 860px) {
+  /* Travelling cards already hold their exact landing positions. Replaying a
+     filter/arrival effect on the real face adds a paint spike at the handoff. */
   .game-shell.portrait-table
     :is(.market-cards, .hand-cards)
     .card.market-arrived {
-    animation: portrait-card-land 400ms ease-out both;
-  }
-  .game-shell.portrait-table[data-paused="true"]
-    :is(.market-cards, .hand-cards)
-    .card.market-arrived {
-    animation-play-state: paused;
+    animation: none;
   }
   .portrait-table .money-pile {
     display: inline-flex;
@@ -327,11 +316,12 @@
   .portrait-table .money-pile.money-pile-tabletop {
     display: inline-flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 4px;
-    width: 64px;
-    height: 34px;
-    min-height: 34px;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1px;
+    width: var(--reserve-score-width);
+    height: 48px;
+    min-height: 48px;
   }
   .portrait-table .money-pile-tabletop .money-pile-coins {
     position: relative;
@@ -376,6 +366,9 @@
     font-size: 24px;
     line-height: 28px;
     font-weight: 600;
+  }
+  .portrait-table .money-pile-tabletop[data-digits="3"] .money-pile-value {
+    font-size: 19px;
   }
   .table-travel .flight-back {
     border-radius: 4px;
@@ -424,7 +417,7 @@
     background: #60766a;
   }
   .game-shell.portrait-table .market-row {
-    --market-group-gap: clamp(12px, 4cqw, 18px);
+    --market-group-gap: calc((100cqw - var(--table-card-width) * 7 - 24px) / 2);
     --market-card-width: var(--table-card-width);
     grid-template-columns:
       var(--market-card-width) calc(var(--market-card-width) * 5 + 24px)
@@ -478,9 +471,11 @@
   }
   .game-shell.portrait-table .hand-and-herd.player-hand-and-herd {
     display: grid;
-    grid-template-columns: var(--table-card-width) minmax(0, 1fr) 64px;
+    grid-template-columns: var(--table-card-width) minmax(0, 1fr) var(
+        --reserve-score-width
+      );
     align-items: center;
-    gap: 8px;
+    gap: var(--reserve-gap);
     min-height: 60px;
     --hand-card-width: var(--table-card-width);
   }
@@ -892,19 +887,23 @@
     font-size: 12px;
   }
   .game-shell.portrait-table .hand-and-herd.player-hand-and-herd {
-    grid-template-columns: var(--table-card-width) minmax(0, 1fr) 58px;
-    gap: 6px;
+    grid-template-columns: var(--table-card-width) minmax(0, 1fr) var(
+        --reserve-score-width
+      );
+    gap: 4px;
   }
   .portrait-table .opponent-cards-and-herd {
-    grid-template-columns: var(--table-card-width) minmax(0, 1fr) 58px;
-    gap: 6px;
+    grid-template-columns: var(--table-card-width) minmax(0, 1fr) var(
+        --reserve-score-width
+      );
+    gap: 4px;
   }
   .portrait-table .reserve-money {
-    width: 58px;
+    width: var(--reserve-score-width);
   }
   .portrait-table .money-pile.money-pile-tabletop {
-    width: 58px;
-    gap: 3px;
+    width: var(--reserve-score-width);
+    gap: 1px;
   }
   .portrait-table .money-pile-tabletop .money-pile-value {
     font-size: 22px;
@@ -1205,10 +1204,9 @@
     font: inherit;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .game-shell.portrait-table
-    :is(.market-cards, .hand-cards)
-    .card.market-arrived {
-    animation: none;
+
+@media (max-width: 360px) {
+  :is(.game-shell.portrait-table, .flight-layer) .card .premium-badge {
+    font-size: 8px;
   }
 }

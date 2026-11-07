@@ -94,7 +94,7 @@ test("mobile taking and camel collection finish selected cards before refilling 
               ? "your-hand"
               : "opponent-hand";
         const departures = step.flights.filter(
-          (flight) => flight.from !== "deck",
+          (flight) => flight.from !== "deck" && !flight.layout,
         );
         const refills = step.flights.filter((flight) => flight.from === "deck");
         assert.deepEqual(

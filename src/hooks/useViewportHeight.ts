@@ -15,6 +15,8 @@ export function useViewportHeight(active: boolean) {
         Math.min(window.innerHeight, viewport?.height ?? window.innerHeight),
       );
       element.style.setProperty("--game-viewport-height", `${available}px`);
+      // Measure the natural table before redistributing spare portrait height.
+      element.style.removeProperty("--table-viewport-height");
       if (!element.classList.contains("viewport-table")) return;
       element.dataset.fit = "ready";
       element.dataset.density = available < 760 ? "compact" : "normal";
@@ -51,6 +53,27 @@ export function useViewportHeight(active: boolean) {
           `${Math.ceil(controls.getBoundingClientRect().height)}px`,
         );
         element.dataset.fit = "scroll";
+      }
+      const table = element.querySelector<HTMLElement>(".table-column");
+      if (
+        element.classList.contains("portrait-table") &&
+        element.dataset.fit === "ready" &&
+        table
+      ) {
+        const tableBox = table.getBoundingClientRect();
+        const bottomPadding =
+          parseFloat(getComputedStyle(element).paddingBottom) || 0;
+        const tableHeight = Math.floor(
+          available - tableBox.top - window.scrollY - bottomPadding - 8,
+        );
+        // Let the two seat-to-market gaps grow by at most 16px each.
+        // Tall phones should not stretch a compact table into three islands.
+        const fittedHeight = Math.min(tableHeight, tableBox.height + 32);
+        if (fittedHeight > tableBox.height)
+          element.style.setProperty(
+            "--table-viewport-height",
+            `${fittedHeight}px`,
+          );
       }
     };
     const schedule = () => {

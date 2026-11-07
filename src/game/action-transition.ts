@@ -110,11 +110,13 @@ function mobileFlights(
       duration,
       flights: [
         ...phase(outgoing, departureHoldMs, outgoingTravel),
-        ...phase(
-          flights.filter((flight) => flight.layout),
-          departureHoldMs + (reduced ? 100 : 260),
-          reduced ? 120 : 640,
-        ),
+        ...flights
+          .filter((flight) => flight.layout)
+          .map((flight) => ({
+            ...flight,
+            start: incomingStart / duration,
+            end: (incomingStart + incomingTravel) / duration,
+          })),
         ...phase(incoming, incomingStart, incomingTravel),
       ],
     };
@@ -146,7 +148,7 @@ function mobileFlights(
       ...layout.map((flight) => ({
         ...flight,
         start: departureHoldMs / duration,
-        end: (departureHoldMs + (reduced ? 120 : 640)) / duration,
+        end: (departureHoldMs + travel) / duration,
       })),
       ...refills.map((flight, index) => ({
         ...flight,

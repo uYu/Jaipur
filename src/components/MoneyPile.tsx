@@ -35,6 +35,7 @@ export function MoneyPile({
     <span
       className={`money-pile${hidden ? " money-pile-private" : ""}${tabletop ? " money-pile-tabletop" : ""}`}
       role="img"
+      data-digits={hidden ? undefined : String(amount).length}
       aria-label={
         hidden
           ? "米拉的钱堆，收入保密，收市揭晓"
