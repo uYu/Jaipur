@@ -1,0 +1,439 @@
+/* The wide table shares the phone's material, faces and transaction controls. */
+@media (min-width: 861px) {
+  .game-shell {
+    max-width: 1440px;
+    grid-template-columns: 96px minmax(0, 1fr);
+    padding: 24px;
+  }
+  .game-shell .game-grid {
+    grid-template-columns: minmax(0, 1fr) 260px;
+    gap: 24px;
+  }
+  .game-shell .game-overview {
+    padding: 12px 0 12px 16px;
+  }
+  .game-shell .table-column {
+    --desktop-card-width: min(76px, calc((100cqw - 36px) / 7));
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--table-surface);
+    box-shadow: none;
+  }
+  .game-shell .table-column::before,
+  .game-shell .table-column::after {
+    content: none;
+  }
+  .game-shell .opponent-panel {
+    min-height: 72px;
+    margin: 0;
+    padding: 0 0 14px;
+    border: 0;
+    border-bottom: 1px solid #d4ddd4;
+  }
+  .game-shell .market-table {
+    container-type: normal;
+    padding: 14px;
+    border-radius: 6px;
+    background: var(--market-surface);
+  }
+  .game-shell .market-heading {
+    margin: 0 0 12px;
+  }
+  .game-shell .market-heading .eyebrow {
+    display: none;
+  }
+  .game-shell .market-heading h2 {
+    font-size: 13px;
+    color: var(--board-muted);
+  }
+  .game-shell .market-row {
+    grid-template-columns: var(--desktop-card-width) minmax(0, 1fr);
+    gap: 18px;
+  }
+  .game-shell .market-cards,
+  .game-shell .hand-cards {
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 0;
+    overflow: visible;
+  }
+  .game-shell .table-column :is(.market-cards, .hand-cards) > .card,
+  .game-shell .table-column .market-deck {
+    flex: none;
+    width: var(--desktop-card-width);
+    height: calc(var(--desktop-card-width) * 1.5);
+    min-width: 0;
+    min-height: 0;
+    max-width: none;
+    aspect-ratio: 2 / 3;
+    margin: 0;
+    border-radius: 5px;
+  }
+  :is(.game-shell .table-column, .flight-layer) .card {
+    padding: 4px;
+    box-shadow: 0 2px 5px #102d2633;
+  }
+  .game-shell .table-column :is(.market-cards, .hand-cards) > .card {
+    padding: 4px;
+  }
+  .game-shell .table-column .card.selected {
+    transform: none;
+    outline-offset: 0;
+    border-color: var(--selection-gold);
+  }
+  :is(.game-shell .table-column, .flight-layer) .card > .goods-art {
+    width: 94%;
+    height: auto;
+    max-width: none;
+    flex: none;
+  }
+  :is(.game-shell .table-column, .flight-layer)
+    .card
+    > :is(.card-name, .card-sale-rule) {
+    display: none;
+  }
+  :is(.game-shell .table-column, .flight-layer)
+    .card.premium-card
+    > .goods-art {
+    transform: translateY(-6px);
+  }
+  :is(.game-shell .table-column, .flight-layer) .card .premium-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inset: auto 0 0;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    border-top: 1px solid
+      color-mix(in srgb, var(--premium-foil) 45%, transparent);
+    border-radius: 0 0 4px 4px;
+    background: color-mix(in srgb, #fffdf4 35%, var(--card-bg));
+    font: 600 10px/17px var(--font-ui);
+    color: var(--card-color);
+  }
+  :is(.game-shell .table-column, .flight-layer) .premium-badge-label {
+    display: none;
+  }
+  :is(.game-shell .table-column, .flight-layer) .premium-badge-minimum {
+    display: inline;
+    font: inherit;
+  }
+  .game-shell .table-column .market-deck {
+    background: #16483c;
+    color: #e3ede3;
+    border-color: #f6f1dc;
+    box-shadow: -2px 2px 0 #c5c5a9;
+  }
+  .game-shell .market-deck::before,
+  .game-shell .market-deck::after {
+    content: none;
+  }
+  .game-shell .recent-log {
+    display: none;
+  }
+  .game-shell .market-deck > b {
+    font-size: 26px;
+  }
+  .game-shell .market-deck-label {
+    display: none;
+  }
+  .game-shell .hand-panel {
+    min-height: 0;
+    padding: 0;
+  }
+  .game-shell .hand-heading {
+    margin: 0 0 12px;
+    padding: 0;
+  }
+  .game-shell .your-score > b,
+  .game-shell .opponent-score > b {
+    font-size: 26px;
+    line-height: 30px;
+    font-variant-numeric: tabular-nums;
+  }
+  .game-shell .action-panel.direct-selection {
+    height: 112px;
+    min-height: 112px;
+    padding: 12px 0 0;
+    background: transparent;
+    grid-template-columns: minmax(0, 1fr) 90px 150px;
+    grid-template-rows: 44px 38px;
+    gap: 8px;
+  }
+  .game-shell .action-panel .direct-guidance {
+    height: 44px;
+    min-height: 44px;
+  }
+  .game-shell .action-panel.direct-selection > :is(.clear-button, .confirm) {
+    height: 38px;
+    min-height: 38px;
+    border-radius: 5px;
+    padding: 6px 12px;
+  }
+  .game-shell .action-panel.direct-selection > .clear-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 90px;
+    border: 1px solid #bcc9bc;
+    background: #e2e9e0;
+  }
+  .game-shell .action-panel.direct-selection > .clear-button > span {
+    display: inline;
+  }
+  .game-shell .action-panel.direct-selection > .confirm {
+    background: #3d4941;
+    border-color: #3d4941;
+    color: #fff;
+  }
+  .game-shell .action-panel.direct-selection > .confirm:disabled {
+    background: #f7f9f5;
+    border-color: #d7ddd6;
+    color: #959e96;
+  }
+  .game-shell .action-panel.direct-selection[data-overview="true"] {
+    grid-template-rows: 88px;
+  }
+  .game-shell
+    .action-panel.direct-selection[data-overview="true"]
+    > :is(.clear-button, .confirm) {
+    display: none;
+  }
+  .game-shell .action-panel .direct-guidance[data-overview="true"] {
+    height: 88px;
+    min-height: 88px;
+    align-content: center;
+  }
+  .game-shell .action-overview {
+    font-size: 13px;
+    line-height: 20px;
+  }
+  .game-shell .action-instruction strong {
+    font-size: 14px;
+  }
+  .game-shell .action-panel .selection-reward {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #79653b;
+    font-size: 12px;
+  }
+
+  .game-shell .action-panel .direct-guidance:not([data-overview="true"]) {
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    grid-template-rows: 20px 20px;
+    row-gap: 4px;
+  }
+  .game-shell .action-panel .direct-guidance[data-explaining="true"] > b {
+    display: none;
+  }
+  .game-shell
+    .action-panel
+    .action-description.direct-guidance
+    > span:is(.invalid, .selection-next-step) {
+    grid-column: 2 / -1;
+    grid-row: 1 / 3;
+    align-self: center;
+    height: auto;
+    max-height: 44px;
+    line-height: 20px;
+  }
+  .game-shell
+    .action-panel
+    .direct-guidance[data-reward="true"]
+    > .selection-reward {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    height: 20px;
+    line-height: 20px;
+  }
+  .game-shell
+    .action-panel
+    .direct-guidance[data-explaining="false"][data-reward="false"]
+    > :is(b, .selection-intent-icon) {
+    grid-row: 1 / 3;
+    align-self: center;
+  }
+
+  .game-shell
+    .action-panel
+    .action-description.direct-guidance[data-explaining="true"]
+    > .selection-intent-icon {
+    grid-row: 1 / 3;
+    align-self: center;
+  }
+
+  /* A small physical bank, with the same faces and quantity marks as the phone. */
+  .game-shell .supply-tabletop > summary {
+    display: block;
+    padding: 0;
+  }
+  .game-shell .supply-tabletop .supply-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .game-shell .supply-tabletop .supply-expand {
+    width: auto;
+    display: inline-flex;
+    gap: 3px;
+  }
+  .game-shell .supply-tabletop .supply-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .game-shell .supply-tabletop :is(.supply-counter, .stock-bonus-group) {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 74px;
+    justify-items: center;
+    align-items: start;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .game-shell .supply-tabletop :is(.counter-quote, .stock-bonus-chip) {
+    --chip-paper: var(--card-bg);
+    --chip-rim: color-mix(in srgb, var(--card-color) 45%, transparent);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 1px solid var(--chip-rim);
+    border-radius: 50%;
+    background: var(--chip-paper);
+    color: var(--card-color);
+  }
+  .game-shell .supply-tabletop :is(.counter-quote, .stock-bonus-chip)::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 1px solid var(--chip-rim);
+    opacity: 0.5;
+    border-radius: inherit;
+  }
+  .game-shell .supply-tabletop .counter-name {
+    display: grid;
+    place-items: center;
+    min-height: 0;
+  }
+  .game-shell
+    .supply-tabletop
+    :is(.counter-name > .goods-art, .stock-bonus-chip > svg) {
+    width: 13px;
+    height: 13px;
+    flex: none;
+  }
+  .game-shell
+    .supply-tabletop
+    :is(
+      .counter-name > span,
+      .counter-next > small,
+      .counter-next > i,
+      .stock-bonus-label
+    ) {
+    display: none;
+  }
+  .game-shell .supply-tabletop .counter-next {
+    display: block;
+    min-height: 0;
+  }
+  .game-shell .supply-tabletop .stock-chip-face {
+    display: grid;
+    place-items: center;
+    height: 25px;
+  }
+  .game-shell .supply-tabletop .stock-chip-face > b {
+    font: 600 24px/25px var(--font-ui);
+    color: var(--card-color);
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+  .game-shell .supply-tabletop :is(.counter-remaining, .stock-bonus-count) {
+    position: absolute;
+    top: 57px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 1px;
+    width: max-content;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #657169;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .game-shell
+    .supply-tabletop
+    :is(.counter-remaining, .stock-bonus-count)
+    :is(b, small) {
+    font: inherit;
+  }
+  .game-shell .supply-tabletop .stock-bonus-bank {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 14px;
+    border-top: 1px solid #d7dfd6;
+  }
+  .game-shell .supply-tabletop .stock-bonus-chip {
+    --chip-paper: #e4dcc4;
+    --chip-rim: #c2ac72;
+    color: #71603c;
+  }
+  .game-shell .supply-tabletop .stock-bonus-tier {
+    display: flex;
+    align-items: baseline;
+    gap: 1px;
+    line-height: 24px;
+  }
+  .game-shell .supply-tabletop .stock-bonus-tier b {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .game-shell .supply-tabletop .stock-bonus-tier small {
+    font-size: 10px;
+  }
+  .game-shell
+    .supply-tabletop
+    :is(.counter-quote, .stock-bonus-chip)[data-stack="2"] {
+    box-shadow:
+      0 2px 0 -1px var(--chip-paper),
+      0 2px 0 var(--chip-rim);
+  }
+  .game-shell
+    .supply-tabletop
+    :is(.counter-quote, .stock-bonus-chip)[data-stack="3"] {
+    box-shadow:
+      0 2px 0 -1px var(--chip-paper),
+      0 2px 0 var(--chip-rim),
+      0 4px 0 -1px var(--chip-paper),
+      0 4px 0 var(--chip-rim);
+  }
+  .game-shell .supply-tabletop > .supply-details {
+    display: none;
+  }
+}

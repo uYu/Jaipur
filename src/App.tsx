@@ -1001,6 +1001,7 @@ export default function App() {
                 <MobileSupply
                   state={viewed}
                   onInspect={() => setModal("supply")}
+                  tabletop
                 />
                 {actionLedger}
               </section>
@@ -1058,7 +1059,7 @@ export default function App() {
                   className="opponent-score"
                   data-motion-anchor="opponent-score"
                 >
-                  <b>{opponentScore?.hidden ? "保密" : opponentScore?.total}</b>
+                  <b>{opponentScore?.hidden ? "?" : opponentScore?.total}</b>
                   <span>
                     {opponentScore?.hidden ? "收市揭晓得分" : "本轮总分"}
                   </span>

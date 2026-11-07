@@ -19,12 +19,12 @@ export function MobileSupply({
     const desktop = window.matchMedia("(min-width: 861px)");
     const sync = () => {
       setMobile(!desktop.matches);
-      if (panel.current) panel.current.open = desktop.matches;
+      if (panel.current) panel.current.open = desktop.matches && !tabletop;
     };
     sync();
     desktop.addEventListener("change", sync);
     return () => desktop.removeEventListener("change", sync);
-  }, []);
+  }, [tabletop]);
   const depleted = GOODS.filter((g) => !state.tokens[g].length).length;
   return (
     <details
@@ -40,9 +40,9 @@ export function MobileSupply({
               : "点击整个筹码面板，展开或收起明细"
         }
         aria-label={tabletop ? "查看筹码盘" : undefined}
-        aria-haspopup={mobile ? "dialog" : undefined}
+        aria-haspopup={mobile || tabletop ? "dialog" : undefined}
         onClick={(event) => {
-          if (mobile) {
+          if (mobile || tabletop) {
             event.preventDefault();
             onInspect();
           }

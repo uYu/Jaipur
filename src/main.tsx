@@ -9,6 +9,7 @@ import "./mobile-viewport.css";
 import "./board-hierarchy.css";
 import "./portrait-board.css";
 import "./table-objects.css";
+import "./desktop-board.css";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />

@@ -7,7 +7,7 @@
 }
 @media (max-width: 860px) {
   .game-shell.portrait-table {
-    --felt: #e9ede5;
+    --felt: var(--table-felt);
     --felt-line: #d7dfd6;
     --board-gap: 7px;
     --reserve-score-width: 40px;
@@ -56,12 +56,7 @@
     outline: 0;
     border-radius: 8px;
     /* Static, quiet linen: spare space reads as a physical playing surface. */
-    background:
-      radial-gradient(ellipse at 28% 0%, #fff8e660, transparent 64%),
-      radial-gradient(ellipse at 100% 100%, #6f816b0a, transparent 60%),
-      repeating-linear-gradient(0deg, #5d715705 0 1px, transparent 1px 5px),
-      repeating-linear-gradient(90deg, #ffffff10 0 1px, transparent 1px 3px),
-      var(--felt);
+    background: var(--table-surface);
     color: var(--text);
     box-shadow: none;
   }
@@ -86,7 +81,7 @@
     margin-inline: -6px;
     padding: 12px 6px;
     border-radius: 5px;
-    background-color: #f2e6e0;
+    background-color: var(--market-surface);
     box-shadow: none;
   }
   .portrait-table .market-zone::before {

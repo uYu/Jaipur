@@ -2,6 +2,14 @@
 .game-shell {
   --selection-gold: #b58a33;
   --selection-ink: #294b3c;
+  --table-felt: #e9ede5;
+  --market-surface: #f2e6e0;
+  --table-surface:
+    radial-gradient(ellipse at 28% 0%, #fff8e660, transparent 64%),
+    radial-gradient(ellipse at 100% 100%, #6f816b0a, transparent 60%),
+    repeating-linear-gradient(0deg, #5d715705 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(90deg, #ffffff10 0 1px, transparent 1px 3px),
+    var(--table-felt);
 }
 .game-shell .lucide {
   stroke-width: 1.6;
