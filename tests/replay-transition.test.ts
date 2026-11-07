@@ -67,7 +67,7 @@ test("replay uses the same action transitions as a match for every tutorial acti
     );
 });
 
-test("mobile taking and camel collection finish selected cards before refilling actual public market slots", () => {
+test("collection refills the actual vacant slots and camel dealing overlaps the caravan", () => {
   const slots = [4, 2, 0, 3, 1];
   for (const actor of [0, 1]) {
     for (const reduced of [false, true]) {
@@ -137,10 +137,19 @@ test("mobile taking and camel collection finish selected cards before refilling 
               !flight.hideTarget,
           ),
         );
-        assert.ok(
-          Math.max(...departures.map((flight) => flight.end)) <
-            Math.min(...refills.map((flight) => flight.start)),
+        const lastDeparture = Math.max(
+          ...departures.map((flight) => flight.end),
         );
+        const firstRefill = Math.min(...refills.map((flight) => flight.start));
+        if (action.type === "camels" && !reduced) {
+          assert.ok(firstRefill < lastDeparture);
+          assert.ok(firstRefill > departures[0].start);
+          assert.ok(
+            step.duration -
+              Math.max(...step.flights.map((f) => f.end)) * step.duration <=
+              101,
+          );
+        } else assert.ok(lastDeparture < firstRefill);
         assert.ok(
           refills.every(
             (flight) =>
@@ -161,9 +170,10 @@ test("mobile taking and camel collection finish selected cards before refilling 
             step.flights.filter((flight) => actor === 1 || !flight.layout),
           ).includes("diamond"),
         );
-        if (actor === 1)
-          assert.equal(step.departureHoldMs, reduced ? 1200 : 1500);
-        if (!reduced) assert.ok(step.duration >= 2975 && step.duration <= 4450);
+        if (actor === 1) assert.ok(step.departureHoldMs >= 1000);
+        if (!reduced && action.type === "camels" && actor === 0)
+          assert.ok(step.departureHoldMs <= 200);
+        if (!reduced) assert.ok(step.duration >= 2000 && step.duration <= 4450);
       }
     }
   }
@@ -285,7 +295,7 @@ test("mobile exchanges start payment first and smoothly overlap receiving and ha
   }
 });
 
-test("mobile sales land sold cards before income coins travel to the actor's money pile", () => {
+test("sales pay cards as they land and finish hand compaction without stopping the stream", () => {
   for (const actor of [0, 1]) {
     for (const count of [1, 3, 7]) {
       const before = newGame(3);
@@ -301,8 +311,10 @@ test("mobile sales land sold cards before income coins travel to the actor's mon
       });
       assert.equal(step.before, before);
       assert.deepEqual(before, snapshot);
-      assert.equal(step.departureHoldMs, 625);
-      assert.ok(step.duration >= 3212.5 && step.duration <= 4850);
+      if (actor === 0) assert.ok(step.departureHoldMs <= 200);
+      else
+        assert.ok(step.departureHoldMs >= 650 && step.departureHoldMs <= 1000);
+      assert.ok(step.duration >= 2000 && step.duration <= 4500);
       const cards = step.flights.filter((flight) => flight.to === "sale");
       const income = step.flights.filter((flight) => flight.coin !== undefined);
       assert.equal(cards.length, count);
@@ -320,7 +332,10 @@ test("mobile sales land sold cards before income coins travel to the actor's mon
         );
         assert.equal(flight.coin, undefined);
         assert.ok(
-          Math.abs(flight.start * step.duration - (625 + index * 112.5)) < 0.01,
+          Math.abs(
+            flight.start * step.duration -
+              (step.departureHoldMs + index * 112.5),
+          ) < 0.01,
         );
         assert.ok(
           Math.abs((flight.end - flight.start) * step.duration - 1312.5) < 0.01,
@@ -335,10 +350,12 @@ test("mobile sales land sold cards before income coins travel to the actor's mon
             : [step.action.bonus === "hidden" ? "?" : step.action.bonus]),
         ],
       );
-      assert.ok(
-        Math.max(...cards.map((flight) => flight.end)) <
-          Math.min(...income.map((flight) => flight.start)),
-      );
+      assert.ok(Math.abs(cards[0].end - income[0].start) < 0.00001);
+      if (cards.length > 1) assert.ok(income[0].start < cards.at(-1)!.end);
+      for (const flight of step.flights.filter((f) => f.layout)) {
+        assert.ok(flight.start < cards[0].end);
+        assert.ok(flight.end < income.at(-1)!.end);
+      }
       income.forEach((flight, index) => {
         assert.equal(flight.to, `money-${actor}`);
         assert.equal(
@@ -355,14 +372,16 @@ test("mobile sales land sold cards before income coins travel to the actor's mon
         if (index > 0)
           assert.ok(
             Math.abs(
-              (flight.start - income[index - 1].start) * step.duration - 137.5,
+              (flight.start - income[index - 1].start) * step.duration - 112.5,
             ) < 0.01,
           );
       });
       assert.ok(
-        Math.abs(step.duration - income.at(-1)!.end * step.duration - 275) <
+        Math.abs(step.duration - income.at(-1)!.end * step.duration - 100) <
           0.01,
       );
+      const bonus = income.find((f) => f.from.startsWith("bonus-face-"));
+      if (bonus) assert.ok(bonus.start >= cards.at(-1)!.end);
       assert.ok(
         !JSON.stringify(
           step.flights.filter((flight) => actor === 1 || !flight.layout),
@@ -429,6 +448,25 @@ test("mobile income includes only actually available sale tokens and never inven
       );
     }
   }
+});
+
+test("a sale bonus follows all sold cards even when goods tokens are exhausted", () => {
+  const before = newGame(3);
+  before.current = 0;
+  before.players[0].hand = Array(7).fill("spice");
+  before.tokens.spice = [];
+  const action: Action = { type: "sell", good: "spice", count: 7 };
+  const after = advance(before, action);
+  const step = actionTransition(before, action, after, [0, 1, 2, 3, 4], 0, {
+    mobile: true,
+    reduced: false,
+  });
+  const cards = step.flights.filter((f) => f.to === "sale");
+  const income = step.flights.filter((f) => f.coin !== undefined);
+  assert.equal(income.length, 1);
+  assert.equal(income[0].from, "bonus-face-5");
+  assert.ok(income[0].start >= Math.max(...cards.map((f) => f.end)));
+  assert.ok(income[0].end < 1);
 });
 
 test("replay round transitions deal the new round and clear the old round's action summary", () => {

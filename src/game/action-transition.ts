@@ -37,7 +37,7 @@ function mobileFlights(
   reduced: boolean,
 ): Pick<ActionTransition, "flights" | "duration" | "departureHoldMs"> {
   if (action.type === "sell") {
-    const departureHoldMs = reduced ? 400 : 500;
+    const departureHoldMs = reduced ? 400 : actor === 1 ? 640 : 120;
     const cards = flights.filter((flight) => flight.to === "sale");
     const layout = flights.filter((flight) => flight.layout);
     const income = flights.filter((flight) => flight.coin !== undefined);
@@ -45,17 +45,20 @@ function mobileFlights(
     const cardStagger = reduced ? 0 : 90;
     const cardsEnd =
       departureHoldMs + cardTravel + (cards.length - 1) * cardStagger;
-    const incomeStart = cardsEnd + (reduced ? 100 : 150);
+    // Pay each sold card as it lands, instead of stopping the whole stream
+    // until the last card arrives. The bonus follows all sold cards.
+    const incomeStart = reduced ? cardsEnd + 100 : departureHoldMs + cardTravel;
     const incomeTravel = reduced ? 180 : 650;
-    const incomeStagger = reduced ? 0 : 110;
+    const incomeStagger = reduced ? 0 : cardStagger;
+    const incomeAt = (flight: Flight, index: number) =>
+      incomeStart + (flight.coinGood ? index : cards.length) * incomeStagger;
+    const incomeEnd = income.length
+      ? Math.max(...income.map(incomeAt)) + incomeTravel
+      : cardsEnd;
+    const layoutStart = reduced ? cardsEnd : departureHoldMs + cardTravel * 0.3;
     const duration = Math.max(
-      income.length
-        ? incomeStart +
-            incomeTravel +
-            (income.length - 1) * incomeStagger +
-            (reduced ? 200 : 220)
-        : cardsEnd + (reduced ? 200 : 250),
-      layout.length ? cardsEnd + (reduced ? 220 : 700) : 0,
+      Math.max(cardsEnd, incomeEnd) + (reduced ? 200 : 80),
+      layout.length ? layoutStart + (reduced ? 220 : 580) : 0,
     );
     return {
       departureHoldMs,
@@ -68,13 +71,13 @@ function mobileFlights(
         })),
         ...layout.map((flight) => ({
           ...flight,
-          start: (cardsEnd + (reduced ? 0 : 60)) / duration,
-          end: (cardsEnd + (reduced ? 120 : 580)) / duration,
+          start: layoutStart / duration,
+          end: (layoutStart + (reduced ? 120 : 580)) / duration,
         })),
         ...income.map((flight, index) => ({
           ...flight,
-          start: (incomeStart + index * incomeStagger) / duration,
-          end: (incomeStart + index * incomeStagger + incomeTravel) / duration,
+          start: incomeAt(flight, index) / duration,
+          end: (incomeAt(flight, index) + incomeTravel) / duration,
         })),
       ],
     };
@@ -82,7 +85,16 @@ function mobileFlights(
 
   // An opponent's choice stays on the market long enough to identify it.
   // Payment leads; receiving follows without a stop between the two streams.
-  const departureHoldMs = actor === 1 ? 1200 : reduced ? 450 : 500;
+  const departureHoldMs =
+    action.type === "camels" && !reduced
+      ? actor === 1
+        ? 800
+        : 120
+      : actor === 1
+        ? 1200
+        : reduced
+          ? 450
+          : 500;
   if (action.type === "exchange") {
     const incoming = flights.filter((flight) =>
       flight.from.startsWith("market-"),
@@ -130,12 +142,20 @@ function mobileFlights(
   const refills = flights.filter((flight) => flight.from === "deck");
   const departureEnd =
     departureHoldMs + travel + (departures.length - 1) * stagger;
-  const refillStart = departureEnd + (reduced ? 140 : 120);
+  // Once camels have cleared the market, deal into their vacated slots while
+  // the caravan is still travelling. Keep reduced-motion sequencing distinct.
+  const refillStart =
+    action.type === "camels" && !reduced
+      ? departureHoldMs + travel * 0.65
+      : departureEnd + (reduced ? 140 : 120);
   const refillTravel = reduced ? 180 : 900;
   const duration =
-    (refills.length
-      ? refillStart + refillTravel + (refills.length - 1) * stagger
-      : departureEnd) + (reduced ? 200 : 160);
+    Math.max(
+      departureEnd,
+      refills.length
+        ? refillStart + refillTravel + (refills.length - 1) * stagger
+        : 0,
+    ) + (reduced ? 200 : action.type === "camels" ? 80 : 160);
   return {
     departureHoldMs,
     duration,

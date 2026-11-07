@@ -121,17 +121,20 @@ export function ActionAnimation({
         const handTarget =
           tabletop &&
           (flight.to === "your-hand" || flight.to === "opponent-hand");
+        // The deck is a narrow stack, not a card face. A dealt card starts at
+        // its destination's aspect ratio instead of stretching out of the deck.
+        const cardBox = tabletop && flight.from === "deck" ? b : a;
         const width = coin
           ? 34
           : tabletop ||
               flight.from.startsWith("market-") ||
               flight.from.startsWith("hand-")
-            ? a.width
+            ? cardBox.width
             : 64;
         const height = coin
           ? 34
           : tabletop || source.classList.contains("card")
-            ? a.height
+            ? cardBox.height
             : width * 1.43;
         const saleStackStep =
           saleTravel && flight.to === "sale"
@@ -257,6 +260,13 @@ export function ActionAnimation({
                 : flight.to === "your-hand"
                   ? (measure?.height ?? targetWidth * 1.43)
                   : targetWidth * 1.43;
+        // A landing anchor can include a count badge, stack or money bag.
+        // Fit the physical object uniformly; never squash its x/y axes.
+        const landingScale = Math.min(
+          targetWidth / width,
+          targetHeight / height,
+        );
+        const landing = `translate(${tx - x}px, ${ty - y}px) scale(${landingScale})`;
         // Sparse hands can keep the same positions even when their count changes.
         // Do not replace a stationary real card with a redundant animated copy.
         if (
@@ -277,7 +287,6 @@ export function ActionAnimation({
           startMotions.push(() => {
             sprite.style.opacity = "0";
             if (typeof source.animate !== "function") return;
-            const landing = `translate(${tx - x}px, ${ty - y}px) scale(${targetWidth / width}, ${targetHeight / height})`;
             const start = Math.min(0.95, flight.start);
             const motion = source.animate(
               [
@@ -287,7 +296,7 @@ export function ActionAnimation({
                   transform: "none",
                   easing: reduced
                     ? "steps(1, end)"
-                    : "cubic-bezier(0.22, 0.68, 0, 1)",
+                    : "cubic-bezier(0.3, 0, 0.7, 1)",
                 },
                 {
                   offset: reduced
@@ -336,13 +345,12 @@ export function ActionAnimation({
             end = Math.min(0.99, flight.end),
             middle =
               tabletop && flight.from === "deck"
-                ? start + (end - start) * 0.75
+                ? start + (end - start) * 0.5
                 : tabletop && fromBack
                   ? start + (end - start) * 0.2
                   : tabletop && toBack
                     ? start + (end - start) * 0.8
                     : (start + end) / 2;
-          const landing = `translate(${tx - x}px, ${ty - y}px) scale(${targetWidth / width}, ${targetHeight / height})`;
           // Tabletop cards hold their final slots until the real board replaces
           // them at exactly the same geometry. No fade-out / reappearance gap.
           const vanishAtEnd =
@@ -392,7 +400,7 @@ export function ActionAnimation({
                     offset: start,
                     opacity: 1,
                     transform: "translate(0,0) scale(1)",
-                    easing: "cubic-bezier(0.22, 0.68, 0, 1)",
+                    easing: "cubic-bezier(0.3, 0, 0.7, 1)",
                   },
                   {
                     offset: end,
@@ -453,19 +461,38 @@ export function ActionAnimation({
               back.style.opacity = toBack ? "1" : "0";
               return;
             }
-            back.style.opacity = "";
-            const flip = back.animate(
-              [
-                { offset: 0, opacity: fromBack ? 1 : 0 },
-                { offset: middle - 0.01, opacity: fromBack ? 1 : 0 },
-                { offset: middle + 0.01, opacity: toBack ? 1 : 0 },
-                { offset: 1, opacity: toBack ? 1 : 0 },
-              ],
-              { duration, fill: "both" },
+            if (!!fromBack === !!toBack) {
+              back.style.opacity = toBack ? "1" : "0";
+              return;
+            }
+            back.style.opacity = "1";
+            // Rotate two faces around the same center while translation keeps
+            // running. Swapping opacity near a single frame looks like a hitch.
+            const halfFlip = Math.min(
+              150 / duration,
+              middle - start,
+              end - middle,
             );
-            flip.currentTime = time;
-            if (frozen.current) flip.pause();
-            animations.current.push(flip);
+            const flipStart = middle - halfFlip;
+            const flipEnd = middle + halfFlip;
+            for (const [element, first, last] of [
+              [face, fromBack ? 180 : 0, toBack ? 180 : 0],
+              [back, fromBack ? 0 : -180, toBack ? 0 : -180],
+            ] as const) {
+              if (!element) continue;
+              const flip = element.animate(
+                [
+                  { offset: 0, transform: `rotateY(${first}deg)` },
+                  { offset: flipStart, transform: `rotateY(${first}deg)` },
+                  { offset: flipEnd, transform: `rotateY(${last}deg)` },
+                  { offset: 1, transform: `rotateY(${last}deg)` },
+                ],
+                { duration, fill: "both", easing: "linear" },
+              );
+              flip.currentTime = time;
+              if (frozen.current) flip.pause();
+              animations.current.push(flip);
+            }
           }
         });
       });

@@ -2126,8 +2126,16 @@ select {
   background: transparent;
   overflow: visible;
   box-shadow: none;
+  perspective: 800px;
 }
-.flight-card > .card {
+.flight-card > :is(.card, .flight-back) {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-origin: center;
+  will-change: transform;
+}
+/* Beat the hand's .card.small minimum: a travelling face must fit its sprite. */
+.flight-sprite.flight-card > .card {
   width: 100%;
   height: 100%;
   max-width: none;

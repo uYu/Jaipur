@@ -1,0 +1,117 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "camel": {
+    "frames": 281,
+    "p95FrameMs": 9.100000000000364,
+    "maxFrameMs": 9.399999999999636,
+    "framesOver50Ms": 0,
+    "maxAxisDifference": 0,
+    "flipFrames": 846,
+    "distinctFaceRotations": 94,
+    "faceSizes": [
+      [
+        "flight-sprite camel flight-card  flight-market",
+        [
+          35.75,
+          53.625
+        ]
+      ],
+      [
+        "flight-sprite silver flight-card  flight-market",
+        [
+          35.75,
+          53.625
+        ]
+      ],
+      [
+        "flight-sprite leather flight-card  flight-market",
+        [
+          35.75,
+          53.625
+        ]
+      ]
+    ],
+    "shapes": [
+      [
+        "flight-sprite camel flight-card  flight-market",
+        [
+          35.75,
+          53.625
+        ]
+      ],
+      [
+        "flight-sprite silver flight-card  flight-market",
+        [
+          35.75,
+          53.625
+        ]
+      ],
+      [
+        "flight-sprite leather flight-card  flight-market",
+        [
+          35.75,
+          53.625
+        ]
+      ]
+    ]
+  },
+  "sale": {
+    "frames": 326,
+    "p95FrameMs": 9.199999999982538,
+    "maxFrameMs": 9.400000000023283,
+    "framesOver50Ms": 0,
+    "maxAxisDifference": 0,
+    "flipFrames": 0,
+    "distinctFaceRotations": 0,
+    "faceSizes": [
+      [
+        "flight-sprite spice flight-card  ",
+        [
+          35.75,
+          53.625
+        ]
+      ]
+    ],
+    "shapes": [
+      [
+        "flight-sprite spice flight-card  ",
+        [
+          35.75,
+          53.625
+        ]
+      ],
+      [
+        "flight-sprite diamond flight-card  ",
+        [
+          null,
+          null
+        ]
+      ],
+      [
+        "flight-sprite silver flight-card  ",
+        [
+          null,
+          null
+        ]
+      ],
+      [
+        "flight-sprite spice flight-coin  ",
+        [
+          34,
+          34
+        ]
+      ],
+      [
+        "flight-sprite  flight-coin flight-bonus flight-bonus-3 ",
+        [
+          34,
+          34
+        ]
+      ]
+    ]
+  },
+  "pauseResume": "checked in replay; card scale remained uniform"
+}
