@@ -6,7 +6,7 @@ import {
   playerScoreDisplay,
 } from "../game/score-display.ts";
 import { GOODS } from "../game/types.ts";
-import { LABEL } from "../game/data.ts";
+import { LABEL, precious } from "../game/data.ts";
 import { SaleReceipt } from "./SaleReceipt.tsx";
 import {
   Award,
@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import { GoodsArt, JaipurMark } from "./Art.tsx";
 import { SaleFeedback } from "./SaleFeedback.tsx";
-import { CamelPile } from "./CamelPile.tsx";
+import { CamelPile, CamelChoice } from "./CamelPile.tsx";
 import { MoneyPile } from "./MoneyPile.tsx";
+import { TableNumber } from "./TableNumber.tsx";
+import { CardFace } from "./Card.tsx";
 import type { OpponentMemory } from "../game/opponent-memory.ts";
 
 function ScoreIcon({
@@ -268,11 +270,15 @@ function OpponentHandFan({
           return (
             <span
               key={index}
-              className={`opponent-hand-card${good === undefined ? " card-back" : ` ${good}`}`}
+              className={`opponent-hand-card${good === undefined ? " card-back" : ` card ${good}${precious(good) ? " premium-card" : ""}`}`}
               data-motion-anchor={`opponent-hand-${index}`}
               data-known={knownOnly && good !== undefined ? "true" : undefined}
               role="img"
-              aria-label={good === undefined ? "背面朝上的手牌" : LABEL[good]}
+              aria-label={
+                good === undefined
+                  ? "背面朝上的手牌"
+                  : `${LABEL[good]}${precious(good) ? "，高级货物，至少 2 张起售" : ""}`
+              }
               style={
                 {
                   "--fan-index": index,
@@ -285,7 +291,7 @@ function OpponentHandFan({
                   <JaipurMark />
                 </span>
               ) : (
-                <GoodsArt good={good} cardFace />
+                <CardFace good={good} />
               )}
             </span>
           );
@@ -301,12 +307,18 @@ export function PlayerReserve({
   onInspect,
   revealOpponent = false,
   memory,
+  camelPayment,
 }: {
   state: State;
   actor: 0 | 1;
   onInspect: () => void;
   revealOpponent?: boolean;
   memory?: OpponentMemory;
+  camelPayment?: {
+    selected: number;
+    active: boolean;
+    onChange: (count: number) => void;
+  };
 }) {
   const cards = playerCardsDisplay(state, actor, revealOpponent, memory);
   const score = playerScoreDisplay(state, actor, revealOpponent, memory);
@@ -318,10 +330,19 @@ export function PlayerReserve({
       role="group"
       aria-label={own ? "你的驼队与钱堆" : "米拉的驼队与钱堆"}
     >
-      <CamelPile
-        count={cards.camels}
-        motionAnchor={own ? "your-herd" : "opponent-herd"}
-      />
+      {own ? (
+        <CamelChoice
+          count={cards.camels ?? 0}
+          selected={camelPayment?.selected ?? 0}
+          active={camelPayment?.active ?? false}
+          onChange={camelPayment?.onChange}
+        />
+      ) : (
+        <CamelPile
+          count={cards.camels}
+          motionAnchor={own ? "your-herd" : "opponent-herd"}
+        />
+      )}
       <button
         className={`reserve-money reserve-money-${own ? "own" : "opponent"}`}
         onClick={onInspect}
@@ -338,7 +359,10 @@ export function PlayerReserve({
         {goodsOnly && (
           <span className="reserve-score-label">
             <span>货物分</span>
-            <span title="奖励筹码面值保密">+{score.bonusTokenCount}张筹码</span>
+            <span title="奖励筹码面值保密">
+              +<TableNumber value={score.bonusTokenCount} />
+              张筹码
+            </span>
           </span>
         )}
       </button>
@@ -348,12 +372,14 @@ export function PlayerReserve({
 
 export function OpponentSeat({
   state,
+  reserveState = state,
   onInspect,
   revealOpponent = false,
   actionSummary,
   memory,
 }: {
   state: State;
+  reserveState?: State;
   onInspect: () => void;
   revealOpponent?: boolean;
   actionSummary?: ReactNode;
@@ -389,7 +415,7 @@ export function OpponentSeat({
           knownOnly={knownOnly}
         />
         <PlayerReserve
-          state={state}
+          state={reserveState}
           actor={1}
           onInspect={onInspect}
           revealOpponent={revealOpponent}

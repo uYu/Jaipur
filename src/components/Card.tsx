@@ -25,6 +25,27 @@ function PremiumFoil() {
     </svg>
   );
 }
+export function CardFace({ good }: { good: CardType }) {
+  const premium = good !== "camel" && precious(good);
+  return (
+    <>
+      {premium && <PremiumFoil />}
+      {premium && (
+        <span className="premium-badge">
+          <span className="premium-badge-label">高级</span>
+          <span className="premium-badge-minimum" aria-hidden="true">
+            2张起售
+          </span>
+        </span>
+      )}
+      <GoodsArt good={good} cardFace />
+      <span className="card-name">{LABEL[good]}</span>
+      <span className="card-sale-rule">
+        {good === "camel" ? "不占手牌" : premium ? "2张起售" : "1张起售"}
+      </span>
+    </>
+  );
+}
 export function Card({
   good,
   selected = false,
@@ -61,20 +82,7 @@ export function Card({
       aria-label={`${LABEL[good]}${premium ? "，高级货物，至少 2 张起售" : ""}${selected ? "，已选中" : ""}`}
       aria-pressed={selected}
     >
-      {premium && <PremiumFoil />}
-      {premium && (
-        <span className="premium-badge">
-          <span className="premium-badge-label">高级</span>
-          <span className="premium-badge-minimum" aria-hidden="true">
-            2张起售
-          </span>
-        </span>
-      )}
-      <GoodsArt good={good} cardFace />
-      <span className="card-name">{LABEL[good]}</span>
-      <span className="card-sale-rule">
-        {good === "camel" ? "不占手牌" : premium ? "2张起售" : "1张起售"}
-      </span>
+      <CardFace good={good} />
       {selected && (
         <span className="selected-check" aria-hidden="true">
           <Check size={14} strokeWidth={3} />

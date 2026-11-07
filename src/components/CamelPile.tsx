@@ -1,4 +1,6 @@
 import { GoodsArt } from "./Art.tsx";
+import { Minus, Plus } from "lucide-react";
+import { TableNumber } from "./TableNumber.tsx";
 
 /** A visible herd, or a fixed decorative stack when its size is private. */
 export function CamelPile({
@@ -27,8 +29,57 @@ export function CamelPile({
         ))}
       </span>
       <b className="camel-pile-count" aria-hidden="true">
-        {privateHerd ? "?" : count}
+        <TableNumber value={privateHerd ? "?" : count!} />
       </b>
+    </span>
+  );
+}
+
+export function CamelChoice({
+  count,
+  selected,
+  active,
+  onChange,
+}: {
+  count: number;
+  selected: number;
+  active: boolean;
+  onChange?: (count: number) => void;
+}) {
+  return (
+    <span
+      className="camel-choice"
+      data-selected={selected > 0}
+      role="group"
+      aria-label="选择骆驼付款"
+    >
+      <span className="camel-choice-card">
+        <CamelPile count={count} motionAnchor="your-herd" />
+      </span>
+      {count > 0 && (
+        <span className="camel-choice-payment">
+          <span className="camel-choice-label">骆驼付款</span>
+          <span className="camel-choice-stepper">
+            <button
+              aria-label="减少付出骆驼"
+              disabled={!active || selected === 0}
+              onClick={() => onChange?.(selected - 1)}
+            >
+              <Minus size={14} aria-hidden="true" />
+            </button>
+            <output aria-label="已选付出骆驼数量" aria-live="polite">
+              <TableNumber value={selected} />
+            </output>
+            <button
+              aria-label={`增加付出骆驼，已选 ${selected} 头，共 ${count} 头`}
+              disabled={!active || selected >= count}
+              onClick={() => onChange?.(selected + 1)}
+            >
+              <Plus size={14} aria-hidden="true" />
+            </button>
+          </span>
+        </span>
+      )}
     </span>
   );
 }

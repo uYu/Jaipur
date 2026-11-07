@@ -1,5 +1,39 @@
 import type { Card } from "../game/types.ts";
 import { GoodsGlyph } from "./GoodsGlyph.tsx";
+export function PremiumChipRim() {
+  return (
+    <svg className="premium-chip-rim" viewBox="0 0 40 40" aria-hidden="true">
+      <circle
+        cx="20"
+        cy="20"
+        r="19"
+        fill="var(--card-bg)"
+        stroke="currentColor"
+        strokeWidth=".9"
+        strokeOpacity=".75"
+      />
+      <circle
+        cx="20"
+        cy="20"
+        r="16.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth=".65"
+        opacity=".65"
+      />
+      <circle
+        cx="20"
+        cy="20"
+        r="18"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth=".6"
+        strokeDasharray="1 7"
+        opacity=".5"
+      />
+    </svg>
+  );
+}
 export function JaipurMark() {
   return (
     <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">

@@ -31,6 +31,7 @@ import {
   emptySelection,
   selectMarket,
   selectHand,
+  selectCamels,
   selectedAction,
 } from "./game/selection.ts";
 import { observe } from "./game/ai.ts";
@@ -46,6 +47,10 @@ import {
 } from "./components/PlayerScores.tsx";
 import { ResultDialog, resultTitle } from "./components/ResultDialog.tsx";
 import { TurnIntro } from "./components/TurnIntro.tsx";
+import { RoundEndNotice } from "./components/RoundEndNotice.tsx";
+import { NumberMotion, TableNumber } from "./components/TableNumber.tsx";
+import { numberFrames } from "./game/number-frames.ts";
+import { sum } from "./game/data.ts";
 import { actionSummaries } from "./game/receipts.ts";
 import { LastActions } from "./components/LastActions.tsx";
 import { ActionHistory } from "./components/ActionHistory.tsx";
@@ -132,6 +137,7 @@ export default function App() {
   const teaching = screen === "tutorial";
   const tutorialGuide = TUTORIAL_STEPS[tutorialStep];
   const [dismissedResult, setDismissedResult] = useState("");
+  const [explainedResult, setExplainedResult] = useState("");
   const [inspectResult, setInspectResult] = useState(false);
   const [menu, setMenu] = useState<"home" | "new">("home");
   const [modal, setModal] = useState<
@@ -155,6 +161,10 @@ export default function App() {
     [retry, setRetry] = useState(0);
   const [transition, setTransition] = useState<ActionTransition | null>(null);
   const [turnIntro, setTurnIntro] = useState<"round" | "resume" | null>(null);
+  const [numberFrame, setNumberFrame] = useState<{
+    transition: ActionTransition;
+    index: number;
+  } | null>(null);
   const [marketNotice, setMarketNotice] = useState<BoardFeedback | null>(null);
   const [marketSlots, setMarketSlots] = useState(() =>
     marketSlotsAt(initial.save),
@@ -370,6 +380,18 @@ export default function App() {
   const resultKey = viewed
     ? `${viewed.seed}:${viewed.round}:${viewed.phase}`
     : "";
+  const frames = useMemo(
+    () => (transition ? numberFrames(transition) : []),
+    [transition],
+  );
+  const numberCheckpoints = useMemo(
+    () => frames.map((frame) => frame.at),
+    [frames],
+  );
+  const numberState =
+    transition && numberFrame?.transition === transition
+      ? (frames[numberFrame.index]?.state ?? viewed)
+      : viewed;
   const memory = useMemo(
     () =>
       screen === "game" && save?.informationMode === "assisted" && viewed
@@ -377,6 +399,20 @@ export default function App() {
         : undefined,
     [screen, save?.informationMode, history, viewed],
   );
+  const numberMemory =
+    memory && viewed && numberState
+      ? {
+          ...memory,
+          camels:
+            memory.camels +
+            numberState.players[1].camels -
+            viewed.players[1].camels,
+          goods:
+            memory.goods +
+            sum(numberState.players[1].goods) -
+            sum(viewed.players[1].goods),
+        }
+      : memory;
   const showResult =
     !!viewed &&
     viewed.phase !== "playing" &&
@@ -384,6 +420,8 @@ export default function App() {
     !modal &&
     ((screen === "game" && dismissedResult !== resultKey) ||
       (screen === "replay" && inspectResult));
+  const showEndNotice =
+    showResult && screen === "game" && explainedResult !== resultKey;
   const closeResult = () => {
     setDismissedResult(resultKey);
     setInspectResult(false);
@@ -533,6 +571,7 @@ export default function App() {
       events: [],
     };
     setDismissedResult("");
+    setExplainedResult("");
     const freshGame = newGame(seed, targetSeals);
     animateDeal(freshGame);
     setTurnIntro("round");
@@ -653,7 +692,9 @@ export default function App() {
     />
   ) : null;
   return (
-    <>
+    <NumberMotion.Provider
+      value={{ paused: animationPaused, reduced: reducedMotion }}
+    >
       {error && (
         <div className="toast" role="status">
           <span>{error}</span>
@@ -881,10 +922,15 @@ export default function App() {
               </span>
             </div>
             <div className="header-round">
-              第 {viewed.round} 轮 <span>·</span>{" "}
+              第 <TableNumber value={viewed.round} /> 轮 <span>·</span>{" "}
               <>
-                {`第 ${viewed.phase === "playing" ? viewed.turn + 1 : viewed.turn} 手`}
-                <span>·</span>
+                第{" "}
+                <TableNumber
+                  value={
+                    viewed.phase === "playing" ? viewed.turn + 1 : viewed.turn
+                  }
+                />{" "}
+                手<span>·</span>
               </>
               {viewed.targetSeals === 1 ? "1 局定胜负" : "三局两胜"}
               {viewed.targetSeals !== 1 && (
@@ -892,7 +938,8 @@ export default function App() {
                   className="match-seals"
                   aria-label={`胜局：你 ${viewed.seals[0]}，米拉 ${viewed.seals[1]}`}
                 >
-                  {viewed.seals[0]} : {viewed.seals[1]}
+                  <TableNumber value={viewed.seals[0]} /> :{" "}
+                  <TableNumber value={viewed.seals[1]} />
                 </span>
               )}
             </div>
@@ -970,7 +1017,7 @@ export default function App() {
               </span>
             </div>
           )}
-          {viewed.phase !== "playing" && (
+          {viewed.phase !== "playing" && !showEndNotice && (
             <div
               className={`result-banner ${viewed.phase === "finished" ? "final-banner" : ""}`}
               role="status"
@@ -1022,7 +1069,8 @@ export default function App() {
               </div>
               <OpponentSeat
                 state={viewed}
-                memory={memory}
+                reserveState={numberState ?? viewed}
+                memory={numberMemory}
                 onInspect={() => setModal("scores")}
                 revealOpponent={screen === "replay"}
                 actionSummary={
@@ -1034,7 +1082,7 @@ export default function App() {
               <div className="market-zone" role="group" aria-label="公共集市">
                 <div className="table-supply">
                   <MobileSupply
-                    state={viewed}
+                    state={numberState ?? viewed}
                     onInspect={() => setModal("supply")}
                     tabletop
                   />
@@ -1049,14 +1097,16 @@ export default function App() {
                   </div>
                   <div className="market-row">
                     <div
-                      className={`market-deck ${viewed.deck.length ? "" : "empty-deck"}`}
+                      className={`market-deck ${numberState?.deck.length ? "" : "empty-deck"}`}
                       data-motion-anchor="deck"
-                      aria-label={`牌堆剩余 ${viewed.deck.length} 张`}
+                      aria-label={`牌堆剩余 ${numberState?.deck.length} 张`}
                     >
                       <span className="market-deck-symbol" aria-hidden="true">
                         <JaipurMark />
                       </span>
-                      <b>{viewed.deck.length}</b>
+                      <b>
+                        <TableNumber value={numberState?.deck.length ?? 0} />
+                      </b>
                       <span className="market-deck-label">牌堆</span>
                     </div>
                     <div className="market-cards">
@@ -1096,7 +1146,11 @@ export default function App() {
                       aria-label="市场收货位，出售的牌放在这里"
                       title="出售的货物交到这里"
                     >
-                      <span className="market-sale-sign" aria-hidden="true">
+                      <span
+                        className="market-sale-sign"
+                        data-motion-anchor="sale-intake"
+                        aria-hidden="true"
+                      >
                         <Store size={24} strokeWidth={1.5} />
                       </span>
                       <span className="market-sale-label" aria-hidden="true">
@@ -1117,8 +1171,16 @@ export default function App() {
                 >
                   <div className="player-hand-herd">
                     <PlayerReserve
-                      state={viewed}
+                      state={numberState ?? viewed}
                       actor={0}
+                      camelPayment={{
+                        selected: selection.camels,
+                        active:
+                          active &&
+                          (!teaching || tutorialAllowsCamels(tutorialStep)),
+                        onChange: (count) =>
+                          selectCards(selectCamels(viewed, selection, count)),
+                      }}
                       onInspect={() => setModal("scores")}
                       revealOpponent={screen === "replay"}
                     />
@@ -1149,9 +1211,7 @@ export default function App() {
                         />
                       ))
                     ) : (
-                      <div className="empty-hand">
-                        货摊空空，去集市发现下一笔好生意。
-                      </div>
+                      <div className="empty-hand" aria-hidden="true" />
                     )}
                   </div>
                 </div>
@@ -1161,9 +1221,6 @@ export default function App() {
                   state={viewed}
                   selection={selection}
                   active={active}
-                  camelPaymentAllowed={
-                    !teaching || tutorialAllowsCamels(tutorialStep)
-                  }
                   hint={
                     teaching
                       ? tutorialFeedback(tutorialStep, selection) ||
@@ -1175,7 +1232,6 @@ export default function App() {
                       : undefined
                   }
                   status={turnStatus}
-                  onSelectionChange={selectCards}
                   onClear={() => selectCards(emptySelection())}
                   confirmationBlocked={
                     teaching &&
@@ -1268,7 +1324,13 @@ export default function App() {
             onStart={() => setTurnIntro(null)}
           />
         )}
-      {showResult && viewed && (
+      {showEndNotice && viewed && (
+        <RoundEndNotice
+          state={viewed}
+          onContinue={() => setExplainedResult(resultKey)}
+        />
+      )}
+      {showResult && !showEndNotice && viewed && (
         <ResultDialog
           state={viewed}
           lastAction={history.at(-1)?.action}
@@ -1289,6 +1351,14 @@ export default function App() {
       {transition && (screen === "game" || screen === "replay" || teaching) && (
         <ActionAnimation
           rememberOpponent={!!memory}
+          checkpoints={numberCheckpoints}
+          onCheckpoint={(index) =>
+            setNumberFrame((previous) =>
+              previous?.transition === transition && previous.index === index
+                ? previous
+                : { transition, index },
+            )
+          }
           settling={transition.kind === "action"}
           tableTravel
           saleTravel={transition.action.type === "sell"}
@@ -1330,7 +1400,7 @@ export default function App() {
               <>
                 <h2>筹码盘</h2>
                 <SupplyDetails
-                  state={viewed}
+                  state={numberState ?? viewed}
                   motionAnchors={false}
                   showRewardCards
                 />
@@ -1339,8 +1409,8 @@ export default function App() {
               <>
                 <h2>双方得分</h2>
                 <ScoreDetails
-                  state={viewed}
-                  memory={memory}
+                  state={numberState ?? viewed}
+                  memory={numberMemory}
                   receipts={receipts}
                   revealOpponent={screen === "replay"}
                 />
@@ -1357,6 +1427,6 @@ export default function App() {
           </div>
         </div>
       )}
-    </>
+    </NumberMotion.Provider>
   );
 }

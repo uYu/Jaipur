@@ -2,8 +2,9 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Award, ChevronRight, Info } from "lucide-react";
 import { GOODS } from "../game/types.ts";
 import type { State } from "../game/types.ts";
-import { LABEL } from "../game/data.ts";
-import { GoodsArt } from "./Art.tsx";
+import { LABEL, precious } from "../game/data.ts";
+import { GoodsArt, PremiumChipRim } from "./Art.tsx";
+import { TableNumber } from "./TableNumber.tsx";
 export function MobileSupply({
   state,
   onInspect,
@@ -72,7 +73,7 @@ export function MobileSupply({
         <div className="supply-strip">
           {GOODS.map((g) => (
             <div
-              className={`supply-counter ${g} ${state.tokens[g].length ? "" : "counter-empty"}`}
+              className={`supply-counter ${g} ${precious(g) ? "premium-stock" : ""} ${state.tokens[g].length ? "" : "counter-empty"}`}
               key={g}
               aria-label={`${LABEL[g]}，剩余 ${state.tokens[g].length} 枚${state.tokens[g].length ? `，下一枚 ${state.tokens[g][0]} 卢比` : "，已售罄"}`}
             >
@@ -81,9 +82,14 @@ export function MobileSupply({
                 data-stack={Math.min(3, state.tokens[g].length)}
                 data-motion-anchor={tabletop ? `stock-${g}` : undefined}
               >
+                {tabletop && precious(g) && <PremiumChipRim />}
                 <span
                   className={`counter-name${tabletop ? " stock-good-name" : ""}`}
-                  title={LABEL[g]}
+                  title={
+                    precious(g)
+                      ? `${LABEL[g]} · 高级货物，至少 2 张起售`
+                      : LABEL[g]
+                  }
                   aria-hidden="true"
                 >
                   <GoodsArt good={g} cardFace />
@@ -97,7 +103,11 @@ export function MobileSupply({
                       </small>
                       <span className="stock-chip-face" aria-hidden="true">
                         <b>
-                          {state.tokens[g].length ? state.tokens[g][0] : "—"}
+                          <TableNumber
+                            value={
+                              state.tokens[g].length ? state.tokens[g][0] : "—"
+                            }
+                          />
                         </b>
                       </span>
                       {state.tokens[g].map((_, i) => (
@@ -113,7 +123,9 @@ export function MobileSupply({
                       <small>
                         下<span className="counter-next-suffix">枚</span>
                       </small>
-                      <b>{state.tokens[g][0]}</b>
+                      <b>
+                        <TableNumber value={state.tokens[g][0]} />
+                      </b>
                       {state.tokens[g].map((_, i) => (
                         <i
                           key={i}
@@ -132,7 +144,9 @@ export function MobileSupply({
                   aria-hidden={tabletop || undefined}
                 >
                   <small>{tabletop ? "×" : "剩"}</small>
-                  <b>{state.tokens[g].length}</b>
+                  <b>
+                    <TableNumber value={state.tokens[g].length} />
+                  </b>
                 </span>
               </span>
             </div>
@@ -184,7 +198,9 @@ export function MobileSupply({
                       aria-hidden="true"
                     >
                       <small>×</small>
-                      <b>{state.bonus[n].length}</b>
+                      <b>
+                        <TableNumber value={state.bonus[n].length} />
+                      </b>
                     </span>
                   </span>
                 </>
@@ -225,14 +241,21 @@ export function SupplyDetails({
             {state.tokens[good].length ? (
               state.tokens[good].map((value, i) => (
                 <i
-                  className={`coin ${i === 0 ? "supply-next-coin" : ""}`}
+                  className={`coin ${precious(good) ? "premium-detail-coin" : ""} ${i === 0 ? "supply-next-coin" : ""}`}
                   key={i}
                   title={i === 0 ? "下一枚" : undefined}
                   data-motion-anchor={
                     motionAnchors ? `token-${good}-${i}` : undefined
                   }
                 >
-                  {value}
+                  {precious(good) ? (
+                    <>
+                      <PremiumChipRim />
+                      <span className="premium-chip-value">{value}</span>
+                    </>
+                  ) : (
+                    value
+                  )}
                 </i>
               ))
             ) : (

@@ -1,4 +1,5 @@
 import { Coins } from "lucide-react";
+import { TableNumber } from "./TableNumber.tsx";
 
 function MoneyBag() {
   return (
@@ -58,7 +59,7 @@ export function MoneyPile({
         </i>
       </span>
       <strong className="money-pile-value" aria-hidden="true">
-        {hidden ? "?" : amount}
+        <TableNumber value={hidden ? "?" : amount!} />
       </strong>
     </span>
   );

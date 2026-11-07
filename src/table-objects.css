@@ -4,6 +4,7 @@
   --selection-ink: #294b3c;
   --table-felt: #e9ede5;
   --market-surface: #f2e6e0;
+  --table-weave: url("./assets/linen-weave.svg");
   --table-surface:
     radial-gradient(ellipse at 28% 0%, #fff8e660, transparent 64%),
     radial-gradient(ellipse at 100% 100%, #6f816b0a, transparent 60%),
@@ -433,7 +434,32 @@
     gap: var(--market-group-gap);
   }
   .game-shell.portrait-table .market-row .market-cards {
+    position: relative;
     gap: 6px;
+  }
+  .game-shell.portrait-table .market-row .market-cards::before {
+    content: "";
+    position: absolute;
+    inset: -9px -7px -6px;
+    border: 1px solid #b6836866;
+    border-radius: 8px 8px 3px 3px;
+    background: #f9eadc38;
+    pointer-events: none;
+  }
+  .game-shell.portrait-table .market-row .market-cards::after {
+    content: "";
+    position: absolute;
+    top: -9px;
+    left: -7px;
+    right: -7px;
+    height: 6px;
+    border-radius: 6px 6px 0 0;
+    background: repeating-linear-gradient(
+      90deg,
+      #b7886ca6 0 12px,
+      #edcfaccc 12px 24px
+    );
+    pointer-events: none;
   }
   .portrait-table .market-sale-pile {
     position: relative;
@@ -766,22 +792,24 @@
     box-shadow: none;
   }
   .game-shell.portrait-table .action-panel.direct-selection {
+    height: auto;
+    min-height: calc(86px + env(safe-area-inset-bottom));
     grid-template-columns: minmax(0, 1fr) 64px 112px;
-    grid-template-rows: 40px 32px;
-    row-gap: 4px;
+    grid-template-rows: minmax(40px, auto) 32px;
+    row-gap: 6px;
   }
   .game-shell.portrait-table
     .action-panel
     .direct-guidance:not([data-overview="true"]) {
-    height: 40px;
+    height: auto;
     min-height: 40px;
-    grid-template-rows: 20px 18px;
+    grid-template-rows: 20px minmax(18px, auto);
   }
   .game-shell.portrait-table
     .action-panel
     .direct-guidance:not([data-overview="true"])
     > span:is(.selection-next-step, .invalid) {
-    height: 18px;
+    height: auto;
   }
   .game-shell.portrait-table
     .action-panel
@@ -794,14 +822,16 @@
     .direct-guidance[data-explaining="true"]
     > span:is(.selection-next-step, .invalid) {
     grid-column: 2;
-    grid-row: 1 / 3;
-    height: 40px;
+    grid-row: 1 / -1;
+    align-self: center;
+    height: auto;
+    min-height: 20px;
   }
   .game-shell.portrait-table
     .action-panel
     .direct-guidance[data-overview="false"][data-explaining="false"][data-reward="false"]
     > :is(b, .selection-intent-icon) {
-    grid-row: 1 / 3;
+    grid-row: 1;
     align-self: center;
     margin-top: 0;
   }
@@ -881,6 +911,27 @@
     .action-panel.direct-selection[data-overview="true"]
     > :is(.clear-button, .confirm) {
     display: none;
+  }
+}
+@media (min-width: 680px) {
+  .game-shell.portrait-table
+    .action-panel.direct-selection:not([data-overview="true"]) {
+    grid-template-rows: minmax(76px, auto);
+    column-gap: 12px;
+    row-gap: 0;
+  }
+  .game-shell.portrait-table
+    .action-panel.direct-selection:not([data-overview="true"])
+    > .action-description {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+  }
+  .game-shell.portrait-table
+    .action-panel.direct-selection:not([data-overview="true"])
+    > :is(.clear-button, .confirm) {
+    grid-row: 1;
+    align-self: center;
   }
 }
 @media (max-width: 360px) {
@@ -1285,8 +1336,258 @@
   .money-pile-value {
   font-size: 16px;
 }
-.portrait-table .opponent-hand-card[data-known="true"] {
+.portrait-table .opponent-hand-card[data-known="true"]:not(.premium-card) {
   border-color: color-mix(in srgb, var(--card-color) 45%, transparent);
+}
+.game-shell.portrait-table .opponent-hand-card.card {
+  display: flex;
+  position: relative;
+  width: var(--table-card-width);
+  height: calc(var(--table-card-width) * 1.5);
+  min-height: 0;
+  min-width: 0;
+  max-width: none;
+  padding: 3px;
+  gap: 0;
+  border-radius: 4px;
+  transform: none;
+  pointer-events: none;
+}
+.game-shell.portrait-table .opponent-hand-card.card > .goods-art {
+  width: 94%;
+  height: auto;
+  max-width: none;
+}
+
+/* Counter faces stay legible above travel sprites (layer 16). */
+.game-shell.portrait-table
+  :is(.camel-pile-count, .counter-remaining, .stock-bonus-count) {
+  z-index: 18;
+}
+.game-shell.portrait-table
+  :is(.market-deck > b, .money-pile-value, .stock-chip-face > b) {
+  position: relative;
+  z-index: 18;
+}
+.game-shell.portrait-table .market-deck > b {
+  border-radius: 4px;
+  background: #16483c;
+  padding-inline: 2px;
+}
+.game-shell.portrait-table .money-pile-value {
+  background: var(--table-felt);
+  border-radius: 4px;
+}
+.game-shell.portrait-table .stock-chip-face > b {
+  background: var(--card-bg);
+}
+.table-number {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 1ch;
+  font-variant-numeric: tabular-nums;
+  line-height: inherit;
+  height: 1lh;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.table-number-current {
+  display: inline-block;
+}
+.game-shell .header-round .table-number,
+.game-shell .header-round .table-number > span {
+  margin: 0;
+}
+.table-number-old {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+}
+.portrait-table .camel-choice {
+  position: relative;
+  display: block;
+  grid-column: 1;
+  grid-row: 1;
+  width: var(--table-card-width);
+  height: calc(var(--table-card-width) * 1.5);
+}
+.game-shell.portrait-table .hand-panel {
+  padding-bottom: 28px;
+}
+.portrait-table .camel-choice-card {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border-radius: 5px;
+  background: transparent;
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+.camel-choice[data-selected="true"] .camel-pile-stack {
+  outline: 2px solid var(--selection-gold);
+  outline-offset: 1px;
+  border-radius: 5px;
+}
+.camel-choice-payment {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #3c5146;
+  white-space: nowrap;
+  font-size: var(--board-type-body);
+  font-weight: 600;
+  z-index: 18;
+}
+.camel-choice-label {
+  color: var(--text-secondary);
+}
+.camel-choice-stepper {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  overflow: hidden;
+  border: 1px solid #b9cdbd;
+  border-radius: 5px;
+  background: #e3eae1;
+}
+.camel-choice-stepper > button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #526052;
+  box-shadow: none;
+}
+.camel-choice-stepper > button:not(:disabled):hover {
+  background: #d5dfd3;
+}
+.camel-choice-stepper > button:disabled {
+  opacity: 0.35;
+}
+.camel-choice-stepper > output {
+  min-width: 28px;
+  padding: 0;
+  text-align: center;
+  font-weight: 700;
+}
+.camel-choice-stepper > button > .lucide {
+  stroke-width: 2.5;
+}
+.round-end-notice h2 {
+  font-size: 23px;
+  line-height: 1.5;
+  margin: 12px 0 20px;
+}
+.round-end-store {
+  color: #987a43;
+  margin-top: 6px;
+}
+.round-end-notice #round-end-detail {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #5b685e;
+  margin: 20px 0 0;
+}
+.round-end-depleted {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.round-end-good {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--card-color);
+}
+.round-end-good > .goods-art {
+  width: 46px;
+  height: 46px;
+  padding: 8px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  border: 1px dashed currentColor;
+}
+.round-end-good b {
+  font-variant-numeric: tabular-nums;
+}
+.round-end-market {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #667a6c;
+}
+.round-end-deck {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+.round-end-slots {
+  display: flex;
+  gap: 4px;
+}
+.round-end-slots > span {
+  width: 22px;
+  height: 33px;
+  border: 1px dashed #b2baab;
+  border-radius: 3px;
+}
+.round-end-slots > .filled {
+  border-style: solid;
+  background: #dde5d8;
+}
+
+/* Keep every goods chip round; premium rims add a fine engraved edge. */
+.premium-chip-rim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+.game-shell.portrait-table .premium-stock .counter-quote {
+  border-color: transparent;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+}
+.game-shell.portrait-table .premium-stock .counter-quote::before {
+  content: none;
+}
+.premium-stock .counter-name {
+  position: relative;
+}
+.premium-detail-coin,
+.table-travel .flight-coin.flight-premium {
+  position: relative;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+}
+.table-travel .flight-coin.flight-premium {
+  position: absolute;
+}
+.premium-chip-value,
+.flight-premium > :is(.goods-art, .flight-coin-value) {
+  position: relative;
+  z-index: 1;
 }
 .score-hand-unknown {
   display: inline-flex;

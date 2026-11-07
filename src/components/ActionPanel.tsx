@@ -6,12 +6,9 @@ import {
   Coins,
   Hand,
   Info,
-  Minus,
   MousePointer2,
-  Plus,
   RotateCcw,
 } from "lucide-react";
-import { selectCamels } from "../game/selection.ts";
 import type { Selection } from "../game/selection.ts";
 import {
   ACTION_INSTRUCTIONS,
@@ -23,24 +20,20 @@ export function ActionPanel({
   state,
   selection,
   active,
-  onSelectionChange,
   onClear,
   onConfirm,
   hint,
   confirmationBlocked = false,
-  camelPaymentAllowed = true,
   status,
   turnNumber,
 }: {
   state: State;
   selection: Selection;
   active: boolean;
-  onSelectionChange: (selection: Selection) => void;
   onClear: () => void;
   onConfirm: () => void;
   hint?: string;
   confirmationBlocked?: boolean;
-  camelPaymentAllowed?: boolean;
   status?: string;
   turnNumber?: number;
 }) {
@@ -58,14 +51,6 @@ export function ActionPanel({
           ? hint || "先点教程「下一步」，核对预览后再确认。"
           : ""
       : "";
-  const player = state.players[0];
-  const { market, hand, camels } = selection;
-  const canPayCamels =
-    camelPaymentAllowed &&
-    player.camels > 0 &&
-    (market.some((i) => state.market[i] !== "camel") ||
-      hand.length > 0 ||
-      camels > 0);
   const Icon = blockedReason
     ? Info
     : guide.intent === "sell"
@@ -151,40 +136,6 @@ export function ActionPanel({
       data-overview={overview}
     >
       {description}
-      {canPayCamels && (
-        <div
-          className="camel-picker"
-          role="group"
-          aria-label={`用骆驼付款，共 ${player.camels} 头`}
-        >
-          <span className="camel-picker-label">骆驼付款</span>
-          <div className="camel-payment" data-active="true">
-            <button
-              aria-label="减少付出骆驼"
-              title="减少 1 头骆驼付款"
-              disabled={!active || !camels}
-              onClick={() =>
-                onSelectionChange(selectCamels(state, selection, camels - 1))
-              }
-            >
-              <Minus size={16} aria-hidden="true" />
-            </button>
-            <output aria-label="已选付出骆驼数量" aria-live="polite">
-              <span>{camels}</span>
-            </output>
-            <button
-              aria-label="增加付出骆驼"
-              title="增加 1 头骆驼付款"
-              disabled={!active || camels >= player.camels}
-              onClick={() =>
-                onSelectionChange(selectCamels(state, selection, camels + 1))
-              }
-            >
-              <Plus size={16} aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      )}
       <button
         className="clear-button"
         aria-label="清空选择"

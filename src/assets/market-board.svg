@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="320" viewBox="0 0 960 320" preserveAspectRatio="none">
+  <defs>
+    <pattern id="hem" width="24" height="10" patternUnits="userSpaceOnUse">
+      <path d="m1 5 5-4 5 4-5 4Zm12 0 5-4 5 4-5 4Z" fill="#b48063" fill-opacity=".3"/>
+      <path d="M0 5H24" stroke="#91614f" stroke-opacity=".25" stroke-width=".7"/>
+    </pattern>
+    <pattern id="bays" width="106.6667" height="160" patternUnits="userSpaceOnUse">
+      <path d="M14 158V51Q14 38 32 32Q47 28 53 16Q59 28 74 32Q92 38 92 51V158Z" fill="#fff4d9" fill-opacity=".35" stroke="#a8775e" stroke-opacity=".3" stroke-width="1"/>
+      <path d="M19 155V52Q19 42 35 37Q47 33 53 24Q59 33 71 37Q87 42 87 52V155" fill="none" stroke="#a8775e" stroke-opacity=".17" stroke-width=".7"/>
+      <path d="m53 5 3 4-3 4-3-4Z" fill="#ac795b" fill-opacity=".45"/>
+    </pattern>
+    <pattern id="paving" width="24" height="16" patternUnits="userSpaceOnUse">
+      <path d="m0 8 12-8 12 8-12 8Z" fill="none" stroke="#a8775e" stroke-opacity=".1" stroke-width=".7"/>
+    </pattern>
+  </defs>
+  <!-- The bank and street are printed areas on one cloth. -->
+  <path d="M12 12H948V162H12Z" fill="url(#bays)"/>
+  <path d="M12 181H948V306H12Z" fill="#d9b39a" fill-opacity=".12"/>
+  <path d="M16 270H944V304H16Z" fill="url(#paving)"/>
+  <g fill="none" stroke="#98684f" stroke-opacity=".45" stroke-width="1">
+    <rect x="6" y="6" width="948" height="308" rx="4"/>
+    <rect x="11" y="11" width="938" height="298" rx="2" stroke-opacity=".2"/>
+    <path d="M21 167H449M511 167H939M21 173H449M511 173H939" stroke-opacity=".3"/>
+  </g>
+  <path fill="url(#hem)" d="M28 8H932V18H28ZM28 302H932V312H28Z"/>
+  <g fill="#dfc29d" stroke="#9d6b4f" stroke-opacity=".5" stroke-width=".9">
+    <path d="m460 170 20-13 20 13-20 13Z"/>
+    <path d="m473 170 7-5 7 5-7 5Z" fill="#a77457" fill-opacity=".45" stroke="none"/>
+  </g>
+  <!-- Block-printed Pink City pavilion. -->
+  <g transform="translate(0 65) scale(1 .8)" stroke="#a5745b" stroke-width="1" stroke-linejoin="round">
+    <path d="M114 282V207H278V282Z" fill="#d9ad89" fill-opacity=".48" stroke-opacity=".5"/>
+    <path d="M105 207H287L271 194H121Z" fill="#b47c5b" fill-opacity=".55" stroke-opacity=".55"/>
+    <path d="M148 194V177H244V194Z" fill="#ead0ae" fill-opacity=".65" stroke-opacity=".4"/>
+    <path d="M148 177Q153 160 177 157Q190 154 196 141Q202 154 215 157Q239 160 244 177Z" fill="#bf8b65" fill-opacity=".6" stroke-opacity=".55"/>
+    <path d="M196 141V133M191 133H201M109 283H283M104 288H288" fill="none" stroke-opacity=".4"/>
+    <path d="M124 282V233Q136 213 148 233V282M163 282V229Q177 206 191 229V282M202 282V229Q216 206 230 229V282M245 282V233Q257 213 269 233V282" fill="#f4e3ce" fill-opacity=".7" stroke-opacity=".45"/>
+    <path d="M155 182H237M155 187H237M123 215H269" fill="none" stroke-opacity=".25"/>
+    <path d="M133 202V198M148 202V198M163 202V198M178 202V198M214 202V198M229 202V198M244 202V198M259 202V198" stroke-opacity=".4"/>
+  </g>
+  <!-- An awning arcade across the trading street. -->
+  <g transform="translate(0 65) scale(1 .8)" stroke="#a5745b" stroke-width="1" stroke-linejoin="round">
+    <path d="M682 282V222H846V282Z" fill="#d9ad89" fill-opacity=".45" stroke-opacity=".5"/>
+    <path d="M674 222H854L837 203H691Z" fill="#bf8b65" fill-opacity=".6" stroke-opacity=".55"/>
+    <path d="m705 203-9 19m32-19-4 19m31-19v19m27-19 4 19m23-19 9 19" fill="none" stroke-opacity=".3"/>
+    <path d="M702 203V192H826V203M716 192V181H812V192M730 181V171H798V181" fill="#ead0ae" fill-opacity=".6" stroke-opacity=".4"/>
+    <path d="M694 282V246Q708 225 722 246V282M733 282V246Q747 225 761 246V282M772 282V246Q786 225 800 246V282M811 282V246Q825 225 839 246V282" fill="#f4e3ce" fill-opacity=".7" stroke-opacity=".45"/>
+    <path d="M675 283H853M670 288H858M707 196H821" fill="none" stroke-opacity=".4"/>
+  </g>
+  <g transform="translate(480 236)" fill="none" stroke="#a5745b" stroke-opacity=".18" stroke-width="1">
+    <path d="M0-66 18-42 47-47 42-18 66 0 42 18 47 47 18 42 0 66-18 42-47 47-42 18-66 0-42-18-47-47-18-42Z"/>
+    <circle r="42"/>
+    <path d="M0-42 30 30-42 0 30-30 0 42-30-30 42 0-30 30Z"/>
+  </g>
+</svg>

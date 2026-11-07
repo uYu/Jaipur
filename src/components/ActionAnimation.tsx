@@ -2,9 +2,11 @@ import { useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { Flight } from "../game/flights.ts";
 import { Card } from "./Card.tsx";
-import { GoodsArt, JaipurMark } from "./Art.tsx";
+import { GoodsArt, JaipurMark, PremiumChipRim } from "./Art.tsx";
+import { precious } from "../game/data.ts";
 import { handSlotOffset } from "../game/hand-layout.ts";
 import { useReducedMotion } from "../hooks/useReducedMotion.ts";
+const NO_CHECKPOINTS: number[] = [];
 export function ActionAnimation({
   flights,
   duration,
@@ -14,6 +16,8 @@ export function ActionAnimation({
   saleTravel = false,
   tableTravel = false,
   rememberOpponent = false,
+  checkpoints = NO_CHECKPOINTS,
+  onCheckpoint,
 }: {
   flights: Flight[];
   duration: number;
@@ -23,12 +27,16 @@ export function ActionAnimation({
   saleTravel?: boolean;
   tableTravel?: boolean;
   rememberOpponent?: boolean;
+  checkpoints?: readonly number[];
+  onCheckpoint?: (index: number) => void;
 }) {
   const reduced = useReducedMotion();
   const tabletop = tableTravel || saleTravel;
   const layer = useRef<HTMLDivElement>(null),
     animations = useRef<Animation[]>([]),
     frozen = useRef(paused);
+  const notifyCheckpoint = useRef(onCheckpoint);
+  notifyCheckpoint.current = onCheckpoint;
   frozen.current = paused;
   useLayoutEffect(() => {
     const hidden = new Map<HTMLElement, string>();
@@ -117,6 +125,8 @@ export function ActionAnimation({
             : flight.toBack;
         const a = rect(source),
           b = rect(target);
+        const intake = flight.to === "sale" ? find("sale-intake") : undefined;
+        const intakeBox = intake ? rect(intake) : b;
         const coin = flight.coin !== undefined;
         const handTarget =
           tabletop &&
@@ -351,16 +361,59 @@ export function ActionAnimation({
                   : tabletop && toBack
                     ? start + (end - start) * 0.8
                     : (start + end) / 2;
-          // Tabletop cards hold their final slots until the real board replaces
-          // them at exactly the same geometry. No fade-out / reappearance gap.
+          // Retained cards hold their final slots for the board handoff. Sold
+          // cards instead enter the market and are consumed before payment.
+          const sold = tabletop && flight.to === "sale";
           const vanishAtEnd =
-            (flight.to === "sale" && !saleTravel) ||
+            flight.to === "sale" ||
             (!tabletop && settling && flight.to === "your-hand");
           const fadeAtLanding = tabletop && vanishAtEnd;
           const arrivalOpacity = fadeAtLanding ? 1 : vanishAtEnd ? 0 : 1;
           const fadeEnd = Math.min(1, end + 110 / duration);
-          const frames =
-            reduced || flight.from === flight.to
+          const intakeStart =
+            end - Math.min(260 / duration, (end - start) * 0.25);
+          const absorbed = `translate(${intakeBox.left + window.scrollX + intakeBox.width / 2 - width / 2 - x}px, ${intakeBox.top + window.scrollY + intakeBox.height / 2 - height / 2 - y}px) scale(${landingScale * 0.12})`;
+          const frames = sold
+            ? reduced
+              ? [
+                  { offset: 0, opacity: 0, transform: landing },
+                  { offset: start, opacity: 0, transform: landing },
+                  {
+                    offset: start + (end - start) * 0.2,
+                    opacity: 1,
+                    transform: landing,
+                  },
+                  { offset: intakeStart, opacity: 1, transform: landing },
+                  { offset: end, opacity: 0, transform: landing },
+                  { offset: 1, opacity: 0, transform: landing },
+                ]
+              : [
+                  {
+                    offset: 0,
+                    opacity: 0,
+                    transform: "translate(0,0) scale(1)",
+                  },
+                  {
+                    offset: Math.max(0, start - 0.001),
+                    opacity: 0,
+                    transform: "translate(0,0) scale(1)",
+                  },
+                  {
+                    offset: start,
+                    opacity: 1,
+                    transform: "translate(0,0) scale(1)",
+                    easing: "cubic-bezier(0.3, 0, 0.7, 1)",
+                  },
+                  {
+                    offset: intakeStart,
+                    opacity: 1,
+                    transform: landing,
+                    easing: "cubic-bezier(0.3, 0, 0.7, 1)",
+                  },
+                  { offset: end, opacity: 0, transform: absorbed },
+                  { offset: 1, opacity: 0, transform: absorbed },
+                ]
+            : reduced || flight.from === flight.to
               ? [
                   { offset: 0, opacity: 0, transform: landing },
                   { offset: start, opacity: 0, transform: landing },
@@ -532,6 +585,20 @@ export function ActionAnimation({
   useLayoutEffect(() => {
     animations.current.forEach((a) => (paused ? a.pause() : a.play()));
   }, [paused]);
+  useLayoutEffect(() => {
+    let frame = 0,
+      next = 0;
+    const update = () => {
+      const time = Number(animations.current[0]?.currentTime ?? elapsed);
+      const first = next;
+      while (next < checkpoints.length && time >= checkpoints[next]) next++;
+      if (next > first) notifyCheckpoint.current?.(next - 1);
+      if (!paused && next < checkpoints.length)
+        frame = requestAnimationFrame(update);
+    };
+    update();
+    return () => cancelAnimationFrame(frame);
+  }, [flights, checkpoints, paused, duration]);
   return createPortal(
     <div
       ref={layer}
@@ -541,7 +608,8 @@ export function ActionAnimation({
       {flights.map((flight, i) => (
         <div
           key={i}
-          className={`flight-sprite ${flight.good ?? flight.coinGood ?? ""} ${flight.coin !== undefined ? "flight-coin" : "flight-card"} ${tabletop && flight.from.startsWith("bonus-face-") ? `flight-bonus flight-bonus-${flight.from.slice(11)}` : ""} ${flight.from.startsWith("market-") || (tabletop && flight.from === "deck") ? "flight-market" : ""}`}
+          data-flight-to={flight.to}
+          className={`flight-sprite ${flight.good ?? flight.coinGood ?? ""} ${flight.coin !== undefined ? "flight-coin" : "flight-card"} ${flight.coinGood && flight.coinGood !== "camel" && precious(flight.coinGood) ? "flight-premium" : ""} ${tabletop && flight.from.startsWith("bonus-face-") ? `flight-bonus flight-bonus-${flight.from.slice(11)}` : ""} ${flight.from.startsWith("market-") || (tabletop && flight.from === "deck") ? "flight-market" : ""}`}
         >
           {flight.layout ? null : flight.good ? (
             <>
@@ -556,6 +624,9 @@ export function ActionAnimation({
             </>
           ) : tabletop ? (
             <>
+              {flight.coinGood &&
+                flight.coinGood !== "camel" &&
+                precious(flight.coinGood) && <PremiumChipRim />}
               {flight.coinGood && <GoodsArt good={flight.coinGood} cardFace />}
               <b className="flight-coin-value">{flight.coin}</b>
             </>

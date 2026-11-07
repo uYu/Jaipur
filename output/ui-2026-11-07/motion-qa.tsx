@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "/src/App.tsx";
+import closingFixtures from "./round-end-qa-fixtures.json";
 import { createTutorialSave, TUTORIAL_ACTIONS } from "/src/game/tutorial.ts";
 import { SAVE_KEY } from "/src/game/storage.ts";
 import "/src/style.css";
@@ -15,7 +16,26 @@ import "/src/desktop-board.css";
 // Dedicated QA origin only. The player's save on 127.0.0.1 is untouched.
 localStorage.setItem(
   SAVE_KEY,
-  JSON.stringify({ ...createTutorialSave(), events: TUTORIAL_ACTIONS }),
+  JSON.stringify(
+    closingFixtures[
+      new URLSearchParams(location.search).get(
+        "ending",
+      ) as keyof typeof closingFixtures
+    ]?.save ?? {
+      ...createTutorialSave(),
+      informationMode:
+        new URLSearchParams(location.search).get("information") === "assisted"
+          ? "assisted"
+          : "standard",
+      events: TUTORIAL_ACTIONS.slice(
+        0,
+        Number(
+          new URLSearchParams(location.search).get("prefix") ??
+            TUTORIAL_ACTIONS.length,
+        ),
+      ),
+    },
+  ),
 );
 createRoot(document.getElementById("root")!).render(<App />);
 const report = document.createElement("output");
@@ -29,10 +49,19 @@ let maxAxisDifference = 0;
 let flips = 0;
 let faceRatios = new Map<string, number[]>();
 let rotationSamples = new Set<string>();
+let numberSamples: unknown[] = [];
+let previousNumbers = "";
+let saleStats = new Map<
+  number,
+  { firstVisibleAt: number; absorbedAt?: number; minimumVisibleScale: number }
+>();
 let shapes = new Map<string, number[]>();
 function monitor(now: number) {
   const layer = document.querySelector(".flight-layer");
   if (layer && !prior) {
+    numberSamples = [];
+    previousNumbers = "";
+    saleStats = new Map();
     gaps = [];
     maxAxisDifference = 0;
     flips = 0;
@@ -47,6 +76,23 @@ function monitor(now: number) {
       ".flight-sprite",
     )) {
       const transform = new DOMMatrix(getComputedStyle(sprite).transform);
+      if (sprite.dataset.flightTo === "sale") {
+        const opacity = Number(getComputedStyle(sprite).opacity);
+        const index = Array.from(layer.children).indexOf(sprite);
+        const clock = Number(sprite.getAnimations()[0]?.currentTime ?? 0);
+        let stats = saleStats.get(index);
+        if (opacity > 0.05) {
+          if (!stats) {
+            stats = { firstVisibleAt: clock, minimumVisibleScale: transform.a };
+            saleStats.set(index, stats);
+          }
+          stats.minimumVisibleScale = Math.min(
+            stats.minimumVisibleScale,
+            transform.a,
+          );
+        } else if (stats && opacity < 0.005 && stats.absorbedAt === undefined)
+          stats.absorbedAt = clock;
+      }
       maxAxisDifference = Math.max(
         maxAxisDifference,
         Math.abs(transform.a - transform.d),
@@ -74,10 +120,30 @@ function monitor(now: number) {
           flips++;
       }
     }
+    const numbers = {
+      herd: document
+        .querySelector('[data-motion-anchor="your-herd"] .table-number')
+        ?.getAttribute("data-value"),
+      deck: document
+        .querySelector('[data-motion-anchor="deck"] .table-number')
+        ?.getAttribute("data-value"),
+      money: document
+        .querySelector(".reserve-money-own .money-pile-value .table-number")
+        ?.getAttribute("data-value"),
+      spice: [
+        ...document.querySelectorAll(".supply-counter.spice .table-number"),
+      ].map((e) => e.getAttribute("data-value")),
+    };
+    if (JSON.stringify(numbers) !== previousNumbers) {
+      previousNumbers = JSON.stringify(numbers);
+      numberSamples.push({ time: now, ...numbers });
+    }
     frame = now;
   } else if (prior) {
     const sorted = gaps.slice(1).sort((a, b) => a - b);
     report.textContent = JSON.stringify({
+      numberSamples,
+      saleAbsorption: [...saleStats.values()],
       frames: sorted.length,
       p95FrameMs: sorted[Math.floor(sorted.length * 0.95)],
       maxFrameMs: sorted.at(-1),
