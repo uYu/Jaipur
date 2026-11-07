@@ -1,11 +1,11 @@
-/* Portrait tabletop. Cards, selections, actions and tutorial stay shared. */
+/* Shared tabletop. Phone and desktop use the same seats, bank and controls. */
 .market-zone {
   display: contents;
 }
 .counter-quote {
   display: contents;
 }
-@media (max-width: 860px) {
+@media (min-width: 0px) {
   .game-shell.portrait-table {
     --felt: var(--table-felt);
     --felt-line: #d7dfd6;
@@ -39,8 +39,8 @@
     /* Reserve room for a camel pile, all seven hand cards, and the score.
        The same physical size is used on the market and for both players. */
     --table-card-width: min(
-      var(--fit-market-width, 64px),
-      64px,
+      var(--fit-market-width, var(--table-card-cap, 64px)),
+      var(--table-card-cap, 64px),
       calc(
         (100cqw - var(--reserve-score-width) - var(--reserve-gap) * 2 - 12px) /
           8
@@ -59,6 +59,42 @@
     background: var(--table-surface);
     color: var(--text);
     box-shadow: none;
+  }
+  .game-shell.portrait-table .game-tools,
+  .game-shell.portrait-table .recent-log,
+  .game-shell.portrait-table .game-footer {
+    display: none;
+  }
+  .game-shell.portrait-table .market-row .market-cards > .card,
+  .game-shell.portrait-table .player-hand-and-herd .hand-cards > .card,
+  .game-shell.portrait-table .market-row .market-deck {
+    flex: none;
+    width: var(--table-card-width);
+    height: calc(var(--table-card-width) * 1.5);
+    min-width: 0;
+    max-width: none;
+    min-height: 0;
+    max-height: none;
+    aspect-ratio: 2 / 3;
+  }
+  .game-shell.portrait-table .action-panel.direct-selection {
+    height: calc(84px + env(safe-area-inset-bottom));
+    min-height: 84px;
+    padding: 4px 0 max(4px, env(safe-area-inset-bottom));
+    flex: none;
+  }
+  .game-shell.portrait-table .hand-and-herd::before {
+    content: "";
+    grid-area: 1 / 2;
+    width: var(--table-card-width);
+    height: calc(var(--table-card-width) * 1.5 + 6px);
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .game-shell.portrait-table[data-fit="scroll"] .action-panel {
+    position: fixed;
+    bottom: 0;
+    z-index: 12;
   }
   .portrait-table .table-column::before {
     content: none;
@@ -389,6 +425,7 @@
     border: 0;
   }
   .game-shell.portrait-table .table-supply .mobile-supply {
+    display: block;
     position: static;
     margin: 0;
     background: transparent;
@@ -424,7 +461,7 @@
   .game-shell.portrait-table[data-density] .supply-counter {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 56px;
+    grid-template-rows: var(--chip-row-height, 56px);
     justify-items: center;
     align-items: center;
     gap: 2px;
@@ -445,7 +482,7 @@
     flex-direction: column;
     gap: 0;
     min-width: 0;
-    width: 34px;
+    width: var(--chip-size, 34px);
     max-width: 100%;
     height: auto;
     aspect-ratio: 1;
@@ -472,8 +509,8 @@
     min-height: 0;
   }
   .game-shell.portrait-table .counter-name > .goods-art {
-    width: 10px;
-    height: 10px;
+    width: var(--chip-icon-size, 10px);
+    height: var(--chip-icon-size, 10px);
     color: var(--card-color);
   }
   .portrait-table .counter-name > span,
@@ -484,7 +521,7 @@
     position: absolute;
     left: 50%;
     right: auto;
-    top: 40px;
+    top: var(--chip-count-top, 40px);
     bottom: auto;
     transform: translateX(-50%);
     z-index: 1;
@@ -501,7 +538,7 @@
     border-radius: 0;
     background: transparent;
     color: #53645a;
-    font-size: 11px;
+    font-size: var(--chip-count-size, 11px);
     line-height: 14px;
     white-space: nowrap;
     box-shadow: none;
@@ -514,7 +551,7 @@
     color: inherit;
   }
   .game-shell.portrait-table :is(.counter-remaining, .stock-bonus-count) > b {
-    font-size: 11px;
+    font-size: var(--chip-count-size, 11px);
     font-weight: 500;
     color: inherit;
   }
@@ -532,7 +569,7 @@
     display: grid;
     place-items: center;
     min-width: 16px;
-    height: 18px;
+    height: var(--chip-value-height, 18px);
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -547,9 +584,9 @@
     border: 0;
     border-radius: 0;
     background: none;
-    font-size: 18px;
+    font-size: var(--chip-value-size, 18px);
     font-weight: 600;
-    line-height: 18px;
+    line-height: var(--chip-value-height, 18px);
     color: var(--card-color);
   }
   .game-shell.portrait-table .supply-bonuses {
@@ -586,7 +623,7 @@
   .portrait-table .stock-bonus-group {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 56px;
+    grid-template-rows: var(--chip-row-height, 56px);
     align-items: center;
     justify-items: center;
     gap: 2px;
@@ -601,7 +638,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 34px;
+    width: var(--chip-size, 34px);
     max-width: 100%;
     min-width: 0;
     height: auto;
@@ -625,8 +662,8 @@
     pointer-events: none;
   }
   .portrait-table .stock-bonus-chip > svg {
-    width: 10px;
-    height: 10px;
+    width: var(--chip-icon-size, 10px);
+    height: var(--chip-icon-size, 10px);
   }
   .portrait-table .stock-bonus-tier {
     display: flex;
@@ -671,6 +708,7 @@
   }
 
   .game-shell.portrait-table .market-table {
+    container-type: normal;
     padding: 2px 0 4px;
     background: transparent;
     border: 0;
@@ -972,7 +1010,7 @@
   }
 }
 
-@media (max-width: 860px) {
+@media (min-width: 0px) {
   .flight-layer .card :is(.premium-badge-label, .card-sale-rule) {
     display: none;
   }

@@ -19,7 +19,6 @@ import {
 import type { Action, Difficulty, Event, Save, State } from "./game/types.ts";
 import { AI_MIN_THINKING_MS } from "./game/ai-config.ts";
 import { DIFFICULTY_NAME, opponentPolicy } from "./game/difficulty.ts";
-import { playerScoreDisplay } from "./game/score-display.ts";
 import { applyAction, newGame } from "./game/engine.ts";
 import {
   emptySelection,
@@ -39,7 +38,6 @@ import {
   ScoreDetails,
 } from "./components/PlayerScores.tsx";
 import { ResultDialog, resultTitle } from "./components/ResultDialog.tsx";
-import { SaleReceipt } from "./components/SaleReceipt.tsx";
 import { actionSummaries } from "./game/receipts.ts";
 import { LastActions } from "./components/LastActions.tsx";
 import { ActionHistory } from "./components/ActionHistory.tsx";
@@ -72,7 +70,6 @@ import {
 import type { Selection } from "./game/selection.ts";
 import { readPreferences, writePreferences } from "./game/preferences.ts";
 import { useReducedMotion } from "./hooks/useReducedMotion.ts";
-import { useMobileLayout } from "./hooks/useMobileLayout.ts";
 import { useViewportHeight } from "./hooks/useViewportHeight.ts";
 const menuIllustration = new URL(
   "./assets/jaipur-palace-camel-v2.jpg",
@@ -110,7 +107,6 @@ function DifficultySelect({
 }
 export default function App() {
   const reducedMotion = useReducedMotion();
-  const mobile = useMobileLayout();
   const [initial] = useState(initialSave),
     [save, setSave] = useState<Save | null>(initial.save);
   const [game, setGame] = useState(() =>
@@ -119,7 +115,7 @@ export default function App() {
   const [screen, setScreen] = useState<"menu" | "game" | "replay" | "tutorial">(
     "menu",
   );
-  const boardRef = useViewportHeight(mobile && screen !== "menu");
+  const boardRef = useViewportHeight(screen !== "menu");
   const [tutorialSave, setTutorialSave] = useState(createTutorialSave);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [tutorialSlots, setTutorialSlots] = useState(initialMarketSlots);
@@ -220,7 +216,7 @@ export default function App() {
           next,
           marketSlots,
           save.events.length,
-          { mobile, reduced: reducedMotion },
+          { mobile: true, reduced: reducedMotion },
         );
         transitionRemaining.current = nextTransition.duration;
         setTransition(nextTransition);
@@ -312,7 +308,6 @@ export default function App() {
     save,
     transition,
     animationPaused,
-    mobile,
     reducedMotion,
   ]);
   useEffect(() => {
@@ -437,7 +432,7 @@ export default function App() {
       next,
       tutorialSlots,
       tutorialSave.events.length,
-      { mobile, reduced: reducedMotion },
+      { mobile: true, reduced: reducedMotion },
     );
     transitionRemaining.current = nextTransition.duration;
     setTransition(nextTransition);
@@ -462,7 +457,7 @@ export default function App() {
   function animateDeal(state: State, eventLimit = 0) {
     setMarketNotice(null);
     const nextTransition = dealTransition(state, eventLimit, {
-      mobile,
+      mobile: true,
       reduced: reducedMotion,
     });
     transitionRemaining.current = nextTransition.duration;
@@ -472,7 +467,7 @@ export default function App() {
   function playReplayStep() {
     if (!save || transition || modal) return;
     const nextTransition = replayTransition(save, replayIndex, {
-      mobile,
+      mobile: true,
       reduced: reducedMotion,
       revealOpponent: true,
     });
@@ -524,12 +519,7 @@ export default function App() {
     setAiError("");
     clear();
   }
-  const p = viewed?.players[0],
-    opponent = viewed?.players[1];
-  const ownScore = viewed ? playerScoreDisplay(viewed, 0) : null;
-  const opponentScore = viewed
-    ? playerScoreDisplay(viewed, 1, screen === "replay")
-    : null;
+  const p = viewed?.players[0];
   const replayMarketSlots = useMemo(
     () => (screen === "replay" ? marketSlotsAt(save, replayIndex) : []),
     [screen, save, replayIndex],
@@ -555,7 +545,7 @@ export default function App() {
       const departure = transition.feedback?.departures.find(
         (item) => item.anchor === anchor,
       );
-      return departure ? { departing: mobile } : {};
+      return departure ? { departing: true } : {};
     }
     if (
       marketNotice?.round !== viewed?.round ||
@@ -568,7 +558,6 @@ export default function App() {
     )
       return { arriving: true };
     if (
-      mobile &&
       anchor.startsWith("hand-") &&
       marketNotice?.handArrivals.includes(Number(anchor.slice(5)))
     )
@@ -619,29 +608,8 @@ export default function App() {
       }}
     >
       <Home size={19} aria-hidden="true" />
-      <span>{mobile ? "返回" : "返回菜单"}</span>
+      <span>返回</span>
     </button>
-  );
-  const gameToolButtons = (
-    <>
-      <button
-        title="游戏规则"
-        aria-label="游戏规则"
-        onClick={() => setModal("rules")}
-      >
-        <BookOpen size={19} />
-        <span>游戏规则</span>
-      </button>
-      <button
-        title="行动记录"
-        aria-label="行动记录"
-        onClick={() => setModal("log")}
-      >
-        <History size={19} />
-        <span>行动记录</span>
-      </button>
-      {returnToMenuButton}
-    </>
   );
   const actionLedger = viewed ? (
     <LastActions
@@ -654,7 +622,7 @@ export default function App() {
       active={active}
       paused={animationPaused}
       onHistory={() => setModal("log")}
-      focusOpponent={mobile}
+      focusOpponent
     />
   ) : null;
   return (
@@ -825,7 +793,7 @@ export default function App() {
             <div className="menu-art-caption">买进风物，卖出眼光。</div>
           </section>
         </main>
-      ) : viewed && p && opponent ? (
+      ) : viewed && p ? (
         <main
           ref={boardRef}
           data-paused={animationPaused}
@@ -833,12 +801,8 @@ export default function App() {
             active &&
             (market.length > 0 || hand.length > 0 || selection.camels > 0)
           }
-          className={`game-shell ${mobile ? "portrait-table" : ""} ${teaching ? "tutorial-game" : ""} ${(screen === "game" || screen === "replay" || teaching) && viewed.phase === "playing" ? "viewport-table" : ""} ${mobile && transition?.kind === "deal" ? "mobile-dealing" : ""}`}
+          className={`game-shell portrait-table ${teaching ? "tutorial-game" : ""} ${(screen === "game" || screen === "replay" || teaching) && viewed.phase === "playing" ? "viewport-table" : ""} ${transition?.kind === "deal" ? "mobile-dealing" : ""}`}
         >
-          <nav className="game-tools" aria-label="游戏功能">
-            <span className="game-tools-label">牌桌功能</span>
-            {gameToolButtons}
-          </nav>
           <header className="game-header">
             <div className="game-identity">
               {brand}
@@ -857,14 +821,12 @@ export default function App() {
             </div>
             <div className="header-round">
               第 {viewed.round} 轮 <span>·</span>{" "}
-              {mobile && (
-                <>
-                  {`第 ${viewed.phase === "playing" ? viewed.turn + 1 : viewed.turn} 手`}
-                  <span>·</span>
-                </>
-              )}
+              <>
+                {`第 ${viewed.phase === "playing" ? viewed.turn + 1 : viewed.turn} 手`}
+                <span>·</span>
+              </>
               {viewed.targetSeals === 1 ? "1 局定胜负" : "三局两胜"}
-              {mobile && viewed.targetSeals !== 1 && (
+              {viewed.targetSeals !== 1 && (
                 <span
                   className="match-seals"
                   aria-label={`胜局：你 ${viewed.seals[0]}，米拉 ${viewed.seals[1]}`}
@@ -873,37 +835,35 @@ export default function App() {
                 </span>
               )}
             </div>
-            {mobile && returnToMenuButton}
+            {returnToMenuButton}
           </header>
-          {mobile && (
-            <nav className="table-tools" aria-label="牌桌工具">
-              <button
-                onClick={() => setModal("log")}
-                aria-label="查看完整行动记录"
-                aria-haspopup="dialog"
-              >
-                <History size={16} />
-                <span>历史行动</span>
-              </button>
-              <button
-                onClick={() => setModal("supply")}
-                aria-label="查看筹码盘"
-                aria-haspopup="dialog"
-                title="3 类筹码售罄即收市"
-              >
-                <Coins size={16} />
-                <span>筹码盘</span>
-              </button>
-              <button
-                onClick={() => setModal("rules")}
-                aria-label="查看游戏规则"
-                aria-haspopup="dialog"
-              >
-                <BookOpen size={16} />
-                <span>游戏规则</span>
-              </button>
-            </nav>
-          )}
+          <nav className="table-tools" aria-label="牌桌工具">
+            <button
+              onClick={() => setModal("log")}
+              aria-label="查看完整行动记录"
+              aria-haspopup="dialog"
+            >
+              <History size={16} />
+              <span>历史行动</span>
+            </button>
+            <button
+              onClick={() => setModal("supply")}
+              aria-label="查看筹码盘"
+              aria-haspopup="dialog"
+              title="3 类筹码售罄即收市"
+            >
+              <Coins size={16} />
+              <span>筹码盘</span>
+            </button>
+            <button
+              onClick={() => setModal("rules")}
+              aria-label="查看游戏规则"
+              aria-haspopup="dialog"
+            >
+              <BookOpen size={16} />
+              <span>游戏规则</span>
+            </button>
+          </nav>
           {screen === "replay" && (
             <div className="replay-bar">
               <b>比赛回放</b>
@@ -995,91 +955,28 @@ export default function App() {
             </div>
           )}
           <div className="game-grid">
-            {!mobile && (
-              <section className="game-overview" aria-label="统计信息">
-                <h2 className="overview-title">局势概览</h2>
-                <MobileSupply
-                  state={viewed}
-                  onInspect={() => setModal("supply")}
-                  tabletop
-                />
-                {actionLedger}
-              </section>
-            )}
             <section className="table-column">
               <div className="board-divider" aria-hidden="true">
                 牌桌
               </div>
-              {mobile && (
-                <OpponentSeat
-                  state={viewed}
-                  onInspect={() => setModal("scores")}
-                  revealOpponent={screen === "replay"}
-                  actionSummary={
-                    <aside className="table-notes" aria-label="对手本手行动">
-                      {actionLedger}
-                    </aside>
-                  }
-                />
-              )}
-              <div
-                className={`opponent-panel ${viewed.current === 1 && viewed.phase === "playing" ? "turn-active" : ""}`}
-              >
-                <div className="avatar" data-motion-anchor="opponent-hand">
-                  米
-                </div>
-                <div className="player-name" data-motion-anchor="opponent-herd">
-                  <h2>
-                    米拉{" "}
-                    <span>
-                      集市商人 ·{" "}
-                      {teaching
-                        ? "教学对手"
-                        : DIFFICULTY_NAME[save?.difficulty ?? difficulty]}
-                    </span>
-                  </h2>
-                  <div className="seals">
-                    {Array.from({ length: viewed.targetSeals ?? 2 }, (_, n) => (
-                      <span
-                        key={n}
-                        className={viewed.seals[1] > n ? "won" : ""}
-                      >
-                        ✺
-                      </span>
-                    ))}
-                    <span className="muted">
-                      {opponent.hand.length} 张手牌 ·{" "}
-                      {screen === "replay"
-                        ? `骆驼 ${opponent.camels} 头`
-                        : "驼队保密"}
-                    </span>
-                  </div>
-                </div>
-                <div
-                  className="opponent-score"
-                  data-motion-anchor="opponent-score"
-                >
-                  <b>{opponentScore?.hidden ? "?" : opponentScore?.total}</b>
-                  <span>
-                    {opponentScore?.hidden ? "收市揭晓得分" : "本轮总分"}
-                  </span>
-                  <small>
-                    货物筹码 {opponent.goods.length} 枚 · 奖励{" "}
-                    {opponent.bonuses.length} 枚
-                  </small>
-                  <SaleReceipt receipt={receipts[1]} actor={1} />
-                </div>
-              </div>
+              <OpponentSeat
+                state={viewed}
+                onInspect={() => setModal("scores")}
+                revealOpponent={screen === "replay"}
+                actionSummary={
+                  <aside className="table-notes" aria-label="对手本手行动">
+                    {actionLedger}
+                  </aside>
+                }
+              />
               <div className="market-zone" role="group" aria-label="公共集市">
-                {mobile && (
-                  <div className="table-supply">
-                    <MobileSupply
-                      state={viewed}
-                      onInspect={() => setModal("supply")}
-                      tabletop
-                    />
-                  </div>
-                )}
+                <div className="table-supply">
+                  <MobileSupply
+                    state={viewed}
+                    onInspect={() => setModal("supply")}
+                    tabletop
+                  />
+                </div>
                 <section className="market-table" aria-label="中央集市">
                   <div className="market-heading">
                     <div>
@@ -1126,94 +1023,44 @@ export default function App() {
                           />
                         ))}
                     </div>
-                    {mobile && (
-                      <div
-                        className="market-sale-pile"
-                        data-motion-anchor="sale"
-                        data-selling={
-                          transition?.kind === "action" &&
-                          transition.action.type === "sell"
-                        }
-                        role="img"
-                        aria-label="市场收货位，出售的牌放在这里"
-                        title="出售的货物交到这里"
-                      >
-                        <span className="market-sale-sign" aria-hidden="true">
-                          <Store size={24} strokeWidth={1.5} />
-                        </span>
-                        <span className="market-sale-label" aria-hidden="true">
-                          市场
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  {!mobile && (
-                    <span
-                      className="sale-motion-anchor"
+                    <div
+                      className="market-sale-pile"
                       data-motion-anchor="sale"
-                      aria-hidden="true"
-                    />
-                  )}
+                      data-selling={
+                        transition?.kind === "action" &&
+                        transition.action.type === "sell"
+                      }
+                      role="img"
+                      aria-label="市场收货位，出售的牌放在这里"
+                      title="出售的货物交到这里"
+                    >
+                      <span className="market-sale-sign" aria-hidden="true">
+                        <Store size={24} strokeWidth={1.5} />
+                      </span>
+                      <span className="market-sale-label" aria-hidden="true">
+                        市场
+                      </span>
+                    </div>
+                  </div>
                 </section>
               </div>
               <section className="hand-panel">
-                <div className="hand-heading">
-                  <div className="you-label">
-                    <div className="avatar you">你</div>
-                    <div>
-                      <h2>
-                        你的货摊 <span>{p.hand.length} / 7 张</span>
-                      </h2>
-                      <div className="seals">
-                        {Array.from(
-                          { length: viewed.targetSeals ?? 2 },
-                          (_, n) => (
-                            <span
-                              key={n}
-                              className={viewed.seals[0] > n ? "won" : ""}
-                            >
-                              ✺
-                            </span>
-                          ),
-                        )}
-                        <span
-                          className="herd-summary camel"
-                          data-motion-anchor={mobile ? undefined : "your-herd"}
-                        >
-                          驼队 <b>{p.camels}</b> 头
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="your-score" data-motion-anchor="your-score">
-                    <b>{ownScore?.total}</b>
-                    <span>卢比</span>
-                    <small>
-                      货物 {ownScore?.goods} + 奖励 {ownScore?.bonus}
-                    </small>
-                    <SaleReceipt receipt={receipts[0]} actor={0} />
-                  </div>
-                </div>
                 <div
-                  className={`hand-and-herd${mobile ? " player-hand-and-herd" : ""}`}
+                  className="hand-and-herd player-hand-and-herd"
                   style={
-                    mobile
-                      ? ({
-                          "--hand-count": Math.max(1, p.hand.length),
-                        } as CSSProperties)
-                      : undefined
+                    {
+                      "--hand-count": Math.max(1, p.hand.length),
+                    } as CSSProperties
                   }
                 >
-                  {mobile && (
-                    <div className="player-hand-herd">
-                      <PlayerReserve
-                        state={viewed}
-                        actor={0}
-                        onInspect={() => setModal("scores")}
-                        revealOpponent={screen === "replay"}
-                      />
-                    </div>
-                  )}
+                  <div className="player-hand-herd">
+                    <PlayerReserve
+                      state={viewed}
+                      actor={0}
+                      onInspect={() => setModal("scores")}
+                      revealOpponent={screen === "replay"}
+                    />
+                  </div>
                   <div className="hand-cards" data-motion-anchor="your-hand">
                     <span
                       className="card small hand-card-measure"
@@ -1266,7 +1113,6 @@ export default function App() {
                       : undefined
                   }
                   status={turnStatus}
-                  turnNumber={mobile ? undefined : viewed.turn + 1}
                   onSelectionChange={selectCards}
                   onClear={() => selectCards(emptySelection())}
                   confirmationBlocked={
@@ -1370,8 +1216,8 @@ export default function App() {
       {transition && (screen === "game" || screen === "replay" || teaching) && (
         <ActionAnimation
           settling={transition.kind === "action"}
-          tableTravel={mobile}
-          saleTravel={mobile && transition.action.type === "sell"}
+          tableTravel
+          saleTravel={transition.action.type === "sell"}
           flights={transition.flights}
           elapsed={transition.duration - transitionRemaining.current}
           duration={transition.duration}
