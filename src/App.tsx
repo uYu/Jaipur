@@ -16,7 +16,14 @@ import {
   Store,
   X,
 } from "lucide-react";
-import type { Action, Difficulty, Event, Save, State } from "./game/types.ts";
+import type {
+  Action,
+  Difficulty,
+  Event,
+  InformationMode,
+  Save,
+  State,
+} from "./game/types.ts";
 import { AI_MIN_THINKING_MS } from "./game/ai-config.ts";
 import { DIFFICULTY_NAME, opponentPolicy } from "./game/difficulty.ts";
 import { applyAction, newGame } from "./game/engine.ts";
@@ -71,6 +78,7 @@ import type { Selection } from "./game/selection.ts";
 import { readPreferences, writePreferences } from "./game/preferences.ts";
 import { useReducedMotion } from "./hooks/useReducedMotion.ts";
 import { useViewportHeight } from "./hooks/useViewportHeight.ts";
+import { opponentMemory } from "./game/opponent-memory.ts";
 const menuIllustration = new URL(
   "./assets/jaipur-palace-camel-v2.jpg",
   import.meta.url,
@@ -135,9 +143,12 @@ export default function App() {
   const [targetSeals, setTargetSeals] = useState<1 | 2>(
     preferences.targetSeals,
   );
+  const [informationMode, setInformationMode] = useState<InformationMode>(
+    preferences.informationMode,
+  );
   useEffect(() => {
-    writePreferences({ difficulty, targetSeals });
-  }, [difficulty, targetSeals]);
+    writePreferences({ difficulty, targetSeals, informationMode });
+  }, [difficulty, targetSeals, informationMode]);
   const [error, setError] = useState(initial.error),
     [aiError, setAiError] = useState(""),
     [retry, setRetry] = useState(0);
@@ -355,6 +366,13 @@ export default function App() {
   const resultKey = viewed
     ? `${viewed.seed}:${viewed.round}:${viewed.phase}`
     : "";
+  const memory = useMemo(
+    () =>
+      screen === "game" && save?.informationMode === "assisted" && viewed
+        ? opponentMemory(history, viewed.round, viewed.players[1].hand.length)
+        : undefined,
+    [screen, save?.informationMode, history, viewed],
+  );
   const showResult =
     !!viewed &&
     viewed.phase !== "playing" &&
@@ -507,6 +525,7 @@ export default function App() {
       seed,
       difficulty,
       targetSeals,
+      informationMode,
       events: [],
     };
     setDismissedResult("");
@@ -762,6 +781,38 @@ export default function App() {
                       onChange={setDifficulty}
                     />
                   </label>
+                  <fieldset className="match-format information-mode">
+                    <legend>信息模式</legend>
+                    <div className="format-options">
+                      {(["standard", "assisted"] as const).map((mode) => (
+                        <label
+                          key={mode}
+                          className={informationMode === mode ? "chosen" : ""}
+                        >
+                          <input
+                            type="radio"
+                            name="information-mode"
+                            value={mode}
+                            checked={informationMode === mode}
+                            onChange={() => setInformationMode(mode)}
+                          />
+                          <span>
+                            <b>
+                              {mode === "standard" ? "标准模式" : "辅助模式"}
+                            </b>
+                            <small>
+                              {mode === "standard"
+                                ? "自己记住公开信息"
+                                : "自动记录公开信息"}
+                            </small>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="information-mode-note">
+                      辅助模式显示对手的货物得分、骆驼和已知手牌；奖励面值与未公开的手牌仍保密。
+                    </p>
+                  </fieldset>
                   {save && (
                     <p className="muted">
                       {hasUnfinishedGame
@@ -817,6 +868,7 @@ export default function App() {
                 {teaching
                   ? "练习对局"
                   : `米拉 · ${DIFFICULTY_NAME[save?.difficulty ?? difficulty]}`}
+                {memory && " · 辅助模式"}
               </span>
             </div>
             <div className="header-round">
@@ -961,6 +1013,7 @@ export default function App() {
               </div>
               <OpponentSeat
                 state={viewed}
+                memory={memory}
                 onInspect={() => setModal("scores")}
                 revealOpponent={screen === "replay"}
                 actionSummary={
@@ -1215,6 +1268,7 @@ export default function App() {
       )}
       {transition && (screen === "game" || screen === "replay" || teaching) && (
         <ActionAnimation
+          rememberOpponent={!!memory}
           settling={transition.kind === "action"}
           tableTravel
           saleTravel={transition.action.type === "sell"}
@@ -1266,6 +1320,7 @@ export default function App() {
                 <h2>双方得分</h2>
                 <ScoreDetails
                   state={viewed}
+                  memory={memory}
                   receipts={receipts}
                   revealOpponent={screen === "replay"}
                 />

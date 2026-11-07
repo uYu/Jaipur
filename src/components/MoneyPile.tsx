@@ -25,10 +25,12 @@ export function MoneyPile({
   amount,
   actor,
   tabletop = false,
+  goodsOnly = false,
 }: {
   amount: number | null;
   actor: 0 | 1;
   tabletop?: boolean;
+  goodsOnly?: boolean;
 }) {
   const hidden = amount === null;
   return (
@@ -39,7 +41,9 @@ export function MoneyPile({
       aria-label={
         hidden
           ? "米拉的钱堆，收入保密，收市揭晓"
-          : `${actor === 0 ? "你的" : "米拉的"}钱堆，${amount} 卢比`
+          : goodsOnly
+            ? `米拉的货物得分，${amount} 卢比，不含奖励筹码`
+            : `${actor === 0 ? "你的" : "米拉的"}钱堆，${amount} 卢比`
       }
     >
       <span

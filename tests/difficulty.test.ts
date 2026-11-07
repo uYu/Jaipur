@@ -53,16 +53,26 @@ test("saved preferences migrate the old model level and write only the new name"
     },
   } as Storage;
   try {
-    assert.deepEqual(readPreferences(), { difficulty: "hard", targetSeals: 2 });
-    writePreferences({ difficulty: "experimental", targetSeals: 1 });
+    assert.deepEqual(readPreferences(), {
+      difficulty: "hard",
+      targetSeals: 2,
+      informationMode: "standard",
+    });
+    writePreferences({
+      difficulty: "experimental",
+      targetSeals: 1,
+      informationMode: "standard",
+    });
     assert.deepEqual(JSON.parse(stored), {
       difficulty: "hard",
       targetSeals: 1,
+      informationMode: "standard",
     });
     stored = JSON.stringify({ difficulty: "invalid" });
     assert.deepEqual(readPreferences(), {
       difficulty: "normal",
       targetSeals: 1,
+      informationMode: "standard",
     });
   } finally {
     globalThis.localStorage = original;

@@ -161,6 +161,7 @@ export function ActionPanel({
           <div className="camel-payment" data-active="true">
             <button
               aria-label="减少付出骆驼"
+              title="减少 1 头骆驼付款"
               disabled={!active || !camels}
               onClick={() =>
                 onSelectionChange(selectCamels(state, selection, camels - 1))
@@ -173,6 +174,7 @@ export function ActionPanel({
             </output>
             <button
               aria-label="增加付出骆驼"
+              title="增加 1 头骆驼付款"
               disabled={!active || camels >= player.camels}
               onClick={() =>
                 onSelectionChange(selectCamels(state, selection, camels + 1))

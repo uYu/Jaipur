@@ -19,6 +19,9 @@ export function parseSave(text: string): Save {
     !Number.isInteger(value.seed) ||
     value.seed < 0 ||
     value.seed > 4294967295 ||
+    (value.informationMode !== undefined &&
+      value.informationMode !== "standard" &&
+      value.informationMode !== "assisted") ||
     (value.targetSeals !== undefined &&
       value.targetSeals !== 1 &&
       value.targetSeals !== 2) ||
@@ -32,6 +35,9 @@ export function parseSave(text: string): Save {
     seed: value.seed,
     difficulty: parseDifficulty(value.difficulty)!,
     events: value.events,
+    ...(value.informationMode === undefined
+      ? {}
+      : { informationMode: value.informationMode }),
     ...(value.targetSeals === undefined
       ? {}
       : { targetSeals: value.targetSeals }),

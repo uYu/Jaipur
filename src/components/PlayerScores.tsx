@@ -19,6 +19,7 @@ import { GoodsArt, JaipurMark } from "./Art.tsx";
 import { SaleFeedback } from "./SaleFeedback.tsx";
 import { CamelPile } from "./CamelPile.tsx";
 import { MoneyPile } from "./MoneyPile.tsx";
+import type { OpponentMemory } from "../game/opponent-memory.ts";
 
 function ScoreIcon({
   kind,
@@ -240,28 +241,36 @@ export function PlayerScores({
 function OpponentHandFan({
   hand,
   count,
+  knownOnly = false,
 }: {
-  hand: readonly Good[] | null;
+  hand: readonly (Good | null)[] | null;
   count: number;
+  knownOnly?: boolean;
 }) {
   return (
     <span
       className="opponent-hand-fan"
       data-motion-anchor="opponent-hand"
       role="group"
-      aria-label={`米拉的手牌，共 ${count} 张${hand === null ? "，内容保密" : "，已公开"}`}
+      aria-label={`米拉的手牌，共 ${count} 张${knownOnly ? `，其中 ${hand?.filter(Boolean).length ?? 0} 张已知，其余保密` : hand === null ? "，内容保密" : "，已公开"}`}
+      title={
+        knownOnly
+          ? "仅显示通过公开行动记住的货物，不代表实际手牌顺序"
+          : undefined
+      }
       style={{ "--fan-count": Math.max(1, count) } as CSSProperties}
     >
       {count === 0 ? (
         <span className="opponent-hand-empty">暂无手牌</span>
       ) : (
         Array.from({ length: count }, (_, index) => {
-          const good = hand?.[index];
+          const good = hand?.[index] ?? undefined;
           return (
             <span
               key={index}
               className={`opponent-hand-card${good === undefined ? " card-back" : ` ${good}`}`}
               data-motion-anchor={`opponent-hand-${index}`}
+              data-known={knownOnly && good !== undefined ? "true" : undefined}
               role="img"
               aria-label={good === undefined ? "背面朝上的手牌" : LABEL[good]}
               style={
@@ -291,15 +300,18 @@ export function PlayerReserve({
   actor,
   onInspect,
   revealOpponent = false,
+  memory,
 }: {
   state: State;
   actor: 0 | 1;
   onInspect: () => void;
   revealOpponent?: boolean;
+  memory?: OpponentMemory;
 }) {
-  const cards = playerCardsDisplay(state, actor, revealOpponent);
-  const score = playerScoreDisplay(state, actor, revealOpponent);
+  const cards = playerCardsDisplay(state, actor, revealOpponent, memory);
+  const score = playerScoreDisplay(state, actor, revealOpponent, memory);
   const own = actor === 0;
+  const goodsOnly = !own && score.hidden && score.goods !== null;
   return (
     <div
       className="player-reserve"
@@ -317,7 +329,18 @@ export function PlayerReserve({
         aria-haspopup="dialog"
         data-motion-anchor={own ? "your-score" : "opponent-score"}
       >
-        <MoneyPile amount={score.total} actor={actor} tabletop />
+        <MoneyPile
+          amount={goodsOnly ? score.goods : score.total}
+          actor={actor}
+          tabletop
+          goodsOnly={goodsOnly}
+        />
+        {goodsOnly && (
+          <span className="reserve-score-label">
+            <span>货物分</span>
+            <span title="奖励筹码面值保密">+{score.bonusTokenCount}张筹码</span>
+          </span>
+        )}
       </button>
     </div>
   );
@@ -328,17 +351,29 @@ export function OpponentSeat({
   onInspect,
   revealOpponent = false,
   actionSummary,
+  memory,
 }: {
   state: State;
   onInspect: () => void;
   revealOpponent?: boolean;
   actionSummary?: ReactNode;
+  memory?: OpponentMemory;
 }) {
   const cards = playerCardsDisplay(
     state,
     1,
     revealOpponent || state.phase !== "playing",
+    memory,
   );
+  const knownOnly = !!memory && !revealOpponent && state.phase === "playing";
+  const faces = knownOnly
+    ? [
+        ...Array<null>(Math.max(0, cards.handCount - memory.hand.length)).fill(
+          null,
+        ),
+        ...memory.hand,
+      ]
+    : cards.hand;
   return (
     <section className="player-seat seat-opponent" aria-label="米拉的座位">
       {actionSummary}
@@ -348,20 +383,39 @@ export function OpponentSeat({
           { "--hand-count": Math.max(1, cards.handCount) } as CSSProperties
         }
       >
-        <OpponentHandFan hand={cards.hand} count={cards.handCount} />
+        <OpponentHandFan
+          hand={faces}
+          count={cards.handCount}
+          knownOnly={knownOnly}
+        />
         <PlayerReserve
           state={state}
           actor={1}
           onInspect={onInspect}
           revealOpponent={revealOpponent}
+          memory={memory}
         />
       </div>
     </section>
   );
 }
 
-function HandSummary({ hand }: { hand: Good[] | null }) {
-  if (hand === null) return <p className="score-hand-note">手牌内容保密</p>;
+function HandSummary({
+  hand,
+  knownHand,
+  count,
+}: {
+  hand: Good[] | null;
+  knownHand?: Good[];
+  count: number;
+}) {
+  const partial = hand === null && knownHand !== undefined;
+  if (hand === null && !partial)
+    return <p className="score-hand-note">手牌内容保密</p>;
+  hand = hand ?? knownHand!;
+  const unknown = partial ? count - hand.length : 0;
+  if (!hand.length && unknown)
+    return <p className="score-hand-note">{unknown} 张手牌尚未公开</p>;
   if (!hand.length) return <p className="score-hand-note">暂无手牌</p>;
   return (
     <div className="score-hand-cards">
@@ -379,6 +433,12 @@ function HandSummary({ hand }: { hand: Good[] | null }) {
           </span>
         ) : null;
       })}
+      {unknown > 0 && (
+        <span className="score-hand-unknown">
+          <LockKeyhole size={16} />
+          {unknown} 张未知
+        </span>
+      )}
     </div>
   );
 }
@@ -387,18 +447,20 @@ export function ScoreDetails({
   state,
   receipts,
   revealOpponent = false,
+  memory,
 }: {
   state: State;
   receipts: [Presentation | null, Presentation | null];
   revealOpponent?: boolean;
+  memory?: OpponentMemory;
 }) {
   return (
     <div className="player-score-details">
       {([0, 1] as const).map((actor) => {
         const own = actor === 0;
         const name = own ? "你" : "米拉";
-        const score = playerScoreDisplay(state, actor, revealOpponent);
-        const cards = playerCardsDisplay(state, actor, revealOpponent);
+        const score = playerScoreDisplay(state, actor, revealOpponent, memory);
+        const cards = playerCardsDisplay(state, actor, revealOpponent, memory);
         const settled = state.phase !== "playing";
         const camelPoints =
           settled && !score.hidden
@@ -432,7 +494,14 @@ export function ScoreDetails({
                   </dd>
                 </div>
               </dl>
-              <HandSummary hand={cards.hand} />
+              {cards.knownHand && (
+                <p className="score-hand-note">已知手牌 · 仅记录公开行动</p>
+              )}
+              <HandSummary
+                hand={cards.hand}
+                knownHand={cards.knownHand}
+                count={cards.handCount}
+              />
             </section>
             <section
               className="score-detail-finance"
@@ -440,9 +509,9 @@ export function ScoreDetails({
             >
               <dl>
                 <div>
-                  <dt>货物{score.hidden ? "筹码" : "收入"}</dt>
+                  <dt>货物{score.goods === null ? "筹码" : "收入"}</dt>
                   <dd>
-                    {score.hidden
+                    {score.goods === null
                       ? `${score.goodsTokenCount} 枚`
                       : `${score.goods} 卢比`}
                   </dd>
@@ -462,13 +531,19 @@ export function ScoreDetails({
                   </div>
                 )}
                 <div className="score-detail-total">
-                  <dt>{settled ? "本轮得分" : "当前得分"}</dt>
+                  <dt>
+                    {settled
+                      ? "本轮得分"
+                      : score.hidden && score.goods !== null
+                        ? "已知得分（不含奖励）"
+                        : "当前得分"}
+                  </dt>
                   <dd>
-                    {score.hidden ? (
+                    {score.hidden && score.goods === null ? (
                       "保密"
                     ) : (
                       <>
-                        {score.total}
+                        {score.total ?? score.goods}
                         <small>卢比</small>
                       </>
                     )}
@@ -493,7 +568,9 @@ export function ScoreDetails({
         {revealOpponent && state.phase === "playing"
           ? "回放公开双方当时的手牌、驼队和得分；驼队奖励在收市时计算。"
           : state.phase === "playing"
-            ? "米拉的累计得分和奖励面值在收市时揭晓。你的当前得分含货物和奖励，驼队奖励在收市时计算。"
+            ? memory
+              ? "辅助模式仅记录公开信息：对手货物得分不含奖励，已知手牌会随出售、交换更新。起手暗牌与奖励面值仍保密；驼队数量可由公开手牌数及骆驼流转推知。"
+              : "米拉的累计得分和奖励面值在收市时揭晓。你的当前得分含货物和奖励，驼队奖励在收市时计算。"
             : "本轮得分已揭晓，含货物、奖励，以及驼队领先者获得的 5 卢比。"}
       </p>
     </div>

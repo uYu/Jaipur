@@ -46,6 +46,17 @@
           8
       )
     );
+    --table-hand-gap: clamp(
+      2px,
+      calc(
+        (
+            100cqw - var(--reserve-score-width) - var(--reserve-gap) * 2 -
+              var(--table-card-width) * 8
+          ) /
+          6
+      ),
+      6px
+    );
     container-type: inline-size;
     position: relative;
     display: flex;
@@ -307,17 +318,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 6px;
-    --hand-overlap: min(
-      0px,
-      calc(
-        (
-            100% - var(--fan-count) * var(--hand-card-width) -
-              (var(--fan-count) - 1) * 6px
-          ) /
-          max(1, var(--fan-count) - 1)
-      )
-    );
+    gap: var(--table-hand-gap);
     min-width: 0;
     height: calc(var(--hand-card-width) * 1.5 + 6px);
     margin: 0;
@@ -394,7 +395,7 @@
     transform: none;
   }
   .opponent-hand-card + .opponent-hand-card {
-    margin-left: var(--hand-overlap);
+    margin-left: 0;
   }
   .opponent-hand-card.card-back {
     background: #16483c;

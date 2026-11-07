@@ -13,6 +13,7 @@ export function ActionAnimation({
   settling = false,
   saleTravel = false,
   tableTravel = false,
+  rememberOpponent = false,
 }: {
   flights: Flight[];
   duration: number;
@@ -21,6 +22,7 @@ export function ActionAnimation({
   settling?: boolean;
   saleTravel?: boolean;
   tableTravel?: boolean;
+  rememberOpponent?: boolean;
 }) {
   const reduced = useReducedMotion();
   const tabletop = tableTravel || saleTravel;
@@ -106,7 +108,13 @@ export function ActionAnimation({
             ? false
             : flight.fromBack;
         const toBack =
-          tabletop && flight.to.endsWith("-herd") ? false : flight.toBack;
+          tabletop &&
+          (flight.to.endsWith("-herd") ||
+            (rememberOpponent &&
+              flight.to === "opponent-hand" &&
+              flight.from.startsWith("market-")))
+            ? false
+            : flight.toBack;
         const a = rect(source),
           b = rect(target);
         const coin = flight.coin !== undefined;
@@ -485,7 +493,15 @@ export function ActionAnimation({
         element.style.visibility = visibility;
       });
     };
-  }, [flights, duration, reduced, settling, saleTravel, tabletop]);
+  }, [
+    flights,
+    duration,
+    reduced,
+    settling,
+    saleTravel,
+    tabletop,
+    rememberOpponent,
+  ]);
   useLayoutEffect(() => {
     animations.current.forEach((a) => (paused ? a.pause() : a.play()));
   }, [paused]);

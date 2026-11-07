@@ -507,17 +507,8 @@
     grid-row: 1;
     min-width: 0;
     justify-content: flex-start;
-    --hand-overlap: min(
-      0px,
-      calc(
-        (
-            100% - var(--hand-count, 7) * var(--hand-card-width) -
-              (var(--hand-count, 7) - 1) * 6px
-          ) /
-          max(1, var(--hand-count, 7) - 1)
-      )
-    );
-    gap: 6px;
+    --hand-overlap: 0px;
+    gap: var(--table-hand-gap);
     overflow: visible;
   }
   .game-shell.portrait-table
@@ -728,11 +719,37 @@
     width: 32px;
     height: 32px;
     min-height: 32px;
-    border: 1px solid #d3dbd2;
+    border: 1px solid #9ba99b;
     border-radius: 4px;
-    background: transparent;
-    color: #4b5850;
+    background: #f6f4eb;
+    color: #334f40;
+    box-shadow: 0 2px 0 #a8b6a4;
+  }
+  .game-shell.portrait-table .camel-payment > button:last-child:not(:disabled) {
+    border-color: #20553f;
+    background: #2b684f;
+    color: #fffaf0;
+    box-shadow: 0 2px 0 #18422f;
+  }
+  .game-shell.portrait-table .camel-picker button:disabled {
+    border-color: #c8d0c5;
+    background: #e4e9e0;
+    color: #9aa497;
     box-shadow: none;
+    opacity: 1;
+  }
+  .game-shell.portrait-table .camel-picker button:not(:disabled):active {
+    transform: translateY(1px);
+    box-shadow: none;
+  }
+  .game-shell.portrait-table .camel-picker button:focus-visible {
+    outline: 2px solid var(--selection-gold);
+    outline-offset: 3px;
+  }
+  .game-shell.portrait-table .camel-picker button > .lucide {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
   }
   .game-shell.portrait-table .camel-picker output {
     height: 32px;
@@ -1215,6 +1232,80 @@
 
 @media (max-width: 360px) {
   :is(.game-shell.portrait-table, .flight-layer) .card .premium-badge {
+    font-size: 8px;
+  }
+}
+
+/* Public-memory mode keeps unknown faces and reward values private. */
+.game-shell.portrait-table .reserve-money:has(.reserve-score-label) {
+  position: relative;
+  height: 60px;
+  min-height: 60px;
+}
+.game-shell.portrait-table .reserve-score-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  font-size: 9px;
+  line-height: 12px;
+  color: var(--board-muted);
+  white-space: nowrap;
+}
+.game-shell.portrait-table .reserve-score-label > span {
+  display: block;
+}
+.game-shell.portrait-table
+  .reserve-money:has(.reserve-score-label)
+  .money-pile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex-direction: row;
+  gap: 2px;
+  height: 34px;
+  min-height: 34px;
+}
+.game-shell.portrait-table
+  .reserve-money:has(.reserve-score-label)
+  .money-pile-coins,
+.game-shell.portrait-table
+  .reserve-money:has(.reserve-score-label)
+  .money-pile-coin,
+.game-shell.portrait-table
+  .reserve-money:has(.reserve-score-label)
+  .money-pile-face
+  > svg {
+  width: 10px;
+  height: 14px;
+}
+.game-shell.portrait-table
+  .reserve-money:has(.reserve-score-label)
+  .money-pile[data-digits="3"]
+  .money-pile-value {
+  font-size: 16px;
+}
+.portrait-table .opponent-hand-card[data-known="true"] {
+  border-color: color-mix(in srgb, var(--card-color) 45%, transparent);
+}
+.score-hand-unknown {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px;
+  color: var(--muted);
+}
+.setup .information-mode {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+.setup .information-mode-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.65;
+}
+@media (max-width: 360px) {
+  .game-shell.portrait-table .reserve-score-label {
     font-size: 8px;
   }
 }

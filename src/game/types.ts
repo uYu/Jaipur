@@ -9,6 +9,7 @@ export const GOODS = [
 export type Good = (typeof GOODS)[number];
 export type Card = Good | "camel";
 export type Difficulty = "easy" | "normal" | "hard" | "experimental";
+export type InformationMode = "standard" | "assisted";
 export type Player = {
   hand: Good[];
   camels: number;
@@ -50,6 +51,7 @@ export type State = {
 };
 export type Event = Action | { type: "next" };
 export type Save = {
+  informationMode?: InformationMode;
   targetSeals?: 1 | 2;
   version: 1;
   seed: number;

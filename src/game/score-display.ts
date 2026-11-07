@@ -1,14 +1,17 @@
 import { sum } from "./data.ts";
 import type { Good, State } from "./types.ts";
+import type { OpponentMemory } from "./opponent-memory.ts";
 
 export function playerCardsDisplay(
   state: State,
   actor: 0 | 1,
   revealOpponent = false,
+  memory?: OpponentMemory,
 ): {
   handCount: number;
   hand: Good[] | null;
   camels: number | null;
+  knownHand?: Good[];
 } {
   const player = state.players[actor];
   return {
@@ -17,7 +20,10 @@ export function playerCardsDisplay(
     camels:
       actor === 0 || revealOpponent || state.phase !== "playing"
         ? player.camels
-        : null,
+        : (memory?.camels ?? null),
+    ...(actor === 1 && !revealOpponent && memory
+      ? { knownHand: [...memory.hand] }
+      : {}),
   };
 }
 
@@ -36,6 +42,7 @@ export function playerScoreDisplay(
   state: State,
   actor: 0 | 1,
   revealOpponent = false,
+  memory?: OpponentMemory,
 ): PublicScoreView {
   const player = state.players[actor];
   const counts = {
@@ -43,7 +50,13 @@ export function playerScoreDisplay(
     bonusTokenCount: player.bonuses.length,
   };
   if (state.phase === "playing" && actor === 1 && !revealOpponent)
-    return { ...counts, total: null, goods: null, bonus: null, hidden: true };
+    return {
+      ...counts,
+      total: null,
+      goods: memory?.goods ?? null,
+      bonus: null,
+      hidden: true,
+    };
 
   const settled = state.phase !== "playing";
   const result = settled
