@@ -45,6 +45,7 @@ import {
   ScoreDetails,
 } from "./components/PlayerScores.tsx";
 import { ResultDialog, resultTitle } from "./components/ResultDialog.tsx";
+import { TurnIntro } from "./components/TurnIntro.tsx";
 import { actionSummaries } from "./game/receipts.ts";
 import { LastActions } from "./components/LastActions.tsx";
 import { ActionHistory } from "./components/ActionHistory.tsx";
@@ -153,6 +154,7 @@ export default function App() {
     [aiError, setAiError] = useState(""),
     [retry, setRetry] = useState(0);
   const [transition, setTransition] = useState<ActionTransition | null>(null);
+  const [turnIntro, setTurnIntro] = useState<"round" | "resume" | null>(null);
   const [marketNotice, setMarketNotice] = useState<BoardFeedback | null>(null);
   const [marketSlots, setMarketSlots] = useState(() =>
     marketSlotsAt(initial.save),
@@ -235,6 +237,7 @@ export default function App() {
         setMarketSlots(nextMarketSlots(game, event, next, marketSlots));
       } else {
         animateDeal(next, save.events.length + 1);
+        setTurnIntro("round");
       }
       setGame(next);
       setSave({ ...save, events: [...save.events, event] });
@@ -251,6 +254,7 @@ export default function App() {
       game.current !== 1 ||
       modal ||
       aiError ||
+      turnIntro ||
       transition
     )
       return;
@@ -293,7 +297,7 @@ export default function App() {
     };
     // A fresh worker receives only the acting player's observation for each committed turn.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game, screen, modal, retry, aiError, transition]);
+  }, [game, screen, modal, retry, aiError, transition, turnIntro]);
   useEffect(() => {
     if (
       screen !== "replay" ||
@@ -531,6 +535,7 @@ export default function App() {
     setDismissedResult("");
     const freshGame = newGame(seed, targetSeals);
     animateDeal(freshGame);
+    setTurnIntro("round");
     setSave(fresh);
     setGame(freshGame);
     setScreen("game");
@@ -558,6 +563,7 @@ export default function App() {
     viewed?.phase === "playing" &&
     viewed.current === 0 &&
     !modal &&
+    (screen !== "game" || !turnIntro) &&
     !transition;
   function cardFeedback(anchor: string) {
     if (transition) {
@@ -598,9 +604,11 @@ export default function App() {
             : `${transition.action.actor === 0 ? "你" : "米拉"}正在行动…`
           : aiError
             ? "等待重试"
-            : viewed.current === 1
-              ? "米拉思考中…"
-              : "轮到你了";
+            : screen === "game" && turnIntro
+              ? "等待开市"
+              : viewed.current === 1
+                ? "米拉思考中…"
+                : "轮到你了";
   const hasUnfinishedGame = !!game && game.phase !== "finished";
   const brand = (
     <div className="brand">
@@ -676,6 +684,7 @@ export default function App() {
                     <button
                       className="primary menu-action"
                       onClick={() => {
+                        if (game?.phase === "playing") setTurnIntro("resume");
                         setScreen("game");
                       }}
                     >
@@ -1248,6 +1257,17 @@ export default function App() {
           onRestart={beginTutorial}
         />
       )}
+      {screen === "game" &&
+        turnIntro &&
+        !transition &&
+        !modal &&
+        game?.phase === "playing" && (
+          <TurnIntro
+            state={game}
+            resume={turnIntro === "resume"}
+            onStart={() => setTurnIntro(null)}
+          />
+        )}
       {showResult && viewed && (
         <ResultDialog
           state={viewed}

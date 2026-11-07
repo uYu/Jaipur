@@ -112,7 +112,7 @@ test("mobile taking and camel collection finish selected cards before refilling 
             (flight) =>
               Math.abs(
                 (flight.end - flight.start) * step.duration -
-                  (reduced ? 150 : 1000),
+                  (reduced ? 150 : 1250),
               ) < 0.01,
           ),
         );
@@ -146,7 +146,7 @@ test("mobile taking and camel collection finish selected cards before refilling 
             (flight) =>
               Math.abs(
                 (flight.end - flight.start) * step.duration -
-                  (reduced ? 180 : 900),
+                  (reduced ? 180 : 1125),
               ) < 0.01,
           ),
         );
@@ -161,8 +161,9 @@ test("mobile taking and camel collection finish selected cards before refilling 
             step.flights.filter((flight) => actor === 1 || !flight.layout),
           ).includes("diamond"),
         );
-        if (actor === 1) assert.equal(step.departureHoldMs, 1200);
-        if (!reduced) assert.ok(step.duration >= 2380 && step.duration <= 3560);
+        if (actor === 1)
+          assert.equal(step.departureHoldMs, reduced ? 1200 : 1500);
+        if (!reduced) assert.ok(step.duration >= 2975 && step.duration <= 4450);
       }
     }
   }
@@ -277,8 +278,9 @@ test("mobile exchanges start payment first and smoothly overlap receiving and ha
           .filter((flight) => flight.from.endsWith("-herd"))
           .every((flight) => !flight.hideSource),
       );
-      if (!reduced) assert.ok(step.duration >= 1800 && step.duration <= 2700);
-      if (actor === 1) assert.equal(step.departureHoldMs, 1200);
+      if (!reduced) assert.ok(step.duration >= 2250 && step.duration <= 3375);
+      if (actor === 1)
+        assert.equal(step.departureHoldMs, reduced ? 1200 : 1500);
     }
   }
 });
@@ -299,8 +301,8 @@ test("mobile sales land sold cards before income coins travel to the actor's mon
       });
       assert.equal(step.before, before);
       assert.deepEqual(before, snapshot);
-      assert.equal(step.departureHoldMs, 500);
-      assert.ok(step.duration >= 2570 && step.duration <= 3880);
+      assert.equal(step.departureHoldMs, 625);
+      assert.ok(step.duration >= 3212.5 && step.duration <= 4850);
       const cards = step.flights.filter((flight) => flight.to === "sale");
       const income = step.flights.filter((flight) => flight.coin !== undefined);
       assert.equal(cards.length, count);
@@ -318,10 +320,10 @@ test("mobile sales land sold cards before income coins travel to the actor's mon
         );
         assert.equal(flight.coin, undefined);
         assert.ok(
-          Math.abs(flight.start * step.duration - (500 + index * 90)) < 0.01,
+          Math.abs(flight.start * step.duration - (625 + index * 112.5)) < 0.01,
         );
         assert.ok(
-          Math.abs((flight.end - flight.start) * step.duration - 1050) < 0.01,
+          Math.abs((flight.end - flight.start) * step.duration - 1312.5) < 0.01,
         );
       });
       assert.deepEqual(
@@ -348,17 +350,17 @@ test("mobile sales land sold cards before income coins travel to the actor's mon
         assert.equal(flight.hideSource, false);
         assert.equal(flight.hideTarget, false);
         assert.ok(
-          Math.abs((flight.end - flight.start) * step.duration - 650) < 0.01,
+          Math.abs((flight.end - flight.start) * step.duration - 812.5) < 0.01,
         );
         if (index > 0)
           assert.ok(
             Math.abs(
-              (flight.start - income[index - 1].start) * step.duration - 110,
+              (flight.start - income[index - 1].start) * step.duration - 137.5,
             ) < 0.01,
           );
       });
       assert.ok(
-        Math.abs(step.duration - income.at(-1)!.end * step.duration - 220) <
+        Math.abs(step.duration - income.at(-1)!.end * step.duration - 275) <
           0.01,
       );
       assert.ok(

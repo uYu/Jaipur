@@ -1,0 +1,53 @@
+{
+  "modelVersion": 147126,
+  "modelSha256": "70dab55747386b2eba8765f20590b551453fdd2d71025ba05fa64baa85560f83",
+  "matches": 200,
+  "targetSeals": 2,
+  "seedStart": 3611070000,
+  "lanes": 8,
+  "policy": "pure-browser-model-self-play",
+  "encoding": "same-as-browser; zero seals/round context; posterior takePreference=0.75",
+  "proofBudget": {
+    "maxNodes": 2000,
+    "maxMs": "unlimited for reproducible offline proofs"
+  },
+  "missDefinition": "No round win by the end of the next horizon own actions; a later win still counts as missed",
+  "parity": "JS checks initial rows, every 100th decision, every rule opportunity and all near ties",
+  "completed": 200,
+  "rounds": 520,
+  "decisions": 23562,
+  "byHorizon": [
+    {
+      "horizon": 1,
+      "opportunities": 470,
+      "realized": 326,
+      "missed": 144,
+      "missRate": 0.30638297872340425,
+      "gamesWithMisses": 93,
+      "roundsWithMisses": 110,
+      "firstActionMatchedButMissed": 0,
+      "missedThenLostRound": 0,
+      "missedButWonRoundLater": 144
+    },
+    {
+      "horizon": 2,
+      "opportunities": 362,
+      "realized": 218,
+      "missed": 144,
+      "missRate": 0.39779005524861877,
+      "gamesWithMisses": 90,
+      "roundsWithMisses": 100,
+      "firstActionMatchedButMissed": 31,
+      "missedThenLostRound": 0,
+      "missedButWonRoundLater": 144
+    }
+  ],
+  "gamesWithAnyMiss": 120,
+  "parityChecks": 1521,
+  "nearTieChecks": 426,
+  "parityArgmaxDifferences": 0,
+  "maximumScoreError": 0,
+  "elapsedSeconds": 89.726948041,
+  "allActionsLegal": true,
+  "allCompletedMatchesReplayed": true
+}

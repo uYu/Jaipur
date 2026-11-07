@@ -212,13 +212,21 @@ export function actionTransition(
         duration: options.reduced ? 180 : before.current === 0 ? 500 : 850,
         departureHoldMs: 0,
       };
+  // Keep the same phase ordering while giving every visible part 25% more time.
+  const pacedMotion = options.reduced
+    ? motion
+    : {
+        ...motion,
+        duration: motion.duration * 1.25,
+        departureHoldMs: motion.departureHoldMs * 1.25,
+      };
   return {
     kind: "action",
     eventLimit,
     before,
     marketSlots: slots,
     action: presentation,
-    ...motion,
+    ...pacedMotion,
     feedback,
   };
 }

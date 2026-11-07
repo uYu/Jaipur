@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export const FEEDBACK_DURATION_MS = 2000;
+export const FEEDBACK_DURATION_MS = 3000;
 
 export function useFeedbackLifetime(paused: boolean) {
   const [visible, setVisible] = useState(true);

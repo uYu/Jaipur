@@ -1,0 +1,595 @@
+{
+  "matchesReplayed": 200,
+  "casesVerified": 832,
+  "directProofs": 470,
+  "twoMoveProofs": 362,
+  "opposingRepliesVerified": 13238,
+  "deadlineVerdictsRecomputed": 832,
+  "allRecordedProofsWinAgainstEveryLegalReplyInActualStates": true,
+  "note": "Public uncertainty was covered by the original exhaustive proof; this replay independently checks actual states and all legal replies.",
+  "examples": [
+    {
+      "id": "3611070003:43",
+      "seed": 3611070003,
+      "actor": 1,
+      "round": 1,
+      "turn": 43,
+      "eventIndex": 43,
+      "horizon": 2,
+      "deadline": 23,
+      "ruleAction": {
+        "type": "sell",
+        "good": "diamond",
+        "count": 2
+      },
+      "modelAction": {
+        "type": "sell",
+        "good": "cloth",
+        "count": 1
+      },
+      "modelValue": 0.7596659064292908,
+      "ruleValue": 0.39619627594947815,
+      "firstActionMatchesRule": false,
+      "observation": {
+        "hand": [
+          "diamond",
+          "silver",
+          "leather",
+          "spice",
+          "cloth",
+          "diamond"
+        ],
+        "camels": 10,
+        "goods": [
+          7,
+          7,
+          5,
+          5,
+          5,
+          5,
+          3,
+          3,
+          2,
+          5,
+          5,
+          1,
+          1
+        ],
+        "bonuses": [
+          2,
+          3,
+          1
+        ],
+        "opponentGoods": [
+          4,
+          3,
+          2,
+          1,
+          1,
+          5,
+          5,
+          3,
+          3,
+          6,
+          6,
+          2,
+          2,
+          2,
+          1,
+          5,
+          5
+        ],
+        "knownOpponentHand": [
+          "gold",
+          "gold"
+        ],
+        "opponentNextSaleCloseProbability": 0,
+        "market": [
+          "camel",
+          "cloth",
+          "leather",
+          "diamond",
+          "leather"
+        ],
+        "tokens": {
+          "diamond": [
+            5,
+            5
+          ],
+          "gold": [
+            5
+          ],
+          "silver": [],
+          "cloth": [
+            1,
+            1
+          ],
+          "spice": [
+            1
+          ],
+          "leather": [
+            1,
+            1
+          ]
+        },
+        "bonusCounts": {
+          "3": 3,
+          "4": 6,
+          "5": 4
+        },
+        "discard": [
+          "leather",
+          "leather",
+          "leather",
+          "leather",
+          "leather",
+          "diamond",
+          "diamond",
+          "diamond",
+          "cloth",
+          "silver",
+          "silver",
+          "silver",
+          "spice",
+          "spice",
+          "spice",
+          "cloth",
+          "cloth",
+          "cloth",
+          "gold",
+          "gold",
+          "cloth",
+          "gold",
+          "gold",
+          "spice",
+          "leather",
+          "spice",
+          "leather",
+          "spice",
+          "silver",
+          "silver"
+        ],
+        "deckCount": 2,
+        "opponentHandCount": 2,
+        "turn": 43
+      },
+      "searchMs": 0.3268750000002001,
+      "resolved": true,
+      "missed": true,
+      "resolvedAtEvent": 45,
+      "ownMovesAtResolution": 23,
+      "roundWinner": 1,
+      "roundScores": [
+        73,
+        76
+      ],
+      "matchWinner": 1,
+      "actualOwnMovesUntilRoundEnd": 2,
+      "window": [
+        {
+          "index": 43,
+          "actor": 1,
+          "action": {
+            "type": "sell",
+            "good": "cloth",
+            "count": 1
+          }
+        },
+        {
+          "index": 44,
+          "actor": 0,
+          "action": {
+            "type": "take",
+            "index": 2
+          }
+        },
+        {
+          "index": 45,
+          "actor": 1,
+          "action": {
+            "type": "sell",
+            "good": "diamond",
+            "count": 2
+          }
+        }
+      ],
+      "actualRoundResult": {
+        "round": 1,
+        "scores": [
+          73,
+          76
+        ],
+        "goods": [
+          61,
+          65
+        ],
+        "bonuses": [
+          12,
+          6
+        ],
+        "camel": 1,
+        "winner": 1,
+        "reason": "三类货物筹码售罄"
+      }
+    },
+    {
+      "id": "3611070006:37",
+      "seed": 3611070006,
+      "actor": 1,
+      "round": 1,
+      "turn": 37,
+      "eventIndex": 37,
+      "horizon": 1,
+      "deadline": 19,
+      "ruleAction": {
+        "type": "sell",
+        "good": "leather",
+        "count": 1
+      },
+      "modelAction": {
+        "type": "take",
+        "index": 1
+      },
+      "modelValue": 0.9487202167510986,
+      "ruleValue": 0.9129630923271179,
+      "firstActionMatchesRule": false,
+      "observation": {
+        "hand": [
+          "leather",
+          "spice",
+          "spice",
+          "gold"
+        ],
+        "camels": 0,
+        "goods": [
+          5,
+          3,
+          4,
+          5,
+          5,
+          5,
+          6,
+          6,
+          2,
+          2,
+          1,
+          5,
+          5,
+          5
+        ],
+        "bonuses": [
+          3,
+          2,
+          3
+        ],
+        "opponentGoods": [
+          7,
+          7,
+          5,
+          3,
+          3,
+          3,
+          2,
+          1,
+          3,
+          5,
+          5,
+          1,
+          1,
+          1,
+          1
+        ],
+        "knownOpponentHand": [
+          "spice",
+          "diamond",
+          "gold"
+        ],
+        "opponentNextSaleCloseProbability": 0,
+        "market": [
+          "camel",
+          "spice",
+          "camel",
+          "camel",
+          "camel"
+        ],
+        "tokens": {
+          "diamond": [],
+          "gold": [
+            5,
+            5,
+            5
+          ],
+          "silver": [],
+          "cloth": [
+            1
+          ],
+          "spice": [
+            2,
+            2,
+            1,
+            1
+          ],
+          "leather": [
+            1
+          ]
+        },
+        "bonusCounts": {
+          "3": 2,
+          "4": 5,
+          "5": 5
+        },
+        "discard": [
+          "cloth",
+          "cloth",
+          "diamond",
+          "diamond",
+          "spice",
+          "spice",
+          "spice",
+          "leather",
+          "leather",
+          "leather",
+          "leather",
+          "silver",
+          "silver",
+          "silver",
+          "cloth",
+          "gold",
+          "gold",
+          "silver",
+          "silver",
+          "cloth",
+          "cloth",
+          "cloth",
+          "diamond",
+          "diamond",
+          "diamond",
+          "leather",
+          "leather",
+          "leather",
+          "leather"
+        ],
+        "deckCount": 9,
+        "opponentHandCount": 3,
+        "turn": 37
+      },
+      "searchMs": 0.007708000000093307,
+      "resolved": true,
+      "missed": true,
+      "resolvedAtEvent": 37,
+      "ownMovesAtResolution": 19,
+      "roundWinner": 1,
+      "roundScores": [
+        63,
+        68
+      ],
+      "matchWinner": 0,
+      "actualOwnMovesUntilRoundEnd": 2,
+      "window": [
+        {
+          "index": 37,
+          "actor": 1,
+          "action": {
+            "type": "take",
+            "index": 1
+          }
+        }
+      ],
+      "actualRoundResult": {
+        "round": 1,
+        "scores": [
+          63,
+          68
+        ],
+        "goods": [
+          50,
+          60
+        ],
+        "bonuses": [
+          8,
+          8
+        ],
+        "camel": 0,
+        "winner": 1,
+        "reason": "三类货物筹码售罄"
+      }
+    },
+    {
+      "id": "3611070002:88",
+      "seed": 3611070002,
+      "actor": 0,
+      "round": 2,
+      "turn": 52,
+      "eventIndex": 88,
+      "horizon": 2,
+      "deadline": 28,
+      "ruleAction": {
+        "type": "take",
+        "index": 0
+      },
+      "modelAction": {
+        "type": "take",
+        "index": 0
+      },
+      "modelValue": 1.0690867900848389,
+      "ruleValue": 1.0690867900848389,
+      "firstActionMatchesRule": true,
+      "observation": {
+        "hand": [],
+        "camels": 0,
+        "goods": [
+          6,
+          6,
+          5,
+          7,
+          7,
+          3,
+          2,
+          2,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          3,
+          1,
+          5,
+          5
+        ],
+        "bonuses": [
+          1,
+          2,
+          5
+        ],
+        "opponentGoods": [
+          4,
+          3,
+          2,
+          1,
+          1,
+          5,
+          3,
+          5,
+          3,
+          2,
+          2,
+          1,
+          1,
+          1
+        ],
+        "knownOpponentHand": [
+          "spice",
+          "gold",
+          "spice"
+        ],
+        "opponentNextSaleCloseProbability": 1,
+        "market": [
+          "cloth",
+          "cloth",
+          "leather",
+          "gold",
+          "leather"
+        ],
+        "tokens": {
+          "diamond": [],
+          "gold": [
+            5,
+            5
+          ],
+          "silver": [],
+          "cloth": [
+            1
+          ],
+          "spice": [
+            1,
+            1
+          ],
+          "leather": [
+            1
+          ]
+        },
+        "bonusCounts": {
+          "3": 5,
+          "4": 5,
+          "5": 4
+        },
+        "discard": [
+          "gold",
+          "gold",
+          "gold",
+          "leather",
+          "leather",
+          "leather",
+          "leather",
+          "leather",
+          "cloth",
+          "cloth",
+          "diamond",
+          "diamond",
+          "cloth",
+          "cloth",
+          "cloth",
+          "spice",
+          "spice",
+          "silver",
+          "silver",
+          "silver",
+          "silver",
+          "diamond",
+          "diamond",
+          "spice",
+          "spice",
+          "spice",
+          "cloth",
+          "leather",
+          "silver",
+          "silver",
+          "leather",
+          "leather",
+          "diamond",
+          "diamond"
+        ],
+        "deckCount": 3,
+        "opponentHandCount": 3,
+        "turn": 52
+      },
+      "searchMs": 3.0200000000004366,
+      "resolved": true,
+      "missed": true,
+      "resolvedAtEvent": 90,
+      "ownMovesAtResolution": 28,
+      "roundWinner": 0,
+      "roundScores": [
+        90,
+        47
+      ],
+      "matchWinner": 0,
+      "actualOwnMovesUntilRoundEnd": 3,
+      "window": [
+        {
+          "index": 88,
+          "actor": 0,
+          "action": {
+            "type": "take",
+            "index": 0
+          }
+        },
+        {
+          "index": 89,
+          "actor": 1,
+          "action": {
+            "type": "take",
+            "index": 1
+          }
+        },
+        {
+          "index": 90,
+          "actor": 0,
+          "action": {
+            "type": "take",
+            "index": 0
+          }
+        }
+      ],
+      "actualRoundResult": {
+        "round": 2,
+        "scores": [
+          90,
+          47
+        ],
+        "goods": [
+          82,
+          34
+        ],
+        "bonuses": [
+          8,
+          8
+        ],
+        "camel": 1,
+        "winner": 0,
+        "reason": "牌堆已无法补满市场"
+      }
+    }
+  ]
+}

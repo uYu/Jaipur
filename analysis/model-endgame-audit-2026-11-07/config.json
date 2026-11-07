@@ -1,0 +1,16 @@
+{
+  "modelVersion": 147126,
+  "modelSha256": "70dab55747386b2eba8765f20590b551453fdd2d71025ba05fa64baa85560f83",
+  "matches": 200,
+  "targetSeals": 2,
+  "seedStart": 3611070000,
+  "lanes": 8,
+  "policy": "pure-browser-model-self-play",
+  "encoding": "same-as-browser; zero seals/round context; posterior takePreference=0.75",
+  "proofBudget": {
+    "maxNodes": 2000,
+    "maxMs": "unlimited for reproducible offline proofs"
+  },
+  "missDefinition": "No round win by the end of the next horizon own actions; a later win still counts as missed",
+  "parity": "JS checks initial rows, every 100th decision, every rule opportunity and all near ties"
+}

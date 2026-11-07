@@ -1,6 +1,7 @@
 import type { Observation } from "./ai.ts";
 import { dmcAction, dmcActions, dmcState } from "./dmc.ts";
 import { DouzeroNetwork } from "./douzero-network.ts";
+import { findEndgameWinningAction } from "./endgame.ts";
 
 let network: Promise<DouzeroNetwork> | undefined;
 function loadNetwork() {
@@ -15,8 +16,10 @@ function loadNetwork() {
 }
 
 export async function chooseDouzeroAction(observation: Observation, history: number[][]) {
+  const win = findEndgameWinningAction(observation);
+  if (win) return win;
   const model = await loadNetwork();
-  return chooseDouzeroActionFromModel(model, observation, history);
+  return scoreActions(model, observation, history);
 }
 
 export function chooseDouzeroActionFromModel(
@@ -24,6 +27,12 @@ export function chooseDouzeroActionFromModel(
   observation: Observation,
   history: number[][],
 ) {
+  const win = findEndgameWinningAction(observation);
+  if (win) return win;
+  return scoreActions(model, observation, history);
+}
+
+function scoreActions(model: DouzeroNetwork, observation: Observation, history: number[][]) {
   const actions = dmcActions(observation);
   const state = dmcState(observation, { ownSeals: 0, opponentSeals: 0, round: 0 });
   const scores = model.score(history, state, actions.map((action) => dmcAction(observation, action)));
