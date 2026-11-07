@@ -1,8 +1,14 @@
 /* Portrait tabletop. Cards, selections, actions and tutorial stay shared. */
+.market-zone {
+  display: contents;
+}
+.counter-quote {
+  display: contents;
+}
 @media (max-width: 860px) {
   .game-shell.portrait-table {
-    --felt: #245e4e;
-    --felt-line: #c0d4ac40;
+    --felt: #edf0ec;
+    --felt-line: #d7dfd6;
     --board-gap: 7px;
     padding-inline: max(8px, env(safe-area-inset-left));
   }
@@ -13,41 +19,57 @@
     display: block;
     margin-top: 4px;
   }
+  .portrait-table[data-fit="scroll"] .table-column::after {
+    content: none;
+  }
+  .portrait-table[data-fit="scroll"] .game-grid::after {
+    content: "";
+    display: block;
+    height: calc(var(--action-panel-height) + env(safe-area-inset-bottom));
+  }
   .game-shell.portrait-table .table-column {
-    --text: #fff3d9;
-    --text-secondary: #d7e3cd;
+    --text: #303b36;
+    --text-secondary: #657169;
     --board-line: var(--felt-line);
-    --board-muted: #d7e3cd;
-    --board-quiet: #b4cab1;
-    --accent: #eed59c;
+    --board-muted: #657169;
+    --board-quiet: #89928c;
+    --accent: var(--selection-gold);
+    /* One physical card size for the market, hands and herds. */
+    --table-card-width: min(
+      var(--fit-market-width, 64px),
+      64px,
+      calc((100cqw - 24px - clamp(12px, 4cqw, 18px) * 2) / 7)
+    );
     container-type: inline-size;
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 7px;
-    padding: 10px;
-    border: 7px solid #90643e;
-    outline: 1px solid #6d492f;
-    border-radius: 20px;
-    background-color: var(--felt);
-    background-image: repeating-linear-gradient(
-      45deg,
-      #ffffff02 0 1px,
-      transparent 1px 5px
-    );
+    gap: 12px;
+    padding: 14px 12px;
+    border: 0;
+    outline: 0;
+    border-radius: 8px;
+    background: var(--felt);
     color: var(--text);
-    box-shadow:
-      inset 0 0 0 1px #dfc48988,
-      inset 0 0 0 4px #17473788,
-      0 5px 15px #45331e24;
+    box-shadow: none;
   }
   .portrait-table .table-column::before {
-    content: "";
-    position: absolute;
-    inset: 5px;
-    border: 1px solid #d8c18c44;
-    border-radius: 8px;
-    pointer-events: none;
+    content: none;
+  }
+  .portrait-table .market-zone {
+    container-type: inline-size;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-inline: -6px;
+    padding: 8px 6px;
+    border-radius: 5px;
+    background-color: #f2e6e0;
+    box-shadow: none;
+  }
+  .portrait-table .market-zone::before {
+    content: none;
   }
   .portrait-table .board-divider,
   .portrait-table .opponent-panel,
@@ -97,7 +119,7 @@
   }
   .game-shell.portrait-table .score-card-identity > b {
     font-size: var(--board-type-body);
-    color: #f4e5bd;
+    color: var(--text);
   }
   .portrait-table
     :is(.score-stat-label, .score-seals-label, .score-private-label) {
@@ -108,10 +130,10 @@
     color: var(--board-quiet);
   }
   .game-shell.portrait-table .score-card-identity::before {
-    background: #f3da92;
+    background: #ddbf76;
   }
   .game-shell.portrait-table .score-opponent .score-card-identity > b {
-    color: #f0c6a0;
+    color: #56645c;
   }
   .game-shell.portrait-table
     :is(.score-icon, .score-card-seals, .score-card-seals b) {
@@ -161,7 +183,7 @@
     color: var(--text);
   }
   .game-shell.portrait-table .score-stat-income > strong {
-    color: #f4dd9d;
+    color: var(--text);
   }
   .game-shell.portrait-table .score-card-stats .score-private {
     font-size: var(--board-type-label);
@@ -173,38 +195,92 @@
   /* Real back faces use only the public count; no hidden goods enter the DOM. */
   .portrait-table .opponent-cards-and-herd {
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    --hand-card-width: var(--table-card-width);
+    grid-template-columns: var(--table-card-width) minmax(0, 1fr) 64px;
     align-items: center;
-    gap: 3px;
-    min-height: 64px;
-    margin-top: 4px;
+    gap: 8px;
+    min-height: 60px;
+    margin-top: 0;
   }
   .portrait-table .opponent-cards-and-herd > .camel-pile {
     grid-column: 1;
     grid-row: 1;
   }
+  .portrait-table .opponent-cards-and-herd > .player-reserve {
+    display: contents;
+  }
+  .portrait-table .seat-opponent .player-reserve > .camel-pile {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .portrait-table .seat-opponent .reserve-money {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+  }
+  .portrait-table .player-reserve {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 64px;
+  }
+  .portrait-table .reserve-money {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    box-shadow: none;
+  }
+  .portrait-table .reserve-money:focus-visible {
+    outline: 2px solid var(--selection-gold);
+    outline-offset: 2px;
+  }
+  .portrait-table .header-round .match-seals {
+    margin-left: 6px;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
   .opponent-hand-fan {
+    position: relative;
     grid-column: 2;
     grid-row: 1;
     display: flex;
     align-items: center;
-    justify-content: center;
-    height: 45px;
-    margin: 3px 0 2px;
-    padding-inline: 10px;
+    justify-content: flex-start;
+    gap: 6px;
+    --hand-overlap: min(
+      0px,
+      calc(
+        (
+            100% - var(--fan-count) * var(--hand-card-width) -
+              (var(--fan-count) - 1) * 6px
+          ) /
+          max(1, var(--fan-count) - 1)
+      )
+    );
+    min-width: 0;
+    height: calc(var(--hand-card-width) * 1.5 + 6px);
+    margin: 0;
+    padding: 3px 0;
     pointer-events: none;
   }
   .portrait-table .camel-pile {
     position: relative;
     display: inline-block;
     flex: none;
-    width: 44px;
-    height: 60px;
+    width: var(--table-card-width);
+    height: calc(var(--table-card-width) * 1.5);
     vertical-align: bottom;
   }
   .portrait-table .camel-pile-stack {
     position: absolute;
-    inset: 1px 3px 4px 2px;
+    inset: 0;
   }
   .portrait-table .camel-pile-card {
     position: absolute;
@@ -224,8 +300,8 @@
     transform: translate(-2px, 2px);
   }
   .portrait-table .camel-pile-card > .goods-art {
-    width: 30px;
-    height: 36px;
+    width: 70%;
+    height: 70%;
     max-width: none;
   }
   .portrait-table .camel-pile-count {
@@ -239,8 +315,8 @@
     padding: 0 3px;
     border: 2px solid var(--felt);
     border-radius: 50%;
-    background: #f1dba4;
-    color: #3e4d32;
+    background: #ecf0e5;
+    color: #345543;
     font-size: var(--board-type-body);
     line-height: 18px;
     font-variant-numeric: tabular-nums;
@@ -252,30 +328,23 @@
     display: grid;
     place-items: center;
     flex: none;
-    width: 29px;
-    height: 42px;
+    width: var(--hand-card-width);
+    height: auto;
+    aspect-ratio: 2 / 3;
+    margin: 0;
     border: 1px solid #f6f1dc;
     border-radius: 4px;
     background: var(--card-bg, #e7e0d1);
     color: var(--card-color, #fbf8ed);
     box-shadow: 0 1px 2px #273c3020;
-    transform: rotate(
-      calc((var(--fan-index) - (var(--fan-count) - 1) / 2) * 3deg)
-    );
-    transform-origin: center 90%;
+    transform: none;
   }
   .opponent-hand-card + .opponent-hand-card {
-    margin-left: -8px;
+    margin-left: var(--hand-overlap);
   }
   .opponent-hand-card.card-back {
-    background: repeating-linear-gradient(
-      45deg,
-      #173f34,
-      #173f34 3px,
-      #214b3e 3px,
-      #214b3e 5px
-    );
-    color: #f5f2df;
+    background: #16483c;
+    color: #e3ede3;
   }
   .opponent-card-back-mark {
     display: grid;
@@ -283,12 +352,12 @@
     opacity: 0.75;
   }
   .opponent-card-back-mark > svg {
-    width: 16px;
-    height: 16px;
+    width: calc(var(--table-card-width) * 0.45);
+    height: calc(var(--table-card-width) * 0.45);
   }
   .opponent-hand-card > .goods-art {
-    width: 25px;
-    height: 29px;
+    width: 70%;
+    height: 70%;
     max-width: none;
   }
   .opponent-hand-empty {
@@ -298,7 +367,7 @@
 
   /* A compact bank sits beside the shared play area, folded across the phone. */
   .portrait-table .table-supply {
-    padding-block: 4px;
+    padding-block: 0;
     border: 0;
   }
   .game-shell.portrait-table .table-supply .mobile-supply {
@@ -311,6 +380,9 @@
     backdrop-filter: none;
   }
   .game-shell.portrait-table .table-supply .mobile-supply > summary {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    column-gap: 4px;
     padding: 0;
     background: transparent;
   }
@@ -323,39 +395,109 @@
     align-items: center;
     gap: 2px;
   }
-  .game-shell.portrait-table .supply-counter {
+  .game-shell.portrait-table .supply-strip {
     display: grid;
-    --stock-chip: clamp(34px, calc((100cqw - 60px) / 6), 44px);
-    grid-template-columns: auto auto;
-    justify-content: center;
+    grid-column: 1;
+    grid-row: 1;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .game-shell.portrait-table .supply-counter,
+  .game-shell.portrait-table[data-density] .supply-counter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 52px;
+    justify-items: center;
     align-items: center;
-    gap: 3px 1px;
+    gap: 2px;
     padding: 0;
     border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+  }
+  .game-shell.portrait-table .counter-quote {
+    --chip-paper: var(--card-bg);
+    --chip-rim: color-mix(in srgb, var(--card-color) 45%, transparent);
+    align-self: start;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+    width: 40px;
+    max-width: 100%;
+    height: 38px;
+    padding: 1px;
+    border: 1px solid color-mix(in srgb, var(--card-color) 45%, transparent);
+    border-radius: 999px;
+    background: var(--card-bg);
+    color: var(--card-color);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--card-color) 25%, transparent);
+  }
+  .game-shell.portrait-table .counter-quote::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 1px solid color-mix(in srgb, var(--card-color) 25%, transparent);
+    border-radius: inherit;
+    pointer-events: none;
   }
   .game-shell.portrait-table .counter-name {
-    display: none;
+    display: grid;
+    grid-column: 1;
+    grid-row: 1;
+    place-items: center;
+    min-height: 0;
   }
+  .game-shell.portrait-table .counter-name > .goods-art {
+    width: 14px;
+    height: 14px;
+    color: var(--card-color);
+  }
+  .portrait-table .counter-name > span,
   .portrait-table .counter-next-suffix {
     display: none;
   }
-  .game-shell.portrait-table .counter-remaining {
-    grid-column: 1 / -1;
-    grid-row: 2;
+  .game-shell.portrait-table :is(.counter-remaining, .stock-bonus-count) {
+    position: absolute;
+    right: -1px;
+    bottom: -14px;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    gap: 1px;
-    min-height: 16px;
-    line-height: 16px;
+    gap: 0;
+    width: max-content;
+    min-width: 20px;
+    height: 16px;
+    min-height: 0;
+    padding: 0 3px;
+    border: 1px solid #c4d0c7;
+    border-radius: 7px;
+    background: #f7f9f4;
+    color: #53645a;
+    font-size: 11px;
+    line-height: 14px;
+    white-space: nowrap;
+    box-shadow: none;
   }
-  .game-shell.portrait-table .counter-remaining :is(small, b) {
-    font-size: var(--board-type-label);
-    color: var(--board-muted);
+  .game-shell.portrait-table
+    :is(.counter-remaining, .stock-bonus-count)
+    > small {
+    font-size: 9px;
+    font-weight: 400;
+    color: inherit;
   }
-  .game-shell.portrait-table .counter-remaining b {
-    color: #f4dd9d;
+  .game-shell.portrait-table :is(.counter-remaining, .stock-bonus-count) > b {
+    font-size: 11px;
+    font-weight: 500;
+    color: inherit;
   }
   .game-shell.portrait-table .counter-next {
-    grid-column: 1 / -1;
+    grid-column: 2;
     grid-row: 1;
     justify-self: center;
     min-height: 0;
@@ -367,25 +509,13 @@
   .portrait-table .stock-chip-face {
     display: grid;
     place-items: center;
-    align-content: center;
-    gap: 0;
-    width: var(--stock-chip);
-    height: var(--stock-chip);
-    border: 2px solid color-mix(in srgb, var(--card-color) 50%, #fff1c9);
-    border-radius: 50%;
-    background: var(--card-bg);
+    min-width: 16px;
+    height: 20px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
     color: var(--card-color);
-    box-shadow:
-      inset 0 0 0 2px #fff8df66,
-      0 2px 0 var(--card-color),
-      0 4px 0 color-mix(in srgb, var(--card-color) 80%, #203c2c),
-      0 5px 5px #102c2633;
-  }
-  .portrait-table .stock-chip-face > .goods-art {
-    width: 14px;
-    height: 14px;
-    max-width: none;
-    color: var(--card-color);
+    box-shadow: none;
   }
   .game-shell.portrait-table .stock-chip-face > b {
     display: block;
@@ -395,59 +525,116 @@
     border: 0;
     border-radius: 0;
     background: none;
-    font-size: var(--board-type-body);
-    line-height: 16px;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 20px;
     color: var(--card-color);
   }
   .game-shell.portrait-table .supply-bonuses {
-    margin-top: 2px;
-    padding-top: 2px;
+    margin-top: 6px;
+    padding-top: 0;
     border: 0;
+    color: var(--board-muted);
     font-size: var(--board-type-label);
-    line-height: 16px;
+    line-height: 18px;
   }
   .game-shell.portrait-table .stock-bonus-bank {
-    display: flex;
+    display: grid;
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: center;
-    justify-content: center;
-    gap: 14px;
-    margin-top: 4px;
-    padding-top: 0;
+    gap: 2px;
+    margin: 0;
+    padding-left: 4px;
+    border-left: 1px solid #b48a7666;
+  }
+  .portrait-table .stock-bonus-label {
+    display: none;
   }
   .portrait-table .stock-bonus-group {
-    display: inline-flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 52px;
     align-items: center;
-    gap: 6px;
+    justify-items: center;
+    gap: 2px;
+    text-align: center;
   }
   .portrait-table .stock-bonus-chip {
-    display: inline-grid;
-    place-items: center;
-    width: 38px;
+    --chip-paper: #e4dcc4;
+    --chip-rim: #c2ac72;
+    align-self: start;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    max-width: 100%;
+    min-width: 0;
     height: 38px;
-    border: 2px solid #ecd6a7;
-    border-radius: 50%;
-    background: #a9784d;
-    color: #fff3d9;
-    font-size: var(--board-type-heading);
+    min-height: 38px;
+    gap: 0;
+    border: 1px solid #c2ac72;
+    padding: 1px;
+    border-radius: 999px;
+    background: #e4dcc4;
+    color: #71603c;
+    white-space: nowrap;
+    box-shadow: 0 1px 0 #b09e6c55;
+  }
+  .portrait-table .stock-bonus-chip::before {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 1px solid #c2ac7266;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .portrait-table .stock-bonus-chip > svg {
+    width: 14px;
+    height: 14px;
+  }
+  .portrait-table .stock-bonus-tier {
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+    line-height: 20px;
+  }
+  .portrait-table .stock-bonus-tier > b {
+    font-size: 14px;
     font-weight: 600;
-    box-shadow:
-      inset 0 0 0 2px #fff4d220,
-      0 3px 0 #60442b;
   }
-  .portrait-table .stock-bonus-4 {
-    background: #63746a;
-    box-shadow:
-      inset 0 0 0 2px #fff4d220,
-      0 3px 0 #394c42;
+  .portrait-table .stock-bonus-tier > small {
+    font-size: 8px;
   }
-  .portrait-table .stock-bonus-5 {
-    background: #b08b45;
+  .game-shell.portrait-table
+    :is(.counter-quote, .stock-bonus-chip)[data-stack="2"] {
     box-shadow:
-      inset 0 0 0 2px #fff4d220,
-      0 3px 0 #6b542d;
+      0 2px 0 -1px var(--chip-paper),
+      0 2px 0 var(--chip-rim);
+  }
+  .game-shell.portrait-table
+    :is(.counter-quote, .stock-bonus-chip)[data-stack="3"] {
+    box-shadow:
+      0 2px 0 -1px var(--chip-paper),
+      0 2px 0 var(--chip-rim),
+      0 4px 0 -1px var(--chip-paper),
+      0 4px 0 var(--chip-rim);
+  }
+  .game-shell.portrait-table
+    :is(.counter-quote, .stock-bonus-chip)[data-stack="0"] {
+    box-shadow: none;
+  }
+  .portrait-table .stock-bonus-count {
+    white-space: nowrap;
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 400;
   }
   .portrait-table .stock-bonus-count > b {
-    color: #f4dd9d;
+    color: inherit;
     font-weight: 400;
   }
 
@@ -471,14 +658,8 @@
     display: none;
   }
   .game-shell.portrait-table .market-deck {
-    background: repeating-linear-gradient(
-      45deg,
-      #173f34,
-      #173f34 3px,
-      #214b3e 3px,
-      #214b3e 5px
-    );
-    color: #f5eacb;
+    background: #16483c;
+    color: #e3ede3;
     box-shadow: -2px 2px 0 #b7a97c88;
   }
   .portrait-table .card {
@@ -493,20 +674,8 @@
   .portrait-table .card .premium-badge-minimum {
     display: inline;
   }
-  .portrait-table .card.selected .premium-badge {
-    visibility: hidden;
-  }
-  .game-shell.portrait-table .card .premium-badge {
-    padding: 1px 3px;
-    color: #635034;
-    border-radius: 3px;
-  }
   .game-shell.portrait-table .market-row {
-    --market-card-width: min(
-      108px,
-      var(--fit-market-width, 108px),
-      calc((100cqw - 30px) / 6)
-    );
+    --market-card-width: var(--table-card-width);
   }
 
   .game-shell.portrait-table .action-ledger {
@@ -553,10 +722,7 @@
     margin-bottom: 6px;
   }
   .game-shell.portrait-table .hand-and-herd {
-    --hand-card-width: min(
-      var(--fit-hand-width, 60px),
-      calc((100% - 30px) / 7)
-    );
+    --hand-card-width: var(--table-card-width);
   }
   .game-shell.portrait-table .hand-cards {
     gap: 5px;
@@ -703,32 +869,28 @@
     color: var(--card-color);
   }
   .portrait-table :is(.action-summary-income, .action-summary-bonus) {
-    color: #f4dd9d;
+    color: var(--text);
   }
   .portrait-table .table-last-action .ledger-empty {
     color: var(--board-quiet);
   }
 
   .game-shell.portrait-table[data-density="tight"] .table-column {
-    gap: 5px;
-    padding-block: 7px;
-  }
-  .portrait-table[data-density="tight"] .opponent-hand-fan {
-    height: 36px;
-    margin-block: 1px;
-  }
-  .portrait-table[data-density="tight"] .opponent-hand-card {
-    width: 25px;
-    height: 35px;
+    gap: 8px;
+    padding-block: 10px;
   }
   .portrait-table[data-density="tight"] .table-supply {
-    padding-block: 3px;
+    padding-block: 0;
   }
 }
 
 @media (max-width: 360px) {
   .game-shell.portrait-table .table-column {
     padding-inline: 7px;
+  }
+  .portrait-table .market-zone {
+    margin-inline: -4px;
+    padding-inline: 4px;
   }
   .portrait-table .score-stat-title .score-icon {
     display: inline-flex;
@@ -739,8 +901,8 @@
   .game-shell.portrait-table .score-card-stats > .score-stat {
     gap: 2px;
   }
-  .game-shell.portrait-table .supply-counter {
-    column-gap: 1px;
+  .game-shell.portrait-table .counter-quote {
+    gap: 0;
   }
   .game-shell.portrait-table .action-panel .confirm {
     padding-inline: 6px;

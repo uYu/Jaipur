@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { Good, State } from "../game/types.ts";
 import type { Presentation } from "../game/presentation.ts";
 import {
@@ -250,7 +250,7 @@ function OpponentHandFan({
       data-motion-anchor="opponent-hand"
       role="group"
       aria-label={`米拉的手牌，共 ${count} 张${hand === null ? "，内容保密" : "，已公开"}`}
-      style={{ "--fan-count": count } as CSSProperties}
+      style={{ "--fan-count": Math.max(1, count) } as CSSProperties}
     >
       {count === 0 ? (
         <span className="opponent-hand-empty">暂无手牌</span>
@@ -261,6 +261,7 @@ function OpponentHandFan({
             <span
               key={index}
               className={`opponent-hand-card${good === undefined ? " card-back" : ` ${good}`}`}
+              data-motion-anchor={`opponent-hand-${index}`}
               role="img"
               aria-label={good === undefined ? "背面朝上的手牌" : LABEL[good]}
               style={
@@ -282,6 +283,80 @@ function OpponentHandFan({
         })
       )}
     </span>
+  );
+}
+
+export function PlayerReserve({
+  state,
+  actor,
+  onInspect,
+  revealOpponent = false,
+}: {
+  state: State;
+  actor: 0 | 1;
+  onInspect: () => void;
+  revealOpponent?: boolean;
+}) {
+  const cards = playerCardsDisplay(state, actor, revealOpponent);
+  const score = playerScoreDisplay(state, actor, revealOpponent);
+  const own = actor === 0;
+  return (
+    <div
+      className="player-reserve"
+      role="group"
+      aria-label={own ? "你的驼队与钱堆" : "米拉的驼队与钱堆"}
+    >
+      <CamelPile
+        count={cards.camels}
+        motionAnchor={own ? "your-herd" : "opponent-herd"}
+      />
+      <button
+        className={`reserve-money reserve-money-${own ? "own" : "opponent"}`}
+        onClick={onInspect}
+        aria-label={`查看${own ? "你的" : "米拉的"}得分明细`}
+        aria-haspopup="dialog"
+        data-motion-anchor={own ? "your-score" : "opponent-score"}
+      >
+        <MoneyPile amount={score.total} actor={actor} tabletop />
+      </button>
+    </div>
+  );
+}
+
+export function OpponentSeat({
+  state,
+  onInspect,
+  revealOpponent = false,
+  actionSummary,
+}: {
+  state: State;
+  onInspect: () => void;
+  revealOpponent?: boolean;
+  actionSummary?: ReactNode;
+}) {
+  const cards = playerCardsDisplay(
+    state,
+    1,
+    revealOpponent || state.phase !== "playing",
+  );
+  return (
+    <section className="player-seat seat-opponent" aria-label="米拉的座位">
+      {actionSummary}
+      <div
+        className="opponent-cards-and-herd"
+        style={
+          { "--hand-count": Math.max(1, cards.handCount) } as CSSProperties
+        }
+      >
+        <OpponentHandFan hand={cards.hand} count={cards.handCount} />
+        <PlayerReserve
+          state={state}
+          actor={1}
+          onInspect={onInspect}
+          revealOpponent={revealOpponent}
+        />
+      </div>
+    </section>
   );
 }
 

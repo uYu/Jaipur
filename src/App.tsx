@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,6 +13,7 @@ import {
   Pause,
   Play,
   Plus,
+  Store,
   X,
 } from "lucide-react";
 import type { Action, Difficulty, Event, Save, State } from "./game/types.ts";
@@ -29,11 +31,13 @@ import { observe } from "./game/ai.ts";
 import { dmcEventHistory } from "./game/dmc-history.ts";
 import { advance, parseSave, replay, SAVE_KEY } from "./game/storage.ts";
 import { JaipurMark } from "./components/Art.tsx";
-import { MarketStall } from "./components/MarketStall.tsx";
-import { CamelPile } from "./components/CamelPile.tsx";
 import { Card } from "./components/Card.tsx";
 import { MobileSupply, SupplyDetails } from "./components/MobileSupply.tsx";
-import { PlayerScores, ScoreDetails } from "./components/PlayerScores.tsx";
+import {
+  OpponentSeat,
+  PlayerReserve,
+  ScoreDetails,
+} from "./components/PlayerScores.tsx";
 import { ResultDialog, resultTitle } from "./components/ResultDialog.tsx";
 import { SaleReceipt } from "./components/SaleReceipt.tsx";
 import { actionSummaries } from "./game/receipts.ts";
@@ -52,7 +56,6 @@ import type { BoardFeedback } from "./game/action-feedback.ts";
 import { Rules } from "./components/Rules.tsx";
 import { Tutorial } from "./components/Tutorial.tsx";
 import { ActionPanel } from "./components/ActionPanel.tsx";
-import { GameMenu } from "./components/GameMenu.tsx";
 import {
   createTutorialSave,
   TUTORIAL_ACTIONS,
@@ -63,9 +66,10 @@ import {
   normalizeTutorialSelection,
   tutorialAllowsMarket,
   tutorialAllowsHand,
+  tutorialAllowsCamels,
   tutorialFeedback,
 } from "./game/tutorial.ts";
-import type { ActionMode, Selection } from "./game/selection.ts";
+import type { Selection } from "./game/selection.ts";
 import { readPreferences, writePreferences } from "./game/preferences.ts";
 import { useReducedMotion } from "./hooks/useReducedMotion.ts";
 import { useMobileLayout } from "./hooks/useMobileLayout.ts";
@@ -177,9 +181,6 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [marketNotice, transition, animationPaused, screen]);
   const [selection, setSelection] = useState(emptySelection);
-  const [actionMode, setActionMode] = useState<ActionMode | null>(null);
-  const [actionDescriptionTarget, setActionDescriptionTarget] =
-    useState<HTMLDivElement | null>(null);
   const { market, hand } = selection;
   const shownSave = teaching ? tutorialSave : save;
   const shownEventLimit =
@@ -207,14 +208,7 @@ export default function App() {
   }, [save]);
   const clear = () => {
     setSelection(emptySelection());
-    setActionMode(null);
   };
-  function chooseActionMode(mode: ActionMode | null) {
-    if (mode === actionMode) return;
-    setActionMode(mode);
-    setSelection(emptySelection());
-    setMarketNotice(null);
-  }
   const commit = (event: Event) => {
     if (!game || !save || transition) return;
     try {
@@ -556,18 +550,12 @@ export default function App() {
     viewed.current === 0 &&
     !modal &&
     !transition;
-  const canChooseMode =
-    (screen === "game" || (teaching && tutorialGuide.kind === "mode")) &&
-    viewed?.phase === "playing" &&
-    viewed.current === 0 &&
-    !modal &&
-    !transition;
   function cardFeedback(anchor: string) {
     if (transition) {
       const departure = transition.feedback?.departures.find(
         (item) => item.anchor === anchor,
       );
-      return departure ? { notice: departure.label, departing: mobile } : {};
+      return departure ? { departing: mobile } : {};
     }
     if (
       marketNotice?.round !== viewed?.round ||
@@ -578,19 +566,17 @@ export default function App() {
       anchor.startsWith("market-") &&
       marketNotice?.addedSlots.includes(Number(anchor.slice(7)))
     )
-      return { notice: marketNotice.addedLabel, arriving: true };
+      return { arriving: true };
     if (
       mobile &&
       anchor.startsWith("hand-") &&
       marketNotice?.handArrivals.includes(Number(anchor.slice(5)))
     )
-      return { notice: marketNotice.handLabel, arriving: true };
+      return { arriving: true };
     return {};
   }
   const { action } =
-    viewed && active
-      ? selectedAction(viewed, selection, actionMode)
-      : { action: null };
+    viewed && active ? selectedAction(viewed, selection) : { action: null };
   const turnStatus =
     screen === "replay"
       ? transition
@@ -616,6 +602,26 @@ export default function App() {
       <b>斋普尔</b>
     </div>
   );
+  const returnToMenuButton = (
+    <button
+      className="return-to-menu"
+      title="返回主菜单，保留当前对局"
+      aria-label="返回菜单"
+      onClick={() => {
+        setScreen("menu");
+        setMenu("home");
+        setReplayPlaying(false);
+        if (teaching || screen === "replay") {
+          setTransition(null);
+          setMarketNotice(null);
+          clear();
+        }
+      }}
+    >
+      <Home size={19} aria-hidden="true" />
+      <span>{mobile ? "返回" : "返回菜单"}</span>
+    </button>
+  );
   const gameToolButtons = (
     <>
       <button
@@ -634,23 +640,7 @@ export default function App() {
         <History size={19} />
         <span>行动记录</span>
       </button>
-      <button
-        title="返回菜单"
-        aria-label="返回菜单"
-        onClick={() => {
-          setScreen("menu");
-          setMenu("home");
-          setReplayPlaying(false);
-          if (teaching || screen === "replay") {
-            setTransition(null);
-            setMarketNotice(null);
-            clear();
-          }
-        }}
-      >
-        <Home size={19} />
-        <span>返回菜单</span>
-      </button>
+      {returnToMenuButton}
     </>
   );
   const actionLedger = viewed ? (
@@ -839,8 +829,10 @@ export default function App() {
         <main
           ref={boardRef}
           data-paused={animationPaused}
-          data-action-mode={actionMode ?? "choose"}
-          data-selecting={active && !!actionMode}
+          data-selecting={
+            active &&
+            (market.length > 0 || hand.length > 0 || selection.camels > 0)
+          }
           className={`game-shell ${mobile ? "portrait-table" : ""} ${teaching ? "tutorial-game" : ""} ${(screen === "game" || screen === "replay" || teaching) && viewed.phase === "playing" ? "viewport-table" : ""} ${mobile && transition?.kind === "deal" ? "mobile-dealing" : ""}`}
         >
           <nav className="game-tools" aria-label="游戏功能">
@@ -848,12 +840,40 @@ export default function App() {
             {gameToolButtons}
           </nav>
           <header className="game-header">
-            {brand}
+            <div className="game-identity">
+              {brand}
+              <span
+                className="opponent-level"
+                aria-label={
+                  teaching
+                    ? "练习对局"
+                    : `当前对手难度：${DIFFICULTY_NAME[save?.difficulty ?? difficulty]}`
+                }
+              >
+                {teaching
+                  ? "练习对局"
+                  : `米拉 · ${DIFFICULTY_NAME[save?.difficulty ?? difficulty]}`}
+              </span>
+            </div>
             <div className="header-round">
               第 {viewed.round} 轮 <span>·</span>{" "}
+              {mobile && (
+                <>
+                  {`第 ${viewed.phase === "playing" ? viewed.turn + 1 : viewed.turn} 手`}
+                  <span>·</span>
+                </>
+              )}
               {viewed.targetSeals === 1 ? "1 局定胜负" : "三局两胜"}
+              {mobile && viewed.targetSeals !== 1 && (
+                <span
+                  className="match-seals"
+                  aria-label={`胜局：你 ${viewed.seals[0]}，米拉 ${viewed.seals[1]}`}
+                >
+                  {viewed.seals[0]} : {viewed.seals[1]}
+                </span>
+              )}
             </div>
-            <GameMenu>{gameToolButtons}</GameMenu>
+            {mobile && returnToMenuButton}
           </header>
           {mobile && (
             <nav className="table-tools" aria-label="牌桌工具">
@@ -867,20 +887,12 @@ export default function App() {
               </button>
               <button
                 onClick={() => setModal("supply")}
-                aria-label="查看筹码剩余详情"
+                aria-label="查看筹码盘"
                 aria-haspopup="dialog"
                 title="3 类筹码售罄即收市"
               >
                 <Coins size={16} />
-                <span>筹码</span>
-                <small>
-                  {
-                    Object.values(viewed.tokens).filter(
-                      (tokens) => !tokens.length,
-                    ).length
-                  }
-                  /3
-                </small>
+                <span>筹码盘</span>
               </button>
               <button
                 onClick={() => setModal("rules")}
@@ -891,15 +903,6 @@ export default function App() {
                 <span>游戏规则</span>
               </button>
             </nav>
-          )}
-          {mobile && (
-            <aside className="table-notes" aria-label="本手提示">
-              {actionLedger}
-              <div
-                className="table-guidance"
-                ref={setActionDescriptionTarget}
-              />
-            </aside>
           )}
           {screen === "replay" && (
             <div className="replay-bar">
@@ -1007,23 +1010,16 @@ export default function App() {
                 牌桌
               </div>
               {mobile && (
-                <>
-                  <PlayerScores
-                    actor={1}
-                    state={viewed}
-                    receipts={receipts}
-                    onInspect={() => setModal("scores")}
-                    paused={animationPaused}
-                    revealOpponent={screen === "replay"}
-                  />
-                  <div className="table-supply">
-                    <MobileSupply
-                      state={viewed}
-                      onInspect={() => setModal("supply")}
-                      tabletop
-                    />
-                  </div>
-                </>
+                <OpponentSeat
+                  state={viewed}
+                  onInspect={() => setModal("scores")}
+                  revealOpponent={screen === "replay"}
+                  actionSummary={
+                    <aside className="table-notes" aria-label="对手本手行动">
+                      {actionLedger}
+                    </aside>
+                  }
+                />
               )}
               <div
                 className={`opponent-panel ${viewed.current === 1 && viewed.phase === "playing" ? "turn-active" : ""}`}
@@ -1073,96 +1069,93 @@ export default function App() {
                   <SaleReceipt receipt={receipts[1]} actor={1} />
                 </div>
               </div>
-              <section className="market-table" aria-label="中央集市">
-                <div className="market-heading">
-                  <div>
-                    <p className="eyebrow">斋普尔集市</p>
-                    <h2>中央集市</h2>
-                  </div>
-                  <span className="market-count">始终补至 5 张</span>
-                </div>
-                <div className="market-row">
-                  <div
-                    className={`market-deck ${viewed.deck.length ? "" : "empty-deck"}`}
-                    data-motion-anchor="deck"
-                    aria-label={`牌堆剩余 ${viewed.deck.length} 张`}
-                  >
-                    <span className="market-deck-symbol" aria-hidden="true">
-                      <JaipurMark />
-                    </span>
-                    <b>{viewed.deck.length}</b>
-                    <span className="market-deck-label">牌堆</span>
-                  </div>
-                  <div className="market-cards">
-                    {viewed.market
-                      .map((good, i) => ({
-                        good,
-                        i,
-                        slot: visibleMarketSlots[i],
-                      }))
-                      .sort((a, b) => a.slot - b.slot)
-                      .map(({ good, i, slot }) => (
-                        <Card
-                          key={slot}
-                          motionId={`market-${slot}`}
-                          good={good}
-                          {...cardFeedback(`market-${slot}`)}
-                          selected={market.includes(i)}
-                          disabled={
-                            !active ||
-                            !actionMode ||
-                            actionMode === "sell" ||
-                            (actionMode === "exchange" && good === "camel") ||
-                            (teaching &&
-                              !tutorialAllowsMarket(tutorialStep, good))
-                          }
-                          onClick={() =>
-                            selectCards(
-                              selectMarket(viewed, selection, i, actionMode),
-                            )
-                          }
-                        />
-                      ))}
-                  </div>
-                  {mobile && (
-                    <div
-                      className="market-sale-pile"
-                      data-motion-anchor="sale"
-                      data-selling={
-                        transition?.kind === "action" &&
-                        transition.action.type === "sell"
-                      }
-                      role="img"
-                      aria-label="市场收货位，出售的牌放在这里"
-                    >
-                      <span className="market-sale-face" aria-hidden="true">
-                        <MarketStall />
-                      </span>
-                      <span className="market-sale-label" aria-hidden="true">
-                        市场
-                      </span>
-                    </div>
-                  )}
-                </div>
-                {!mobile && (
-                  <span
-                    className="sale-motion-anchor"
-                    data-motion-anchor="sale"
-                    aria-hidden="true"
-                  />
-                )}
-              </section>
-              <section className="hand-panel">
+              <div className="market-zone" role="group" aria-label="公共集市">
                 {mobile && (
-                  <PlayerScores
-                    actor={0}
-                    state={viewed}
-                    receipts={receipts}
-                    onInspect={() => setModal("scores")}
-                    paused={animationPaused}
-                    revealOpponent={screen === "replay"}
-                  />
+                  <div className="table-supply">
+                    <MobileSupply
+                      state={viewed}
+                      onInspect={() => setModal("supply")}
+                      tabletop
+                    />
+                  </div>
                 )}
+                <section className="market-table" aria-label="中央集市">
+                  <div className="market-heading">
+                    <div>
+                      <p className="eyebrow">斋普尔集市</p>
+                      <h2>中央集市</h2>
+                    </div>
+                    <span className="market-count">始终补至 5 张</span>
+                  </div>
+                  <div className="market-row">
+                    <div
+                      className={`market-deck ${viewed.deck.length ? "" : "empty-deck"}`}
+                      data-motion-anchor="deck"
+                      aria-label={`牌堆剩余 ${viewed.deck.length} 张`}
+                    >
+                      <span className="market-deck-symbol" aria-hidden="true">
+                        <JaipurMark />
+                      </span>
+                      <b>{viewed.deck.length}</b>
+                      <span className="market-deck-label">牌堆</span>
+                    </div>
+                    <div className="market-cards">
+                      {viewed.market
+                        .map((good, i) => ({
+                          good,
+                          i,
+                          slot: visibleMarketSlots[i],
+                        }))
+                        .sort((a, b) => a.slot - b.slot)
+                        .map(({ good, i, slot }) => (
+                          <Card
+                            key={slot}
+                            motionId={`market-${slot}`}
+                            good={good}
+                            {...cardFeedback(`market-${slot}`)}
+                            selected={market.includes(i)}
+                            disabled={
+                              !active ||
+                              (teaching &&
+                                !tutorialAllowsMarket(tutorialStep, good))
+                            }
+                            onClick={() =>
+                              selectCards(selectMarket(viewed, selection, i))
+                            }
+                          />
+                        ))}
+                    </div>
+                    {mobile && (
+                      <div
+                        className="market-sale-pile"
+                        data-motion-anchor="sale"
+                        data-selling={
+                          transition?.kind === "action" &&
+                          transition.action.type === "sell"
+                        }
+                        role="img"
+                        aria-label="市场收货位，出售的牌放在这里"
+                        title="出售的货物交到这里"
+                      >
+                        <span className="market-sale-sign" aria-hidden="true">
+                          <Store size={24} strokeWidth={1.5} />
+                        </span>
+                        <span className="market-sale-label" aria-hidden="true">
+                          市场
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  {!mobile && (
+                    <span
+                      className="sale-motion-anchor"
+                      data-motion-anchor="sale"
+                      aria-hidden="true"
+                    />
+                  )}
+                </section>
+              </div>
+              <section className="hand-panel">
                 <div className="hand-heading">
                   <div className="you-label">
                     <div className="avatar you">你</div>
@@ -1184,7 +1177,7 @@ export default function App() {
                         )}
                         <span
                           className="herd-summary camel"
-                          data-motion-anchor="your-herd"
+                          data-motion-anchor={mobile ? undefined : "your-herd"}
                         >
                           驼队 <b>{p.camels}</b> 头
                         </span>
@@ -1200,7 +1193,26 @@ export default function App() {
                     <SaleReceipt receipt={receipts[0]} actor={0} />
                   </div>
                 </div>
-                <div className="hand-and-herd">
+                <div
+                  className={`hand-and-herd${mobile ? " player-hand-and-herd" : ""}`}
+                  style={
+                    mobile
+                      ? ({
+                          "--hand-count": Math.max(1, p.hand.length),
+                        } as CSSProperties)
+                      : undefined
+                  }
+                >
+                  {mobile && (
+                    <div className="player-hand-herd">
+                      <PlayerReserve
+                        state={viewed}
+                        actor={0}
+                        onInspect={() => setModal("scores")}
+                        revealOpponent={screen === "replay"}
+                      />
+                    </div>
+                  )}
                   <div className="hand-cards" data-motion-anchor="your-hand">
                     <span
                       className="card small hand-card-measure"
@@ -1218,15 +1230,11 @@ export default function App() {
                           selected={hand.includes(i)}
                           disabled={
                             !active ||
-                            !actionMode ||
-                            actionMode === "take" ||
                             (teaching &&
                               !tutorialAllowsHand(tutorialStep, good))
                           }
                           onClick={() =>
-                            selectCards(
-                              selectHand(viewed, selection, i, actionMode),
-                            )
+                            selectCards(selectHand(viewed, selection, i))
                           }
                         />
                       ))
@@ -1237,26 +1245,27 @@ export default function App() {
                     )}
                   </div>
                 </div>
-                {mobile &&
-                  (screen === "replay" || viewed.phase !== "playing") && (
-                    <div className="readonly-herd">
-                      <CamelPile count={p.camels} motionAnchor="your-herd" />
-                    </div>
-                  )}
               </section>
               {viewed.phase === "playing" && (screen === "game" || teaching) ? (
                 <ActionPanel
                   state={viewed}
                   selection={selection}
                   active={active}
-                  mode={actionMode}
-                  onModeChange={chooseActionMode}
-                  chooseModeEnabled={canChooseMode}
-                  allowedMode={teaching ? tutorialGuide.mode : undefined}
-                  tabletop={mobile}
-                  descriptionTarget={actionDescriptionTarget}
+                  camelPaymentAllowed={
+                    !teaching || tutorialAllowsCamels(tutorialStep)
+                  }
+                  hint={
+                    teaching
+                      ? tutorialFeedback(tutorialStep, selection) ||
+                        (tutorialGuide.kind === "select"
+                          ? "选好后点教程「下一步」继续。"
+                          : tutorialGuide.kind === "confirm"
+                            ? "核对预览，再确认这笔交易。"
+                            : undefined)
+                      : undefined
+                  }
                   status={turnStatus}
-                  turnNumber={viewed.turn + 1}
+                  turnNumber={mobile ? undefined : viewed.turn + 1}
                   onSelectionChange={selectCards}
                   onClear={() => selectCards(emptySelection())}
                   confirmationBlocked={
@@ -1314,24 +1323,15 @@ export default function App() {
           saleReceipt={receipts[0]}
           feedback={tutorialFeedback(tutorialStep, selection)}
           canContinue={
-            tutorialStepAfterNext(
-              tutorialStep,
-              selection,
-              tutorialState,
-              actionMode,
-            ) !== tutorialStep
+            tutorialStepAfterNext(tutorialStep, selection, tutorialState) !==
+            tutorialStep
           }
           onHistory={() => setModal("log")}
           paused={!!transition || !!modal}
           onNext={() => {
             if (!transition && !modal)
               setTutorialStep(
-                tutorialStepAfterNext(
-                  tutorialStep,
-                  selection,
-                  tutorialState,
-                  actionMode,
-                ),
+                tutorialStepAfterNext(tutorialStep, selection, tutorialState),
               );
           }}
           onExit={() => {

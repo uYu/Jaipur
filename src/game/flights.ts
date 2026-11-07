@@ -17,6 +17,8 @@ export type Flight = {
   hideSource?: boolean;
   hideTarget?: boolean;
   slot?: number;
+  handCount?: number;
+  layout?: boolean;
 };
 export function actionFlights(
   before: State,
@@ -65,9 +67,10 @@ export function actionFlights(
       hideSource: true,
       toBack: actor === 1,
       slot:
-        actor === 0 && action.type !== "camels"
-          ? p.hand.length - surrendered.length + j
-          : j,
+        action.type !== "camels" ? p.hand.length - surrendered.length + j : j,
+      ...(action.type !== "camels"
+        ? { handCount: after.players[actor].hand.length }
+        : {}),
     }),
   );
   if (action.type === "sell") {

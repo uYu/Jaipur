@@ -5,6 +5,7 @@ import { presentAction } from "./presentation.ts";
 import type { Presentation } from "./presentation.ts";
 import { actionFlights, dealFlights } from "./flights.ts";
 import type { Flight } from "./flights.ts";
+import { handLayoutFlights } from "./hand-layout.ts";
 import { settlementFlights } from "./settlement-flights.ts";
 import { initialMarketSlots } from "./market-layout.ts";
 import { marketSlotsAt } from "./opponent-turn.ts";
@@ -38,6 +39,7 @@ function mobileFlights(
   if (action.type === "sell") {
     const departureHoldMs = reduced ? 400 : 500;
     const cards = flights.filter((flight) => flight.to === "sale");
+    const layout = flights.filter((flight) => flight.layout);
     const income = flights.filter((flight) => flight.coin !== undefined);
     const cardTravel = reduced ? 150 : 1050;
     const cardStagger = reduced ? 0 : 90;
@@ -46,12 +48,15 @@ function mobileFlights(
     const incomeStart = cardsEnd + (reduced ? 100 : 150);
     const incomeTravel = reduced ? 180 : 650;
     const incomeStagger = reduced ? 0 : 110;
-    const duration = income.length
-      ? incomeStart +
-        incomeTravel +
-        (income.length - 1) * incomeStagger +
-        (reduced ? 200 : 220)
-      : cardsEnd + (reduced ? 200 : 250);
+    const duration = Math.max(
+      income.length
+        ? incomeStart +
+            incomeTravel +
+            (income.length - 1) * incomeStagger +
+            (reduced ? 200 : 220)
+        : cardsEnd + (reduced ? 200 : 250),
+      layout.length ? cardsEnd + (reduced ? 220 : 700) : 0,
+    );
     return {
       departureHoldMs,
       duration,
@@ -60,6 +65,11 @@ function mobileFlights(
           ...flight,
           start: (departureHoldMs + index * cardStagger) / duration,
           end: (departureHoldMs + index * cardStagger + cardTravel) / duration,
+        })),
+        ...layout.map((flight) => ({
+          ...flight,
+          start: (cardsEnd + (reduced ? 0 : 60)) / duration,
+          end: (cardsEnd + (reduced ? 120 : 580)) / duration,
         })),
         ...income.map((flight, index) => ({
           ...flight,
@@ -71,7 +81,7 @@ function mobileFlights(
   }
 
   // An opponent's choice stays on the market long enough to identify it.
-  // Exchange directions then run as two distinct, ordered movements.
+  // Payment leads; receiving follows without a stop between the two streams.
   const departureHoldMs = actor === 1 ? 1200 : reduced ? 450 : 500;
   if (action.type === "exchange") {
     const incoming = flights.filter((flight) =>
@@ -81,16 +91,14 @@ function mobileFlights(
       flight.to.startsWith("market-"),
     );
     const stagger = reduced ? 0 : 40;
-    const incomingTravel = reduced ? 240 : 620;
-    const outgoingTravel = reduced ? 240 : 720;
-    const incomingSpan = incomingTravel + (incoming.length - 1) * stagger;
-    const outgoingStart =
-      departureHoldMs + incomingSpan + (reduced ? 140 : 120);
+    const outgoingTravel = reduced ? 200 : 900;
+    const incomingTravel = reduced ? 200 : 900;
+    const incomingStart = departureHoldMs + (reduced ? 100 : 240);
     const duration =
-      outgoingStart +
-      outgoingTravel +
-      (outgoing.length - 1) * stagger +
-      (reduced ? 180 : 160);
+      Math.max(
+        departureHoldMs + outgoingTravel + (outgoing.length - 1) * stagger,
+        incomingStart + incomingTravel + (incoming.length - 1) * stagger,
+      ) + (reduced ? 180 : 200);
     const phase = (items: Flight[], start: number, travel: number) =>
       items.map((flight, index) => ({
         ...flight,
@@ -101,19 +109,27 @@ function mobileFlights(
       departureHoldMs,
       duration,
       flights: [
-        ...phase(incoming, departureHoldMs, incomingTravel),
-        ...phase(outgoing, outgoingStart, outgoingTravel),
+        ...phase(outgoing, departureHoldMs, outgoingTravel),
+        ...phase(
+          flights.filter((flight) => flight.layout),
+          departureHoldMs + (reduced ? 100 : 260),
+          reduced ? 120 : 640,
+        ),
+        ...phase(incoming, incomingStart, incomingTravel),
       ],
     };
   }
   const stagger = reduced ? 0 : 60;
-  const travel = reduced ? 150 : 800;
-  const departures = flights.filter((flight) => flight.from !== "deck");
+  const travel = reduced ? 150 : 1000;
+  const departures = flights.filter(
+    (flight) => flight.from !== "deck" && !flight.layout,
+  );
+  const layout = flights.filter((flight) => flight.layout);
   const refills = flights.filter((flight) => flight.from === "deck");
   const departureEnd =
     departureHoldMs + travel + (departures.length - 1) * stagger;
   const refillStart = departureEnd + (reduced ? 140 : 120);
-  const refillTravel = reduced ? 180 : 800;
+  const refillTravel = reduced ? 180 : 900;
   const duration =
     (refills.length
       ? refillStart + refillTravel + (refills.length - 1) * stagger
@@ -126,6 +142,11 @@ function mobileFlights(
         ...flight,
         start: (departureHoldMs + index * stagger) / duration,
         end: (departureHoldMs + index * stagger + travel) / duration,
+      })),
+      ...layout.map((flight) => ({
+        ...flight,
+        start: departureHoldMs / duration,
+        end: (departureHoldMs + (reduced ? 120 : 640)) / duration,
       })),
       ...refills.map((flight, index) => ({
         ...flight,
@@ -146,7 +167,18 @@ export function actionTransition(
   eventLimit: number,
   options: TransitionOptions,
 ): ActionTransition {
+  const feedback = boardFeedback(before, action, after, slots);
+  const presentation = presentAction(
+    before,
+    action,
+    after,
+    options.revealOpponent,
+  );
   const flights = settlementFlights(before, action, after, slots);
+  if (options.mobile)
+    flights.push(
+      ...handLayoutFlights(before, after, { action: presentation, feedback }),
+    );
   if (options.mobile && (action.type === "take" || action.type === "camels"))
     flights.push(
       ...actionFlights(before, action, after, slots).filter(
@@ -183,9 +215,9 @@ export function actionTransition(
     eventLimit,
     before,
     marketSlots: slots,
-    action: presentAction(before, action, after, options.revealOpponent),
+    action: presentation,
     ...motion,
-    feedback: boardFeedback(before, action, after, slots),
+    feedback,
   };
 }
 

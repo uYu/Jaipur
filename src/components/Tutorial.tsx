@@ -254,7 +254,9 @@ export function Tutorial({
                     ? "米拉行动结束，轮到你了"
                     : guide.kind
                       ? "跟着亮起的区域动手试试"
-                      : "收市与胜负"}
+                      : guide.id.endsWith("-intro")
+                        ? "先了解，再动手"
+                        : "收市与胜负"}
           </span>
           <div className="tutorial-window-controls">
             <button
@@ -358,7 +360,7 @@ export function Tutorial({
               正式开市
               <ArrowRight size={16} />
             </button>
-          ) : reading || guide.kind === "select" || guide.kind === "mode" ? (
+          ) : reading || guide.kind === "select" ? (
             <button
               className="primary"
               onClick={onNext}

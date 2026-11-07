@@ -112,7 +112,7 @@ test("mobile taking and camel collection finish selected cards before refilling 
             (flight) =>
               Math.abs(
                 (flight.end - flight.start) * step.duration -
-                  (reduced ? 150 : 800),
+                  (reduced ? 150 : 1000),
               ) < 0.01,
           ),
         );
@@ -146,7 +146,7 @@ test("mobile taking and camel collection finish selected cards before refilling 
             (flight) =>
               Math.abs(
                 (flight.end - flight.start) * step.duration -
-                  (reduced ? 180 : 800),
+                  (reduced ? 180 : 900),
               ) < 0.01,
           ),
         );
@@ -156,7 +156,11 @@ test("mobile taking and camel collection finish selected cards before refilling 
               flight.start * step.duration >= step.departureHoldMs - 0.01,
           ),
         );
-        assert.ok(!JSON.stringify(step.flights).includes("diamond"));
+        assert.ok(
+          !JSON.stringify(
+            step.flights.filter((flight) => actor === 1 || !flight.layout),
+          ).includes("diamond"),
+        );
         if (actor === 1) assert.equal(step.departureHoldMs, 1200);
         if (!reduced) assert.ok(step.duration >= 2380 && step.duration <= 3560);
       }
@@ -209,7 +213,7 @@ test("mobile short-deck collection flies only available refill cards into surviv
   }
 });
 
-test("mobile exchanges complete incoming cards before paying public goods and camels in a separate phase", () => {
+test("mobile exchanges start payment first and smoothly overlap receiving and hand compaction", () => {
   for (const actor of [0, 1]) {
     for (const reduced of [false, true]) {
       const before = newGame(3);
@@ -246,15 +250,23 @@ test("mobile exchanges complete incoming cards before paying public goods and ca
         ],
       );
       assert.ok(
-        Math.max(...incoming.map((flight) => flight.end)) <
-          Math.min(...outgoing.map((flight) => flight.start)),
+        Math.min(...outgoing.map((flight) => flight.start)) <
+          Math.min(...incoming.map((flight) => flight.start)),
+      );
+      assert.ok(
+        Math.min(...incoming.map((flight) => flight.start)) <
+          Math.max(...outgoing.map((flight) => flight.end)),
       );
       assert.ok(
         step.flights.every(
           (flight) => flight.end < 1 && flight.start < flight.end,
         ),
       );
-      assert.ok(!JSON.stringify(step.flights).includes("diamond"));
+      assert.ok(
+        !JSON.stringify(
+          step.flights.filter((flight) => actor === 1 || !flight.layout),
+        ).includes("diamond"),
+      );
       assert.ok(
         !step.flights.some(
           (flight) => flight.from === "deck" || flight.coin !== undefined,
@@ -265,7 +277,7 @@ test("mobile exchanges complete incoming cards before paying public goods and ca
           .filter((flight) => flight.from.endsWith("-herd"))
           .every((flight) => !flight.hideSource),
       );
-      if (!reduced) assert.ok(step.duration >= 2200 && step.duration <= 3140);
+      if (!reduced) assert.ok(step.duration >= 1800 && step.duration <= 2700);
       if (actor === 1) assert.equal(step.departureHoldMs, 1200);
     }
   }
@@ -349,7 +361,11 @@ test("mobile sales land sold cards before income coins travel to the actor's mon
         Math.abs(step.duration - income.at(-1)!.end * step.duration - 220) <
           0.01,
       );
-      assert.ok(!JSON.stringify(step.flights).includes("diamond"));
+      assert.ok(
+        !JSON.stringify(
+          step.flights.filter((flight) => actor === 1 || !flight.layout),
+        ).includes("diamond"),
+      );
       if (actor === 1 && count >= 3) assert.equal(step.action.bonus, "hidden");
     }
   }
@@ -404,7 +420,11 @@ test("mobile income includes only actually available sale tokens and never inven
         step.flights.filter((flight) => flight.to === "sale").length,
         3,
       );
-      assert.ok(!JSON.stringify(step.flights).includes("diamond"));
+      assert.ok(
+        !JSON.stringify(
+          step.flights.filter((flight) => actor === 1 || !flight.layout),
+        ).includes("diamond"),
+      );
     }
   }
 });

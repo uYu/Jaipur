@@ -1,19 +1,23 @@
-import { createPortal } from "react-dom";
+import { useId, useState } from "react";
 import {
   ArrowLeftRight,
+  Award,
   Check,
-  ChevronLeft,
   Coins,
   Hand,
+  Info,
   Minus,
+  MousePointer2,
   Plus,
   RotateCcw,
 } from "lucide-react";
-import { LABEL, sum } from "../game/data.ts";
-import { selectCamels, selectedAction } from "../game/selection.ts";
-import type { ActionMode, Selection } from "../game/selection.ts";
+import { selectCamels } from "../game/selection.ts";
+import type { Selection } from "../game/selection.ts";
+import {
+  ACTION_INSTRUCTIONS,
+  selectionGuide,
+} from "../game/selection-guide.ts";
 import type { State } from "../game/types.ts";
-import { CamelPile } from "./CamelPile.tsx";
 
 export function ActionPanel({
   state,
@@ -24,14 +28,9 @@ export function ActionPanel({
   onConfirm,
   hint,
   confirmationBlocked = false,
-  tabletop = false,
+  camelPaymentAllowed = true,
   status,
   turnNumber,
-  mode,
-  onModeChange,
-  chooseModeEnabled = active,
-  allowedMode,
-  descriptionTarget,
 }: {
   state: State;
   selection: Selection;
@@ -41,198 +40,181 @@ export function ActionPanel({
   onConfirm: () => void;
   hint?: string;
   confirmationBlocked?: boolean;
-  tabletop?: boolean;
+  camelPaymentAllowed?: boolean;
   status?: string;
   turnNumber?: number;
-  mode: ActionMode | null;
-  onModeChange: (mode: ActionMode | null) => void;
-  chooseModeEnabled?: boolean;
-  allowedMode?: ActionMode;
-  descriptionTarget?: HTMLElement | null;
 }) {
-  const { market, hand, camels } = selection;
-  const hasSelection = market.length > 0 || hand.length > 0 || camels > 0;
-  const canRestartAction = chooseModeEnabled && mode !== null;
-  const { action, error } = active
-    ? selectedAction(state, selection, mode)
-    : { action: null, error: "" };
+  const guide = selectionGuide(state, selection);
+  const { action, error, hasSelection } = guide;
+  const overview = active && !hasSelection && !hint;
+  const reward = active && !hint ? guide.bonusPreview : null;
+  const reasonId = useId();
+  const [attempt, setAttempt] = useState(0);
+  const blockedReason =
+    active && hasSelection
+      ? error || !action
+        ? guide.hint
+        : confirmationBlocked
+          ? hint || "先点教程「下一步」，核对预览后再确认。"
+          : ""
+      : "";
   const player = state.players[0];
-  const soldValue =
-    action?.type === "sell"
-      ? sum(state.tokens[action.good].slice(0, action.count))
-      : 0;
-  const choosing = active || chooseModeEnabled;
-  const showChoices = !mode || !!allowedMode;
-  const modeLabel =
-    mode === "take" ? "拿取" : mode === "sell" ? "出售" : "交换";
-  const instruction =
-    mode === "take"
-      ? "选 1 张货物，或全部骆驼"
-      : mode === "sell"
-        ? "点选要出售的同类手牌"
-        : mode === "exchange"
-          ? "选市场货物，再选付款"
-          : "轮到你了，先选行动";
+  const { market, hand, camels } = selection;
+  const canPayCamels =
+    camelPaymentAllowed &&
+    player.camels > 0 &&
+    (market.some((i) => state.market[i] !== "camel") ||
+      hand.length > 0 ||
+      camels > 0);
+  const Icon = blockedReason
+    ? Info
+    : guide.intent === "sell"
+      ? Coins
+      : guide.intent === "exchange"
+        ? ArrowLeftRight
+        : guide.intent === "idle"
+          ? MousePointer2
+          : Hand;
   const description = (
     <div
-      className={`action-description ${error ? "has-error" : ""}`}
+      className={`action-description direct-guidance ${active && guide.problem ? "has-error" : ""}`}
       aria-live="polite"
-      data-ready={!!action && !error}
-      data-choosing={showChoices}
+      data-ready={active && !!action && !error}
+      data-choosing={!hasSelection}
+      data-overview={overview}
+      data-explaining={!!blockedReason || !!hint}
+      data-reward={!!reward}
     >
-      {!showChoices && (
-        <button
-          className="change-action"
-          aria-label="更换行动"
-          title="更换行动会清空当前选择"
-          disabled={!chooseModeEnabled}
-          onClick={() => onModeChange(null)}
+      {overview ? (
+        <div className="action-overview">
+          {ACTION_INSTRUCTIONS.map(({ intent, label, text }) => {
+            const GuideIcon = {
+              take: Hand,
+              sell: Coins,
+              exchange: ArrowLeftRight,
+            }[intent];
+            return (
+              <span className="action-instruction" key={intent}>
+                <strong>
+                  <GuideIcon size={14} aria-hidden="true" />
+                  {label}
+                </strong>
+                <span>{text}</span>
+              </span>
+            );
+          })}
+        </div>
+      ) : (
+        <>
+          <Icon
+            className="selection-intent-icon"
+            size={16}
+            aria-hidden="true"
+          />
+          <b>{active ? guide.title : (status ?? "等待对手行动")}</b>
+        </>
+      )}
+      {turnNumber !== undefined && (
+        <small className="action-turn-count" aria-label={`第 ${turnNumber} 手`}>
+          第 {turnNumber} 手
+        </small>
+      )}
+      {!overview && (blockedReason || hint) && (
+        <span
+          className={blockedReason ? "invalid" : "selection-next-step"}
+          id={reasonId}
+          key={`${blockedReason}-${attempt}`}
+          aria-hidden={!active}
+          style={{ visibility: active ? "visible" : "hidden" }}
         >
-          <ChevronLeft size={14} aria-hidden="true" />
-          {modeLabel}
-        </button>
+          {blockedReason || hint}
+        </span>
       )}
-      <b>
-        {!choosing
-          ? (status ?? "等待对手行动")
-          : action?.type === "camels"
-            ? `收下市场全部 ${market.length} 头骆驼`
-            : action?.type === "exchange"
-              ? tabletop
-                ? `换入 ${market.length} 张 · 付出 ${hand.length} 张 + ${camels} 驼`
-                : `换入 ${market.length} 张 · 付出 ${hand.length} 张货物 + ${camels} 头骆驼`
-              : action?.type === "sell"
-                ? `出售 ${hand.length} 张${LABEL[action.good]}${tabletop ? ` · ${soldValue} 卢比${action.count >= 3 && state.bonus[Math.min(action.count, 5) as 3 | 4 | 5].length ? " + 奖励" : ""}` : ""}`
-                : action?.type === "take"
-                  ? `拿取 1 张${LABEL[state.market[action.index]]}`
-                  : instruction}
-      </b>
-      {tabletop && showChoices && turnNumber !== undefined && (
-        <small className="action-turn-count">第 {turnNumber} 手</small>
+      {reward && (
+        <span className="selection-reward">
+          <Award size={14} aria-hidden="true" />
+          <span>
+            {reward.tier === 5 ? "5+" : reward.tier}张奖励筹码 ×1（{reward.min}–
+            {reward.max}卢比）
+          </span>
+        </span>
       )}
-      <span className={error ? "invalid" : ""}>
-        {error ||
-          hint ||
-          (action?.type === "sell"
-            ? `获得 ${soldValue} 卢比${action.count >= 3 ? "，并在奖励堆有剩余时领取奖励" : ""}`
-            : action?.type === "exchange"
-              ? "数量已配平，可以确认交换；再次点击可取消选牌"
-              : action?.type === "camels"
-                ? "骆驼加入你的驼队，不占手牌上限"
-                : action?.type === "take"
-                  ? "拿取只选一张货物；要拿多张，请改选交换"
-                  : "先选行动，再选卡牌。确认前可以切换行动，原选择会清空。")}
-      </span>
     </div>
   );
   return (
     <section
-      className="action-panel"
+      className="action-panel direct-selection"
       aria-label="交易操作栏"
-      data-ready={!!action && !error}
-      data-mode={mode ?? "choose"}
-      data-choosing={showChoices}
+      data-ready={active && !!action && !error}
+      data-intent={guide.intent}
+      data-blocked={!!blockedReason}
+      data-overview={overview}
     >
-      <div className="action-modes" role="group" aria-label="选择本手行动">
-        {(
-          [
-            { value: "take", label: "拿取", Icon: Hand },
-            { value: "sell", label: "出售", Icon: Coins },
-            { value: "exchange", label: "交换", Icon: ArrowLeftRight },
-          ] as const
-        ).map(({ value, label, Icon }) => (
-          <button
-            key={value}
-            className={`action-mode action-mode-${value}`}
-            aria-pressed={mode === value}
-            aria-label={`选择${label}行动`}
-            disabled={
-              !chooseModeEnabled || (!!allowedMode && allowedMode !== value)
-            }
-            onClick={() => onModeChange(value)}
-          >
-            <Icon size={18} aria-hidden="true" />
-            <span>{label}</span>
-          </button>
-        ))}
-      </div>
-      {tabletop
-        ? descriptionTarget && createPortal(description, descriptionTarget)
-        : description}
-      <div
-        className="camel-picker"
-        role="group"
-        aria-label={
-          mode === "exchange" ? `付出骆驼，共 ${player.camels} 头` : "你的驼队"
-        }
-      >
-        <span className="camel-picker-label">
-          {tabletop ? (
-            <CamelPile count={player.camels} motionAnchor="your-herd" />
-          ) : (
-            "骆驼"
-          )}
-        </span>
-        <div className="camel-payment" data-active={mode === "exchange"}>
-          <button
-            aria-label="减少付出骆驼"
-            disabled={!active || !camels}
-            onClick={() =>
-              onSelectionChange(
-                selectCamels(state, selection, camels - 1, mode),
-              )
-            }
-          >
-            <Minus size={18} aria-hidden="true" />
-          </button>
-          <output aria-label="已选付出骆驼数量" aria-live="polite">
-            {tabletop && <small>付出</small>}
-            <span>{camels}</span>
-          </output>
-          <button
-            aria-label="增加付出骆驼"
-            disabled={!active || camels >= player.camels}
-            onClick={() =>
-              onSelectionChange(
-                selectCamels(state, selection, camels + 1, mode),
-              )
-            }
-          >
-            <Plus size={18} aria-hidden="true" />
-          </button>
+      {description}
+      {canPayCamels && (
+        <div
+          className="camel-picker"
+          role="group"
+          aria-label={`用骆驼付款，共 ${player.camels} 头`}
+        >
+          <span className="camel-picker-label">骆驼付款</span>
+          <div className="camel-payment" data-active="true">
+            <button
+              aria-label="减少付出骆驼"
+              disabled={!active || !camels}
+              onClick={() =>
+                onSelectionChange(selectCamels(state, selection, camels - 1))
+              }
+            >
+              <Minus size={16} aria-hidden="true" />
+            </button>
+            <output aria-label="已选付出骆驼数量" aria-live="polite">
+              <span>{camels}</span>
+            </output>
+            <button
+              aria-label="增加付出骆驼"
+              disabled={!active || camels >= player.camels}
+              onClick={() =>
+                onSelectionChange(selectCamels(state, selection, camels + 1))
+              }
+            >
+              <Plus size={16} aria-hidden="true" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
       <button
         className="clear-button"
-        aria-label={canRestartAction ? "重新选择行动" : "清空选择"}
-        title={
-          canRestartAction
-            ? "重新选择行动"
-            : hasSelection
-              ? "清空已选卡牌"
-              : "尚未选牌"
-        }
-        disabled={!active || (!canRestartAction && !hasSelection)}
-        onClick={() => (canRestartAction ? onModeChange(null) : onClear())}
+        aria-label="清空选择"
+        title="清空已选卡牌和骆驼"
+        disabled={!active || !hasSelection}
+        onClick={onClear}
       >
-        <RotateCcw size={17} />
+        <RotateCcw size={16} aria-hidden="true" />
         <span>重选</span>
       </button>
       <button
         className="primary confirm"
-        disabled={!active || !action || !!error || confirmationBlocked}
-        onClick={onConfirm}
+        disabled={!active || (!hasSelection && !action)}
+        aria-disabled={!!blockedReason || !active || (!hasSelection && !action)}
+        aria-describedby={blockedReason ? reasonId : undefined}
+        onClick={() => {
+          if (blockedReason) setAttempt((value) => value + 1);
+          else onConfirm();
+        }}
       >
-        <Check size={17} />
+        <Check size={16} aria-hidden="true" />
         {action?.type === "camels"
           ? "收下全部骆驼"
-          : mode === "sell"
+          : action?.type === "sell"
             ? "确认出售"
-            : mode === "exchange"
+            : action?.type === "exchange"
               ? "确认交换"
-              : mode === "take"
+              : action?.type === "take"
                 ? "确认拿取"
-                : "确认交易"}
+                : hasSelection
+                  ? "继续选牌"
+                  : "请先选牌"}
       </button>
     </section>
   );

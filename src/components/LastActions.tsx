@@ -54,6 +54,12 @@ function Income({ action }: { action: Presentation }) {
 }
 
 function TradeFlow({ action }: { action: Presentation }) {
+  const Icon = {
+    take: Hand,
+    camels: ArrowDownToLine,
+    sell: Coins,
+    exchange: ArrowLeftRight,
+  }[action.type];
   return (
     <div className="ledger-trade-flow">
       <span
@@ -63,13 +69,15 @@ function TradeFlow({ action }: { action: Presentation }) {
         {action.outgoing.length ? (
           <>
             <span className="ledger-simple-verb">
-              {action.type === "sell" ? "卖货" : "换牌"}
+              <Icon size={14} aria-hidden="true" />
+              {action.type === "sell" ? "卖货" : "交换"}
             </span>
             <GoodsText cards={action.outgoing} />
           </>
         ) : (
           <span className="ledger-simple-verb">
-            {action.type === "camels" ? "收驼" : "拿取"}
+            <Icon size={14} aria-hidden="true" />
+            {action.type === "camels" ? "收驼" : "拿货"}
           </span>
         )}
       </span>
@@ -106,9 +114,11 @@ export function ActionSummary({ action }: { action: Presentation }) {
         {verb}
       </span>
       <span className="action-summary-goods">
-        <GoodsText
-          cards={action.outgoing.length ? action.outgoing : action.incoming}
-        />
+        <span className="action-summary-items">
+          <GoodsText
+            cards={action.outgoing.length ? action.outgoing : action.incoming}
+          />
+        </span>
         {action.type === "exchange" && (
           <>
             <ArrowRight
@@ -116,7 +126,9 @@ export function ActionSummary({ action }: { action: Presentation }) {
               size={15}
               aria-hidden="true"
             />
-            <GoodsText cards={action.incoming} />
+            <span className="action-summary-items">
+              <GoodsText cards={action.incoming} />
+            </span>
           </>
         )}
         {action.type === "sell" && (
@@ -126,21 +138,34 @@ export function ActionSummary({ action }: { action: Presentation }) {
               size={15}
               aria-hidden="true"
             />
-            <span className="action-summary-income">
-              <Coins size={16} aria-hidden="true" />
-              <b>{sum(action.coins)}</b> 卢比
-            </span>
-            {action.bonus !== null && (
-              <span className="action-summary-bonus">
-                <Award size={15} aria-hidden="true" />
-                奖励 ×1{" "}
-                <small>
-                  {action.bonus === "hidden"
-                    ? "面值保密"
-                    : `+${action.bonus} 卢比`}
-                </small>
+            <span className="action-summary-results">
+              <span
+                className="action-summary-income"
+                aria-label={`收入 ${sum(action.coins)} 卢比`}
+              >
+                <Coins size={16} aria-hidden="true" />
+                <b>+{sum(action.coins)}</b>
               </span>
-            )}
+              {action.bonus !== null && (
+                <span
+                  className="action-summary-bonus"
+                  title={
+                    action.bonus === "hidden"
+                      ? "奖励筹码 1 枚，面值保密"
+                      : `奖励筹码 1 枚，${action.bonus} 卢比`
+                  }
+                  aria-label={
+                    action.bonus === "hidden"
+                      ? "奖励筹码 1 枚，面值保密"
+                      : `奖励筹码 1 枚，${action.bonus} 卢比`
+                  }
+                >
+                  <Award size={15} aria-hidden="true" />
+                  <span>×1</span>
+                  {action.bonus !== "hidden" && <small>+{action.bonus}</small>}
+                </span>
+              )}
+            </span>
           </>
         )}
       </span>

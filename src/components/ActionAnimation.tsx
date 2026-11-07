@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import type { Flight } from "../game/flights.ts";
 import { Card } from "./Card.tsx";
 import { GoodsArt, JaipurMark } from "./Art.tsx";
+import { handSlotOffset } from "../game/hand-layout.ts";
 import { useReducedMotion } from "../hooks/useReducedMotion.ts";
 export function ActionAnimation({
   flights,
@@ -88,6 +89,9 @@ export function ActionAnimation({
         const a = source.getBoundingClientRect(),
           b = target.getBoundingClientRect();
         const coin = flight.coin !== undefined;
+        const handTarget =
+          tabletop &&
+          (flight.to === "your-hand" || flight.to === "opponent-hand");
         const width = coin
           ? 34
           : tabletop ||
@@ -121,15 +125,17 @@ export function ActionAnimation({
         const objectTarget = targetFanCard ?? targetHerdCard;
         const targetWidth = coin
           ? b.width
-          : objectTarget
-            ? objectTarget.offsetWidth
-            : flight.to.startsWith("market-") || flight.to.startsWith("hand-")
-              ? b.width
-              : flight.to === "sale"
-                ? b.width - saleStackSpan
-                : flight.to === "your-hand"
-                  ? (measure?.width ?? Math.min(78, b.width / 5))
-                  : 46;
+          : handTarget
+            ? (measure?.width ?? objectTarget?.offsetWidth ?? a.width)
+            : objectTarget
+              ? objectTarget.offsetWidth
+              : flight.to.startsWith("market-") || flight.to.startsWith("hand-")
+                ? b.width
+                : flight.to === "sale"
+                  ? b.width - saleStackSpan
+                  : flight.to === "your-hand"
+                    ? (measure?.width ?? Math.min(78, b.width / 5))
+                    : 46;
         const spread = coin
           ? 0
           : saleTravel && flight.to === "sale"
@@ -166,8 +172,18 @@ export function ActionAnimation({
                 ((flight.slot ?? 0) + 1) * targetWidth * 0.22,
             )
           : b.left + b.width / 2;
-        const targetX =
-          flight.to === "your-hand"
+        const targetX = handTarget
+          ? b.left +
+            paddingLeft +
+            targetWidth / 2 +
+            handSlotOffset(
+              b.width - paddingLeft * 2,
+              targetWidth,
+              flight.handCount ?? Math.max(1, (flight.slot ?? 0) + 1),
+              flight.slot ?? 0,
+              gap,
+            )
+          : flight.to === "your-hand"
             ? Math.min(
                 b.right - targetWidth / 2 - paddingLeft,
                 b.left +
@@ -182,8 +198,9 @@ export function ActionAnimation({
             : targetFanCard
               ? fanLanding
               : b.left + b.width / 2 + spread;
-        const targetY =
-          flight.to === "your-hand"
+        const targetY = handTarget
+          ? b.top + paddingTop + (measure?.height ?? targetWidth * 1.5) / 2
+          : flight.to === "your-hand"
             ? b.top +
               paddingTop +
               (measure?.height ?? targetWidth * 1.43) / 2 +
@@ -202,6 +219,17 @@ export function ActionAnimation({
           width: `${width}px`,
           height: `${height}px`,
         });
+        // Match the travelling face to the physical card instead of switching
+        // padding, corner shape and glyph scale at take-off and landing.
+        const face = sprite.querySelector<HTMLElement>(":scope > .card");
+        if (tabletop && face) {
+          const style = getComputedStyle(source);
+          face.style.padding = source.classList.contains("card")
+            ? style.padding
+            : "3px";
+          face.style.borderRadius = style.borderRadius;
+          face.style.boxShadow = "0 2px 5px #102d2633";
+        }
         if (!tabletop && flight.hideSource && !hidden.has(source)) {
           hidden.set(source, source.style.visibility);
           if (!reduced || typeof source.animate !== "function")
@@ -213,15 +241,17 @@ export function ActionAnimation({
         }
         const targetHeight = coin
           ? b.height
-          : objectTarget
-            ? objectTarget.offsetHeight
-            : flight.to.startsWith("market-") ||
-                flight.to.startsWith("hand-") ||
-                flight.to === "sale"
-              ? b.height - saleStackSpan
-              : flight.to === "your-hand"
-                ? (measure?.height ?? targetWidth * 1.43)
-                : targetWidth * 1.43;
+          : handTarget
+            ? (measure?.height ?? targetWidth * 1.5)
+            : objectTarget
+              ? objectTarget.offsetHeight
+              : flight.to.startsWith("market-") ||
+                  flight.to.startsWith("hand-") ||
+                  flight.to === "sale"
+                ? b.height - saleStackSpan
+                : flight.to === "your-hand"
+                  ? (measure?.height ?? targetWidth * 1.43)
+                  : targetWidth * 1.43;
         const start = Math.min(0.95, flight.start),
           end = Math.min(0.99, flight.end),
           middle =
@@ -233,11 +263,11 @@ export function ActionAnimation({
                   ? start + (end - start) * 0.8
                   : (start + end) / 2;
         const landing = `translate(${tx - x}px, ${ty - y}px) scale(${targetWidth / width}, ${targetHeight / height})`;
-        // The real hand is compacted once on settlement. Let incoming sprites
-        // fade at the edge so they cannot cover retained cards in old slots.
+        // Tabletop cards hold their final slots until the real board replaces
+        // them at exactly the same geometry. No fade-out / reappearance gap.
         const vanishAtEnd =
           (flight.to === "sale" && !saleTravel) ||
-          (settling && flight.to === "your-hand");
+          (!tabletop && settling && flight.to === "your-hand");
         const fadeAtLanding = tabletop && vanishAtEnd;
         const arrivalOpacity = fadeAtLanding ? 1 : vanishAtEnd ? 0 : 1;
         const fadeEnd = Math.min(1, end + 110 / duration);

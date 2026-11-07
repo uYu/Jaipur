@@ -1,5 +1,5 @@
 import type { Action, Card, Save, State } from "./types.ts";
-import type { ActionMode, Selection } from "./selection.ts";
+import type { Selection } from "./selection.ts";
 import { newGame } from "./engine.ts";
 
 // An ordinary deal; neither the deck nor either player's hand is edited.
@@ -32,32 +32,28 @@ type GuideStep = {
   title: string;
   text: string;
   target: string;
-  kind?:
-    "mode" | "select" | "confirm" | "opponent" | "opponent-result" | "finish";
-  mode?: ActionMode;
+  kind?: "select" | "confirm" | "opponent" | "opponent-result" | "finish";
   lesson?: number;
   tradeoff?: string;
 };
 export const TUTORIAL_STEPS: GuideStep[] = [
   {
-    id: "take-mode",
-    title: "先选「拿取」",
-    text: "每手先决定做什么，再选牌。这次想从市场拿一张货物：点击「拿取」，再点「下一步」。选择行动还不会成交。",
-    target: ".action-mode-take",
-    kind: "mode",
-    mode: "take",
+    id: "take-intro",
+    title: "直接点牌，再确认",
+    text: "不用先选行动。点市场货物就是拿取，点自己的同类手牌就是出售；两边都选，就准备交换。先练拿一张货物，点「下一步」。",
+    target: ".market-table",
   },
   {
     id: "take-select",
     title: "先点集市里的这张香料",
-    text: "中间这 5 张是双方共用的市场。点击亮起的香料，卡牌会高亮并出现 ✓；选牌还不算成交。教程会为练规则安排一些交易，遇到实战需要权衡的地方会提醒你。",
+    text: "中间这 5 张是双方共用的市场。点击亮起的香料，卡牌会出现金色边框和勾选标记；选牌还不算成交。教程会为练规则安排一些交易，遇到实战需要权衡的地方会提醒你。",
     target: ".market-table .spice",
     kind: "select",
   },
   {
     id: "take-cancel",
     title: "再点一次，取消选中",
-    text: "再点同一张香料，✓ 就会消失。也可以点击亮起的「重选」清空选择，确认前都能改。",
+    text: "再点同一张香料，金色边框和勾选标记就会消失。平时也可以用「重选」清空选择，确认前都能改。",
     target: ".market-table .spice",
     kind: "select",
   },
@@ -91,12 +87,10 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     kind: "opponent-result",
   },
   {
-    id: "sell-mode",
-    title: "现在选「出售」",
-    text: "米拉行动完了，轮到你把手里的货物换成筹码。点击「出售」，再点「下一步」选牌。",
-    target: ".action-mode-sell",
-    kind: "mode",
-    mode: "sell",
+    id: "sell-intro",
+    title: "卖货，从自己的手牌开始",
+    text: "米拉行动完了，轮到你。直接点自己的同类手牌，就会出现出售预览；确认前都能取消。点「下一步」试试。",
+    target: ".hand-cards",
   },
   {
     id: "sell-select",
@@ -131,15 +125,13 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     id: "bulk-bonus",
     title: "你多赚了 2 卢比！",
     text: "你的收入已变成 13 卢比：11 来自香料，2 来自刚领到的批量奖励。是同一种货物在一次交易里卖够张数，才有这份额外收入；分几次累计不算。",
-    target: ".your-score, .mobile-player-scores .score-you",
+    target: ".your-score, .reserve-money-own",
   },
   {
-    id: "camel-mode",
-    title: "收骆驼，也先选「拿取」",
-    text: "拿货物和收骆驼都从「拿取」开始。点击「拿取」，再点「下一步」；接下来会一次收下市场里的全部骆驼。",
-    target: ".action-mode-take",
-    kind: "mode",
-    mode: "take",
+    id: "camel-intro",
+    title: "市场骆驼，要一次全收",
+    text: "直接点市场里的任意一张骆驼，就会选中全部骆驼。它们进入独立驼队，不占手牌。点「下一步」试试。",
+    target: ".market-table .camel",
   },
   {
     id: "camel-select",
@@ -173,12 +165,10 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     kind: "opponent-result",
   },
   {
-    id: "camel-exchange-mode",
-    title: "想拿多张，先选「交换」",
-    text: "交换可以同时拿进多张货物，再用手牌或骆驼等量付出。点击「交换」，再点「下一步」，先练用骆驼付款。",
-    target: ".action-mode-exchange",
-    kind: "mode",
-    mode: "exchange",
+    id: "camel-exchange-intro",
+    title: "想拿多张，直接选市场货物",
+    text: "选中两张或更多市场货物，就开始准备交换。引导会告诉你还差多少付款，可以用手牌或骆驼补齐。点「下一步」，先试用骆驼。",
+    target: ".market-table .cloth",
   },
   {
     id: "camel-exchange-select",
@@ -219,12 +209,10 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     kind: "opponent-result",
   },
   {
-    id: "goods-exchange-mode",
-    title: "再选「交换」，试试手牌付款",
-    text: "这次用自己的货物换市场货物。点击「交换」，再点「下一步」；选中的手牌会作为付款，不会出售。",
-    target: ".action-mode-exchange",
-    kind: "mode",
-    mode: "exchange",
+    id: "goods-exchange-intro",
+    title: "也可以用手牌付款",
+    text: "同时点选市场货物和自己的手牌，系统会预览交换。手牌是付出去的货物，确认前不会拿走。点「下一步」试试。",
+    target: ".hand-cards",
   },
   {
     id: "goods-exchange-select",
@@ -265,12 +253,10 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     kind: "opponent-result",
   },
   {
-    id: "mixed-exchange-mode",
-    title: "最后选「交换」，混合付款",
-    text: "一笔交换也能同时用手牌和骆驼付款。点击「交换」，再点「下一步」，亲手试一次。",
-    target: ".action-mode-exchange",
-    kind: "mode",
-    mode: "exchange",
+    id: "mixed-exchange-intro",
+    title: "手牌和骆驼，可以一起付款",
+    text: "点市场货物，再选手牌，用「+」补上骆驼。付款数量配平后才可确认。点「下一步」，亲手试试混合付款。",
+    target: ".hand-cards",
   },
   {
     id: "mixed-exchange-select",
@@ -333,14 +319,13 @@ export const TUTORIAL_STEPS: GuideStep[] = [
     id: "end-score",
     title: "收市后，怎样算赢？",
     text: "货物收入 + 批量奖励 + 驼队奖励，合计更多者赢本轮。驼队更多者加 5 卢比，数量相同不加；留在手里的货物一分不算。同分先比奖励枚数，再比货物筹码枚数。",
-    target: ".your-score, .mobile-player-scores .score-you",
+    target: ".your-score, .reserve-money-own",
   },
   {
     id: "end-match",
     title: "赢下一轮，才会点亮印章",
     text: "当前是「1 局定胜负」，赢本轮就赢比赛。标准赛则先赢两轮、集齐两枚印章获胜。结束时会弹出结算；完全平局会加赛。",
-    target:
-      ".hand-panel .seals, .mobile-player-scores .score-you .score-card-seals",
+    target: ".hand-panel .seals, .header-round",
   },
   {
     id: "finish",
@@ -415,12 +400,15 @@ export function tutorialAllowsHand(step: number, good: Card) {
       ? good === "cloth"
       : g === "mixed-exchange" && good === "leather";
 }
+export function tutorialAllowsCamels(step: number) {
+  const g = group(step);
+  return g === "camels-exchange" || g === "mixed-exchange";
+}
 export function normalizeTutorialSelection(
   step: number,
   selection: Selection,
   state: State,
 ): Selection {
-  const g = group(step);
   return {
     market: selection.market.filter((i) =>
       tutorialAllowsMarket(step, state.market[i]),
@@ -428,8 +416,7 @@ export function normalizeTutorialSelection(
     hand: selection.hand.filter((i) =>
       tutorialAllowsHand(step, state.players[0].hand[i]),
     ),
-    camels:
-      g === "camels-exchange" || g === "mixed-exchange" ? selection.camels : 0,
+    camels: tutorialAllowsCamels(step) ? selection.camels : 0,
   };
 }
 export function tutorialSelectionReady(
@@ -470,7 +457,7 @@ export function tutorialStepAfterSelection(
   selection: Selection,
   state: State,
 ) {
-  if (TUTORIAL_STEPS[step].kind === "mode") return step;
+  if (!TUTORIAL_STEPS[step].kind) return step;
   // Finishing an input enables Next; it never advances the guide by itself.
   if (tutorialSelectionReady(step, selection, state)) return step;
   const id = TUTORIAL_STEPS[step].id;
@@ -512,10 +499,8 @@ export function tutorialStepAfterNext(
   step: number,
   selection: Selection,
   state: State,
-  mode?: ActionMode | null,
 ) {
   const guide = TUTORIAL_STEPS[step];
-  if (guide.kind === "mode") return mode === guide.mode ? step + 1 : step;
   if (guide.kind === "select")
     return tutorialSelectionReady(step, selection, state) ? step + 1 : step;
   if (!guide.kind || guide.kind === "opponent-result") return step + 1;

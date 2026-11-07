@@ -1,5 +1,4 @@
-/* The cards are the playing surface. Reference data sits on the page, while
-   terracotta is reserved for a selection, a new event or the commit button. */
+/* Card faces carry the visual weight; reference data stays quiet. */
 .game-shell,
 .flight-layer {
   --board-type-heading: 16px;
@@ -10,10 +9,10 @@
   font-weight: 400;
 }
 .game-shell {
-  --board-line: #ded8cd;
-  --board-muted: #746e64;
-  --board-quiet: #8a847a;
-  --board-table: #efede5;
+  --board-line: #dce2dc;
+  --board-muted: #6c7770;
+  --board-quiet: #8b958e;
+  --board-table: #f0f3ef;
 }
 
 .game-shell .brand b,
@@ -64,7 +63,6 @@
   font-weight: 400;
 }
 .game-shell :is(.ledger-status, .ledger-turn-number),
-.game-shell .card .market-card-notice,
 .game-shell
   .sale-feedback
   :is(.sale-feedback-tier, .sale-feedback-plus, small) {
@@ -267,7 +265,7 @@
   box-shadow: -2px 2px 0 #c1b8a8;
 }
 :is(.game-shell, .flight-layer) .card {
-  background: color-mix(in srgb, var(--card-bg) 72%, #fffdf7);
+  background: color-mix(in srgb, var(--card-bg) 80%, #fafbf8);
   border-color: color-mix(in srgb, var(--card-color) 32%, transparent);
   box-shadow: 0 2px 0 color-mix(in srgb, var(--card-color) 15%, transparent);
 }

@@ -298,14 +298,6 @@
   .game-shell .card.card-departing {
     will-change: opacity;
   }
-  .game-shell .card.has-notice .premium-badge {
-    visibility: hidden;
-  }
-  .game-shell .card .market-card-notice {
-    font-size: 10px;
-    line-height: 17px;
-    white-space: nowrap;
-  }
   .game-shell .card:not(:disabled):hover {
     transform: none;
   }

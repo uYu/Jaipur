@@ -77,56 +77,63 @@ export function MobileSupply({
               aria-label={`${LABEL[g]}，剩余 ${state.tokens[g].length} 枚${state.tokens[g].length ? `，下一枚 ${state.tokens[g][0]} 卢比` : "，已售罄"}`}
             >
               <span
-                className={`counter-name${tabletop ? " stock-good-name" : ""}`}
-                title={LABEL[g]}
-                aria-hidden="true"
+                className="counter-quote"
+                data-stack={Math.min(3, state.tokens[g].length)}
+                data-motion-anchor={tabletop ? `stock-${g}` : undefined}
               >
-                {!tabletop && <GoodsArt good={g} cardFace />}
-                <span>{LABEL[g]}</span>
-              </span>
-              <span className="counter-remaining">
-                <small>{tabletop ? "×" : "剩"}</small>
-                <b>{state.tokens[g].length}</b>
-              </span>
-              <span className="counter-next">
-                {tabletop ? (
-                  <>
-                    <small>
-                      下<span className="counter-next-suffix">枚</span>
-                    </small>
-                    <span
-                      className="stock-chip-face"
-                      data-motion-anchor={`stock-${g}`}
-                      aria-hidden="true"
-                    >
-                      <GoodsArt good={g} cardFace />
-                      <b>{state.tokens[g].length ? state.tokens[g][0] : "—"}</b>
-                    </span>
-                    {state.tokens[g].map((_, i) => (
-                      <i
-                        key={i}
-                        aria-hidden="true"
-                        data-motion-fallback={`token-${g}-${i}`}
-                      />
-                    ))}
-                  </>
-                ) : state.tokens[g].length ? (
-                  <>
-                    <small>
-                      下<span className="counter-next-suffix">枚</span>
-                    </small>
-                    <b>{state.tokens[g][0]}</b>
-                    {state.tokens[g].map((_, i) => (
-                      <i
-                        key={i}
-                        aria-hidden="true"
-                        data-motion-fallback={`token-${g}-${i}`}
-                      />
-                    ))}
-                  </>
-                ) : (
-                  <small>售罄</small>
-                )}
+                <span
+                  className={`counter-name${tabletop ? " stock-good-name" : ""}`}
+                  title={LABEL[g]}
+                  aria-hidden="true"
+                >
+                  <GoodsArt good={g} cardFace />
+                  <span>{LABEL[g]}</span>
+                </span>
+                <span className="counter-next">
+                  {tabletop ? (
+                    <>
+                      <small>
+                        下<span className="counter-next-suffix">枚</span>
+                      </small>
+                      <span className="stock-chip-face" aria-hidden="true">
+                        <b>
+                          {state.tokens[g].length ? state.tokens[g][0] : "—"}
+                        </b>
+                      </span>
+                      {state.tokens[g].map((_, i) => (
+                        <i
+                          key={i}
+                          aria-hidden="true"
+                          data-motion-fallback={`token-${g}-${i}`}
+                        />
+                      ))}
+                    </>
+                  ) : state.tokens[g].length ? (
+                    <>
+                      <small>
+                        下<span className="counter-next-suffix">枚</span>
+                      </small>
+                      <b>{state.tokens[g][0]}</b>
+                      {state.tokens[g].map((_, i) => (
+                        <i
+                          key={i}
+                          aria-hidden="true"
+                          data-motion-fallback={`token-${g}-${i}`}
+                        />
+                      ))}
+                    </>
+                  ) : (
+                    <small>售罄</small>
+                  )}
+                </span>
+                <span
+                  className="counter-remaining"
+                  title={`剩余 ${state.tokens[g].length} 枚`}
+                  aria-hidden={tabletop || undefined}
+                >
+                  <small>{tabletop ? "×" : "剩"}</small>
+                  <b>{state.tokens[g].length}</b>
+                </span>
               </span>
             </div>
           ))}
@@ -137,7 +144,9 @@ export function MobileSupply({
           aria-label={tabletop ? "奖励筹码余量" : undefined}
         >
           {tabletop ? (
-            <Award className="stock-bonus-icon" size={15} aria-hidden="true" />
+            <span className="stock-bonus-label" aria-hidden="true">
+              奖励
+            </span>
           ) : (
             <span>奖励剩余</span>
           )}
@@ -157,14 +166,26 @@ export function MobileSupply({
                 <>
                   <span
                     className={`stock-bonus-chip stock-bonus-${n}`}
+                    data-stack={Math.min(3, state.bonus[n].length)}
                     data-motion-anchor={`bonus-face-${n}`}
                     aria-hidden="true"
                   >
-                    {n}
-                    {n === 5 ? "+" : ""}
-                  </span>
-                  <span className="stock-bonus-count" aria-hidden="true">
-                    ×<b>{state.bonus[n].length}</b>
+                    <Award size={14} strokeWidth={1.6} />
+                    <span className="stock-bonus-tier">
+                      <b>
+                        {n}
+                        {n === 5 ? "+" : ""}
+                      </b>
+                      <small>张</small>
+                    </span>
+                    <span
+                      className="stock-bonus-count"
+                      title={`剩余 ${state.bonus[n].length} 枚`}
+                      aria-hidden="true"
+                    >
+                      <small>×</small>
+                      <b>{state.bonus[n].length}</b>
+                    </span>
                   </span>
                 </>
               ) : (

@@ -1,18 +1,17 @@
-/* Jaipur palette: terracotta plaster, cream stone, deep brown shadows.
-   Goods keep their own colors; interface text and controls use these tokens. */
+/* Warm white paper and clean green controls; the goods carry the color. */
 :root {
   --font-ui: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-  --text: #33251f;
-  --text-secondary: #6a4d3c;
-  --accent: #963e2c;
-  --accent-hover: #743024;
-  --accent-soft: #dfad91;
-  --surface: #f4e5ce;
-  --surface-sand: #dfbd99;
-  --page: #f7f4ed;
-  --border: #b48668;
-  --action-you-bg: #eee0bf;
-  --action-opponent-bg: #eacbb4;
+  --text: #303b36;
+  --text-secondary: #69756e;
+  --accent: #29664f;
+  --accent-hover: #1d513e;
+  --accent-soft: #bed4c5;
+  --surface: #ffffff;
+  --surface-sand: #edf1eb;
+  --page: #fafbf8;
+  --border: #d4ddd4;
+  --action-you-bg: #edf3ed;
+  --action-opponent-bg: #f0f1ed;
   --ink: var(--text);
   --muted: var(--text-secondary);
   --coral: var(--accent);
@@ -449,32 +448,32 @@ select:focus-visible,
 
 /* One type treatment for all card faces; their illustrations carry the color. */
 .diamond {
-  --card-color: #923b2e;
-  --card-bg: #eec8b5;
+  --card-color: #b74c49;
+  --card-bg: #efc6c2;
 }
 .gold {
-  --card-color: #7a560e;
-  --card-bg: #f1d373;
+  --card-color: #936b1b;
+  --card-bg: #f0d58c;
 }
 .silver {
-  --card-color: #3f595e;
-  --card-bg: #c7cfbe;
+  --card-color: #4d707c;
+  --card-bg: #cadde1;
 }
 .cloth {
-  --card-color: #6b4058;
-  --card-bg: #d7bdd0;
+  --card-color: #805177;
+  --card-bg: #e0c9df;
 }
 .spice {
-  --card-color: #345437;
-  --card-bg: #b9c6a0;
+  --card-color: #416b4a;
+  --card-bg: #c8dac5;
 }
 .leather {
-  --card-color: #773d1e;
-  --card-bg: #e0b68c;
+  --card-color: #965d38;
+  --card-bg: #e7bd9d;
 }
 .camel {
-  --card-color: #674c35;
-  --card-bg: #d6c1a6;
+  --card-color: #6e5943;
+  --card-bg: #dfd3be;
 }
 .card,
 .premium-card {
@@ -512,10 +511,6 @@ select:focus-visible,
 }
 .selected-check {
   background: var(--accent);
-}
-.card .market-card-notice {
-  background: var(--accent);
-  font-size: var(--type-small);
 }
 
 /* Statistics no longer have a separate rainbow palette or display font. */
