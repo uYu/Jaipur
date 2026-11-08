@@ -18,6 +18,29 @@ import {
 import type { State } from "../game/types.ts";
 import { CamelPayment } from "./CamelPile.tsx";
 
+function ActionOverview() {
+  return (
+    <div className="action-overview">
+      {ACTION_INSTRUCTIONS.map(({ intent, label, text }) => {
+        const GuideIcon = {
+          take: Hand,
+          sell: Coins,
+          exchange: ArrowLeftRight,
+        }[intent];
+        return (
+          <span className="action-instruction" key={intent}>
+            <strong>
+              <GuideIcon size={14} aria-hidden="true" />
+              {label}
+            </strong>
+            <span>{text}</span>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ActionPanel({
   state,
   selection,
@@ -86,24 +109,7 @@ export function ActionPanel({
       data-reward={!!reward}
     >
       {overview ? (
-        <div className="action-overview">
-          {ACTION_INSTRUCTIONS.map(({ intent, label, text }) => {
-            const GuideIcon = {
-              take: Hand,
-              sell: Coins,
-              exchange: ArrowLeftRight,
-            }[intent];
-            return (
-              <span className="action-instruction" key={intent}>
-                <strong>
-                  <GuideIcon size={14} aria-hidden="true" />
-                  {label}
-                </strong>
-                <span>{text}</span>
-              </span>
-            );
-          })}
-        </div>
+        <ActionOverview />
       ) : (
         <>
           <Icon
@@ -153,7 +159,13 @@ export function ActionPanel({
       data-blocked={!!blockedReason}
       data-overview={overview}
     >
-      {description}
+      <div className="action-guidance-slot">
+        {/* Reserve the overview's responsive height in every selection state. */}
+        <div className="action-guidance-size" aria-hidden="true">
+          <ActionOverview />
+        </div>
+        {description}
+      </div>
       <CamelPayment {...camelPayment} />
       <button
         className="clear-button"
