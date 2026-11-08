@@ -1,0 +1,11 @@
+Tool: built-in image_gen (reference-guided generation)
+Final asset: src/assets/jaipur-palace-mobile-v1.jpg
+Reference: src/assets/jaipur-palace-camel-v2.jpg
+
+Use case: illustration-story.
+Asset type: a finished raster illustration for a mobile Jaipur board-game home-screen banner, very wide landscape, approximately 2.5:1 aspect ratio.
+Input image: reference for art style, palette and subject only, not an edit target and not a crop.
+Primary request: redraw this Jaipur palace and camel as a complete composition that was designed horizontally from the start. Preserve the reference's restrained terracotta pink palace, warm ochre sun, cream paper sky, muted green palms, brown camel, flat geometric shapes and subtle paper grain.
+Composition: the whole low, broad Rajasthani palace occupies the center; show its complete central dome, three arched doorways, smaller side domes and full base steps. A single small full-body camel stands in the foreground. The ochre sun sits behind the palace, completely inside the image. Small palms balance the sides. Keep the important silhouettes and the camel entirely within the central 84% width and 80% height, with breathing room above the dome and below the camel's feet. Build a low wide palace rather than zooming into a tall building. The composition must remain legible when shown only 350 by 140 pixels.
+Style: same quiet editorial travel illustration as the reference, soft warm paper texture, clean large silhouettes, minimal detail, no photorealism.
+Constraints: full bleed opaque cream background; no text, no labels, no lettering, no watermark, no border or UI, no cut-off architecture or animals. This is the banner art itself, not a screenshot or phone mockup.

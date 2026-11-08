@@ -2,8 +2,40 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { newGame, applyAction } from "../src/game/engine.ts";
 import { actionTransition } from "../src/game/action-transition.ts";
-import { retainedHandSlots } from "../src/game/hand-layout.ts";
+import {
+  retainedHandSlots,
+  publicHandDepartures,
+} from "../src/game/hand-layout.ts";
 import type { Action } from "../src/game/types.ts";
+
+test("assisted departures preserve unknown backs and remove the visible duplicates actually flown", () => {
+  const faces = [
+    null,
+    "diamond",
+    "gold",
+    "spice",
+    "spice",
+    "gold",
+    "silver",
+  ] as const;
+  const removed = publicHandDepartures(faces, ["spice", "spice"]);
+  assert.deepEqual(removed, [3, 4]);
+  assert.deepEqual(
+    faces.filter((_, i) => !removed.includes(i)),
+    [null, "diamond", "gold", "gold", "silver"],
+  );
+});
+
+test("a publicly revealed unknown departure consumes a back without replacing known goods", () => {
+  assert.deepEqual(
+    publicHandDepartures([null, null, "gold"], ["cloth", "gold"]),
+    [0, 2],
+  );
+  assert.deepEqual(
+    publicHandDepartures([null, null, null], ["gold", "cloth"]),
+    [0, 1],
+  );
+});
 
 function motion(action: Action, actor: 0 | 1 = 0) {
   const before = newGame(17);

@@ -1,0 +1,27 @@
+/* Printed empty spaces share the real hand's card size and spacing. */
+.game-shell.portrait-table .player-hand-and-herd .hand-cards,
+.game-shell.portrait-table .opponent-hand-fan {
+  isolation: isolate;
+}
+.hand-capacity-guide {
+  display: none;
+}
+.game-shell.portrait-table .hand-capacity-guide {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  z-index: -1;
+  display: flex;
+  gap: var(--table-hand-gap);
+  width: max-content;
+  pointer-events: none;
+}
+.game-shell.portrait-table .hand-capacity-slot {
+  flex: none;
+  width: var(--table-card-width);
+  height: calc(var(--table-card-width) * 1.5);
+  box-sizing: border-box;
+  border: 1px dashed #7f947b70;
+  border-radius: 4px;
+  background: #fffdf526;
+}

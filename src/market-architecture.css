@@ -1,0 +1,111 @@
+/* Sandstone gallery: one wall, one forecourt and a shared printed type system. */
+.game-shell.portrait-table .market-zone {
+  --market-ink: #71543f;
+  --market-label-font: var(--font-display);
+  padding: 48px 10px 34px;
+  gap: 18px;
+  isolation: isolate;
+  background-color: #efd8cd;
+  background-image: var(--table-weave);
+  background-size: 96px 96px;
+  box-shadow:
+    0 2px 5px #69524720,
+    inset 0 1px 0 #fff9ee99;
+}
+.market-architecture {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.market-architecture-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.market-region-label {
+  position: absolute;
+  display: block;
+  height: 18px;
+  color: var(--market-ink);
+  font-family: var(--market-label-font);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.market-region-foot {
+  transform: translateX(-50%);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+.market-region-title {
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+.game-shell.portrait-table .market-cards::before,
+.game-shell.portrait-table .market-cards::after,
+.game-shell.portrait-table .stock-bonus-bank::before {
+  content: none;
+  display: none;
+}
+.game-shell.portrait-table .market-sale-sign {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: #9a735a;
+}
+.game-shell.portrait-table .market-sale-label {
+  display: none;
+}
+.game-shell.portrait-table .market-row {
+  grid-template-columns: minmax(
+      var(--table-card-width),
+      1fr
+    ) max-content minmax(var(--table-card-width), 1fr);
+  gap: clamp(6px, 2cqw, 28px);
+}
+.game-shell.portrait-table :is(.market-deck, .market-sale-pile) {
+  justify-self: center;
+}
+.game-shell.portrait-table :is(.counter-remaining, .stock-bonus-count) {
+  color: #6f5848;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+.game-shell.portrait-table :is(.counter-remaining, .stock-bonus-count) > b {
+  font-size: 12px;
+  font-weight: 500;
+}
+.game-shell.portrait-table :is(.counter-remaining, .stock-bonus-count) > small {
+  font-size: 10px;
+  color: #8e7968;
+}
+.game-shell.portrait-table
+  :is(.stock-chip-face > b, .stock-bonus-tier > b, .market-deck > b) {
+  font-family: var(--font-numeric);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+.game-shell.portrait-table .stock-bonus-tier > small {
+  font-family: var(--font-ui);
+  font-weight: 500;
+}
+@media (min-width: 861px) {
+  .market-region-label {
+    font-size: 13px;
+  }
+}
+@media (max-width: 600px) {
+  .game-shell.portrait-table .market-zone {
+    padding: 46px 8px 34px;
+    gap: 16px;
+  }
+}

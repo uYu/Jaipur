@@ -1552,7 +1552,7 @@
   background: #dde5d8;
 }
 
-/* Keep every goods chip round; premium rims add a fine engraved edge. */
+/* Round premium chips use an eight-segment double rim, legible at 32px. */
 .premium-chip-rim {
   position: absolute;
   inset: 0;

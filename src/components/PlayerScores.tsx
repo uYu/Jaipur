@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { GoodsArt, JaipurMark } from "./Art.tsx";
 import { SaleFeedback } from "./SaleFeedback.tsx";
-import { CamelPile, CamelChoice } from "./CamelPile.tsx";
+import { CamelPile } from "./CamelPile.tsx";
 import { MoneyPile } from "./MoneyPile.tsx";
 import { TableNumber } from "./TableNumber.tsx";
 import { CardFace } from "./Card.tsx";
@@ -262,6 +262,11 @@ function OpponentHandFan({
       }
       style={{ "--fan-count": Math.max(1, count) } as CSSProperties}
     >
+      <span className="hand-capacity-guide" aria-hidden="true">
+        {Array.from({ length: 7 }, (_, index) => (
+          <span className="hand-capacity-slot" key={index} />
+        ))}
+      </span>
       {count === 0 ? (
         <span className="opponent-hand-empty">暂无手牌</span>
       ) : (
@@ -273,6 +278,7 @@ function OpponentHandFan({
               className={`opponent-hand-card${good === undefined ? " card-back" : ` card ${good}${precious(good) ? " premium-card" : ""}`}`}
               data-motion-anchor={`opponent-hand-${index}`}
               data-known={knownOnly && good !== undefined ? "true" : undefined}
+              data-visible-good={good}
               role="img"
               aria-label={
                 good === undefined
@@ -307,18 +313,12 @@ export function PlayerReserve({
   onInspect,
   revealOpponent = false,
   memory,
-  camelPayment,
 }: {
   state: State;
   actor: 0 | 1;
   onInspect: () => void;
   revealOpponent?: boolean;
   memory?: OpponentMemory;
-  camelPayment?: {
-    selected: number;
-    active: boolean;
-    onChange: (count: number) => void;
-  };
 }) {
   const cards = playerCardsDisplay(state, actor, revealOpponent, memory);
   const score = playerScoreDisplay(state, actor, revealOpponent, memory);
@@ -330,19 +330,10 @@ export function PlayerReserve({
       role="group"
       aria-label={own ? "你的驼队与钱堆" : "米拉的驼队与钱堆"}
     >
-      {own ? (
-        <CamelChoice
-          count={cards.camels ?? 0}
-          selected={camelPayment?.selected ?? 0}
-          active={camelPayment?.active ?? false}
-          onChange={camelPayment?.onChange}
-        />
-      ) : (
-        <CamelPile
-          count={cards.camels}
-          motionAnchor={own ? "your-herd" : "opponent-herd"}
-        />
-      )}
+      <CamelPile
+        count={cards.camels}
+        motionAnchor={own ? "your-herd" : "opponent-herd"}
+      />
       <button
         className={`reserve-money reserve-money-${own ? "own" : "opponent"}`}
         onClick={onInspect}

@@ -1,6 +1,30 @@
-import type { State } from "./types.ts";
+import type { Card, State } from "./types.ts";
 import type { Flight } from "./flights.ts";
 import type { ActionTransition } from "./action-transition.ts";
+
+/** Select only from visible faces. Unknown cards are interchangeable backs. */
+export function publicHandDepartures(
+  faces: readonly (Card | null)[],
+  outgoing: readonly Card[],
+): number[] {
+  const used = new Set<number>();
+  return outgoing.map((good) => {
+    const known = faces.findIndex(
+      (face, index) => face === good && !used.has(index),
+    );
+    const unknown = faces.findIndex(
+      (face, index) => face === null && !used.has(index),
+    );
+    const slot =
+      known >= 0
+        ? known
+        : unknown >= 0
+          ? unknown
+          : faces.findIndex((_, index) => !used.has(index));
+    used.add(slot);
+    return slot;
+  });
+}
 
 /** Match surviving cards by their old slots, including duplicate goods. */
 export function retainedHandSlots(

@@ -1,0 +1,100 @@
+.game-shell.portrait-table .player-last-action {
+  margin-top: 0;
+}
+.game-shell.portrait-table .player-last-action .table-last-action {
+  grid-template-columns: 52px minmax(0, 1fr);
+}
+.game-shell.portrait-table .player-last-action .table-action-actor {
+  white-space: nowrap;
+}
+.player-last-action-content {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+}
+.game-shell.portrait-table .player-last-action .action-summary {
+  flex: none;
+  width: fit-content;
+  margin: 0;
+}
+.player-last-sale {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px 8px;
+  font: 400 var(--type-label)/24px var(--font-ui);
+  color: var(--text-secondary);
+}
+.player-last-sale > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+.player-last-sale > span > svg {
+  display: none;
+}
+.player-last-sale b {
+  font-family: var(--font-numeric);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.player-last-sale .player-last-bonus {
+  padding-inline: 5px;
+  border-radius: 4px;
+  background: #eee7d4;
+  color: #79683f;
+}
+.player-last-sale .player-last-bonus b {
+  color: inherit;
+}
+.player-last-sale .player-last-total {
+  color: #365244;
+}
+.game-shell.portrait-table .player-last-action .action-summary-goods,
+.game-shell.portrait-table .player-last-action .action-summary-items {
+  flex-wrap: nowrap;
+}
+.game-shell.portrait-table .player-last-action .single-good .ledger-item-value {
+  display: none;
+}
+.game-shell.portrait-table
+  .player-last-action[data-compact="true"]
+  .action-summary {
+  grid-template-columns: 14px max-content;
+  gap: 4px;
+}
+.game-shell.portrait-table
+  .player-last-action[data-compact="true"]
+  :is(
+    .action-summary-verb-label,
+    .ledger-item-name,
+    .player-last-amount-label
+  ) {
+  display: none;
+}
+.game-shell.portrait-table
+  .player-last-action[data-compact="true"]
+  .ledger-good {
+  gap: 1px;
+  padding-inline: 2px;
+}
+.game-shell.portrait-table
+  .player-last-action[data-compact="true"]
+  .action-summary-items {
+  gap: 2px;
+}
+.player-last-action[data-compact="true"] .player-last-action-content {
+  gap: 6px;
+}
+.player-last-action[data-compact="true"] .player-last-sale {
+  gap: 5px;
+}
+.player-last-action[data-compact="true"] .player-last-sale > span > svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+}

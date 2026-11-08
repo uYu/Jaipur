@@ -1,0 +1,215 @@
+/* Replay is a compact study surface: position first, then navigation and analysis. */
+.game-shell.portrait-table.replay-table {
+  padding: 4px 8px 8px;
+  max-width: 880px;
+  margin: 0 auto;
+}
+.game-shell.portrait-table.replay-table .replay-board-position {
+  gap: 6px;
+  margin: 0 0 4px;
+  padding: 0;
+}
+.replay-table .replay-board-position > span {
+  margin-right: auto;
+  white-space: nowrap;
+}
+.game-shell.replay-table .replay-board-position > .return-to-menu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.replay-table .replay-board-position > .return-to-menu span {
+  display: none;
+}
+.game-shell.portrait-table.replay-table .game-grid {
+  margin: 0;
+}
+.game-shell.portrait-table.replay-table .game-grid::after {
+  display: none;
+}
+.game-shell.portrait-table.replay-table .table-column {
+  --table-card-cap: 64px;
+  --chip-size: 32px;
+  --chip-row-height: 50px;
+  --chip-count-top: 36px;
+  --chip-count-size: 11px;
+  --chip-value-size: 17px;
+  --chip-value-height: 22px;
+  gap: 6px;
+  padding: 8px;
+  min-height: 0;
+}
+.game-shell.portrait-table.replay-table .market-zone {
+  margin-block: 0;
+  padding: 35px 6px 29px;
+  gap: 9px;
+}
+.game-shell.portrait-table.replay-table .hand-panel {
+  padding: 0;
+  margin: 0;
+}
+.game-shell.portrait-table.replay-table .opponent-cards-and-herd {
+  min-height: 0;
+}
+.game-shell.portrait-table.replay-table .replay-bar {
+  display: grid;
+  grid-template-columns: 44px 44px minmax(0, 1fr) max-content;
+  gap: 6px;
+  margin: 4px 0;
+  padding: 2px 8px;
+}
+.game-shell.replay-table .replay-bar > b {
+  display: none;
+}
+.game-shell.replay-table .replay-bar > button {
+  grid-row: 1;
+}
+.game-shell.replay-table .replay-bar input[type="range"] {
+  grid-column: 3;
+  grid-row: 1;
+  width: 100%;
+}
+.game-shell.replay-table .replay-bar > span {
+  grid-column: 4;
+  grid-row: 1;
+}
+.game-shell.replay-table .replay-value {
+  margin: 0;
+  padding: 4px 8px;
+}
+.game-shell.replay-table .replay-value > summary {
+  min-height: 26px;
+}
+.replay-table .replay-value-plot {
+  height: 66px;
+  margin: 0 0 3px;
+}
+.replay-table .replay-value-plot svg text {
+  display: none;
+}
+.replay-table .replay-value-review {
+  padding-top: 4px;
+}
+.replay-table .review-heading {
+  margin-bottom: 4px;
+}
+.replay-table .review-comparison {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+.replay-table .review-choice {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  min-height: 35px;
+}
+.replay-table .review-choice-label {
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+}
+.replay-table .review-choice-value {
+  font: 600 14px var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: #42644f;
+}
+.replay-table .review-move {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+  scrollbar-width: thin;
+}
+.replay-table .review-move > .review-goods {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 3px;
+  min-width: max-content;
+}
+.replay-table .review-move-direction {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: #8d876c;
+}
+.replay-table .review-good {
+  height: 23px;
+  padding: 0 3px 0 1px;
+  gap: 1px;
+}
+.replay-table .review-good > .goods-art {
+  width: 19px;
+  height: 19px;
+}
+.replay-table .review-good b {
+  font-size: 11px;
+}
+.replay-table .review-good-name {
+  display: none;
+}
+.replay-table .replay-value-extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 0 18px;
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.replay-table .replay-value-extras > details {
+  margin: 0;
+}
+.replay-table .replay-value-extras > details[open] {
+  flex-basis: 100%;
+}
+.replay-table .replay-value-extras summary {
+  cursor: pointer;
+  min-height: 28px;
+  line-height: 28px;
+}
+.replay-table .replay-value-drops {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 4px;
+}
+.replay-table .replay-value-drops > button {
+  flex: 1;
+}
+@media (max-height: 740px) {
+  .game-shell.portrait-table.replay-table .table-column {
+    gap: 4px;
+    padding-block: 5px;
+  }
+  .game-shell.portrait-table.replay-table .market-zone {
+    padding-top: 32px;
+    padding-bottom: 27px;
+    gap: 6px;
+  }
+  .replay-table .replay-value-plot {
+    height: 55px;
+  }
+}
+@media (max-width: 360px) {
+  .replay-table .review-good > .goods-art {
+    width: 16px;
+    height: 16px;
+  }
+  .replay-table .review-move {
+    gap: 3px;
+  }
+  .replay-table .review-move > .review-goods {
+    gap: 2px;
+  }
+}

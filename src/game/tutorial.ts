@@ -180,8 +180,8 @@ export const TUTORIAL_STEPS: GuideStep[] = [
   {
     id: "camel-exchange-pay",
     title: "先试用 2 头骆驼付款",
-    text: "点自己驼队下方的「＋」两次，选出 2 头；「−」可以减少。数量还没配平时，确认按钮不可用。",
-    target: ".camel-choice",
+    text: "点确认按钮旁「付出骆驼」的「＋」两次，选出 2 头；「−」可以减少。数量还没配平时，确认按钮不可用。",
+    target: ".camel-payment-control",
     kind: "select",
   },
   {
@@ -275,8 +275,8 @@ export const TUTORIAL_STEPS: GuideStep[] = [
   {
     id: "mixed-exchange-camel",
     title: "再加上 1 头骆驼",
-    text: "点自己驼队下方的「＋」，选出 1 头骆驼。现在 1 张手牌 + 1 头骆驼，与 2 张市场货物数量相同。",
-    target: ".camel-choice",
+    text: "点确认按钮旁「付出骆驼」的「＋」，选出 1 头骆驼。现在 1 张手牌 + 1 头骆驼，与 2 张市场货物数量相同。",
+    target: ".camel-payment-control",
     kind: "select",
   },
   {

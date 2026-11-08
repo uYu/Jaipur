@@ -1,6 +1,9 @@
 /* Warm white paper and clean green controls; the goods carry the color. */
 :root {
   --font-ui: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-display: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  --font-numeric:
+    "Avenir Next", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --text: #303b36;
   --text-secondary: #69756e;
   --accent: #29664f;
@@ -19,6 +22,7 @@
   --paper: var(--surface);
   --type-small: 11px;
   --type-label: 12px;
+  --type-compact: 13px;
   --type-body: 14px;
   --type-heading: 16px;
   --radius-panel: 10px;

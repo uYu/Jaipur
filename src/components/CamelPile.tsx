@@ -35,7 +35,7 @@ export function CamelPile({
   );
 }
 
-export function CamelChoice({
+export function CamelPayment({
   count,
   selected,
   active,
@@ -48,38 +48,32 @@ export function CamelChoice({
 }) {
   return (
     <span
-      className="camel-choice"
+      className="camel-payment-control"
       data-selected={selected > 0}
       role="group"
       aria-label="选择骆驼付款"
     >
-      <span className="camel-choice-card">
-        <CamelPile count={count} motionAnchor="your-herd" />
-      </span>
-      {count > 0 && (
-        <span className="camel-choice-payment">
-          <span className="camel-choice-label">骆驼付款</span>
-          <span className="camel-choice-stepper">
-            <button
-              aria-label="减少付出骆驼"
-              disabled={!active || selected === 0}
-              onClick={() => onChange?.(selected - 1)}
-            >
-              <Minus size={14} aria-hidden="true" />
-            </button>
-            <output aria-label="已选付出骆驼数量" aria-live="polite">
-              <TableNumber value={selected} />
-            </output>
-            <button
-              aria-label={`增加付出骆驼，已选 ${selected} 头，共 ${count} 头`}
-              disabled={!active || selected >= count}
-              onClick={() => onChange?.(selected + 1)}
-            >
-              <Plus size={14} aria-hidden="true" />
-            </button>
-          </span>
+      <span className="camel-choice-payment">
+        <span className="camel-choice-stepper">
+          <button
+            aria-label="减少付出骆驼"
+            disabled={!active || selected === 0}
+            onClick={() => onChange?.(selected - 1)}
+          >
+            <Minus size={14} aria-hidden="true" />
+          </button>
+          <output aria-label="已选付出骆驼数量" aria-live="polite">
+            <span>付出骆驼:</span> <TableNumber value={selected} />
+          </output>
+          <button
+            aria-label={`增加付出骆驼，已选 ${selected} 头，共 ${count} 头`}
+            disabled={!active || selected >= count}
+            onClick={() => onChange?.(selected + 1)}
+          >
+            <Plus size={14} aria-hidden="true" />
+          </button>
         </span>
-      )}
+      </span>
     </span>
   );
 }

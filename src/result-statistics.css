@@ -1,0 +1,70 @@
+.round-scorecards .result-camel-breakdown {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.result-camel-breakdown > :first-child {
+  color: var(--text-secondary);
+}
+.result-action-statistics {
+  margin: 16px 0;
+  padding: 12px 14px;
+  border: 1px solid #d4ddd4;
+  border-radius: 8px;
+  background: #f2f5ef;
+}
+.result-action-statistics table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: var(--text);
+  font: 500 13px/20px var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+.result-action-statistics caption {
+  padding-bottom: 8px;
+  text-align: left;
+}
+.result-action-statistics :is(th, td) {
+  padding: 7px 4px;
+  border-bottom: 1px solid #dce4d9;
+  text-align: center;
+  font-weight: inherit;
+}
+.result-action-statistics thead {
+  color: var(--text-secondary);
+}
+.result-action-statistics tr > :first-child {
+  text-align: left;
+}
+.result-action-statistics tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+/* Four post-match actions stay on one equal-width row below the phone title. */
+.result-banner {
+  flex-wrap: wrap;
+}
+@media (max-width: 700px) {
+  .result-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .result-banner > .result-banner-actions {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 6px;
+    width: 100%;
+    flex-shrink: 1;
+  }
+  .game-shell .result-banner .result-banner-actions > button {
+    min-width: 0;
+    padding: 8px 4px;
+    font-size: var(--type-label);
+  }
+}

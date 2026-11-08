@@ -5,6 +5,7 @@ import type { State } from "../game/types.ts";
 import { LABEL, precious } from "../game/data.ts";
 import { GoodsArt, PremiumChipRim } from "./Art.tsx";
 import { TableNumber } from "./TableNumber.tsx";
+import "../chip-groups.css";
 export function MobileSupply({
   state,
   onInspect,
@@ -75,7 +76,7 @@ export function MobileSupply({
             <div
               className={`supply-counter ${g} ${precious(g) ? "premium-stock" : ""} ${state.tokens[g].length ? "" : "counter-empty"}`}
               key={g}
-              aria-label={`${LABEL[g]}，剩余 ${state.tokens[g].length} 枚${state.tokens[g].length ? `，下一枚 ${state.tokens[g][0]} 卢比` : "，已售罄"}`}
+              aria-label={`${LABEL[g]}${precious(g) ? "，高级货物" : ""}，剩余 ${state.tokens[g].length} 枚${state.tokens[g].length ? `，下一枚 ${state.tokens[g][0]} 卢比` : "，已售罄"}`}
             >
               <span
                 className="counter-quote"

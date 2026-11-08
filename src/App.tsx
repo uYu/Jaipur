@@ -10,7 +10,6 @@ import {
   History,
   GraduationCap,
   Home,
-  Pause,
   Play,
   Plus,
   Store,
@@ -40,6 +39,7 @@ import { advance, parseSave, replay, SAVE_KEY } from "./game/storage.ts";
 import { JaipurMark } from "./components/Art.tsx";
 import { Card } from "./components/Card.tsx";
 import { MobileSupply, SupplyDetails } from "./components/MobileSupply.tsx";
+import { MarketArchitecture } from "./components/MarketArchitecture.tsx";
 import {
   OpponentSeat,
   PlayerReserve,
@@ -53,13 +53,13 @@ import { numberFrames } from "./game/number-frames.ts";
 import { sum } from "./game/data.ts";
 import { actionSummaries } from "./game/receipts.ts";
 import { LastActions } from "./components/LastActions.tsx";
+import { PlayerLastAction } from "./components/PlayerLastAction.tsx";
+import { ReplayValueChart } from "./components/ReplayValueChart.tsx";
+import { replayBoardIndex } from "./game/replay-position.ts";
+import type { ReplayMoment } from "./game/replay-position.ts";
 import { ActionHistory } from "./components/ActionHistory.tsx";
 import { ActionAnimation } from "./components/ActionAnimation.tsx";
-import {
-  actionTransition,
-  dealTransition,
-  replayTransition,
-} from "./game/action-transition.ts";
+import { actionTransition, dealTransition } from "./game/action-transition.ts";
 import type { ActionTransition } from "./game/action-transition.ts";
 import { initialMarketSlots, nextMarketSlots } from "./game/market-layout.ts";
 import { marketSlotsAt } from "./game/opponent-turn.ts";
@@ -87,6 +87,10 @@ import { useViewportHeight } from "./hooks/useViewportHeight.ts";
 import { opponentMemory } from "./game/opponent-memory.ts";
 const menuIllustration = new URL(
   "./assets/jaipur-palace-camel-v2.jpg",
+  import.meta.url,
+).href;
+const menuMobileIllustration = new URL(
+  "./assets/jaipur-palace-mobile-v1.jpg",
   import.meta.url,
 ).href;
 function initialSave(): { save: Save | null; error: string } {
@@ -119,7 +123,11 @@ function DifficultySelect({
     </select>
   );
 }
-export default function App() {
+export default function App({
+  animationSpeed = 1.1,
+}: {
+  animationSpeed?: number;
+}) {
   const reducedMotion = useReducedMotion();
   const [initial] = useState(initialSave),
     [save, setSave] = useState<Save | null>(initial.save);
@@ -170,12 +178,11 @@ export default function App() {
     marketSlotsAt(initial.save),
   );
   const [replayIndex, setReplayIndex] = useState(0);
-  const [replayPlaying, setReplayPlaying] = useState(false);
-  const [replayPaused, setReplayPaused] = useState(false);
+  const [replayMoment, setReplayMoment] = useState<ReplayMoment>("before");
+  const replayViewedIndex = replayBoardIndex(replayIndex, replayMoment);
   const replayAnimating =
     screen === "replay" && transition?.replayTarget !== undefined;
-  const animationPaused = !!modal || (screen === "replay" && replayPaused);
-  const replayRunning = replayPlaying || (replayAnimating && !replayPaused);
+  const animationPaused = !!modal;
   const transitionRemaining = useRef(0);
   useEffect(() => {
     if (!transition || screen === "menu" || animationPaused) return;
@@ -206,7 +213,7 @@ export default function App() {
     transition && screen !== "menu"
       ? transition.eventLimit
       : screen === "replay"
-        ? replayIndex
+        ? replayViewedIndex
         : (shownSave?.events.length ?? 0);
   const { receipts, history, lastActions, lastTurns, latestActor } = useMemo(
     () => actionSummaries(shownSave, shownEventLimit, screen === "replay"),
@@ -239,7 +246,7 @@ export default function App() {
           next,
           marketSlots,
           save.events.length,
-          { mobile: true, reduced: reducedMotion },
+          { mobile: true, reduced: reducedMotion, speed: animationSpeed },
         );
         transitionRemaining.current = nextTransition.duration;
         setTransition(nextTransition);
@@ -307,33 +314,15 @@ export default function App() {
     };
     // A fresh worker receives only the acting player's observation for each committed turn.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game, screen, modal, retry, aiError, transition, turnIntro]);
-  useEffect(() => {
-    if (
-      screen !== "replay" ||
-      !replayPlaying ||
-      !save ||
-      transition ||
-      animationPaused
-    )
-      return;
-    if (replayIndex >= save.events.length) {
-      setReplayPlaying(false);
-      return;
-    }
-    const timer = setTimeout(
-      () => playReplayStep(),
-      replayIndex === 0 ? 150 : 650,
-    );
-    return () => clearTimeout(timer);
   }, [
+    game,
     screen,
-    replayPlaying,
-    replayIndex,
-    save,
+    modal,
+    retry,
+    aiError,
     transition,
-    animationPaused,
-    reducedMotion,
+    turnIntro,
+    animationSpeed,
   ]);
   useEffect(() => {
     if (!modal) return;
@@ -371,11 +360,11 @@ export default function App() {
       screen === "tutorial"
         ? (transition?.before ?? tutorialState)
         : screen === "replay" && save
-          ? (transition?.before ?? replay(save, replayIndex))
+          ? (transition?.before ?? replay(save, replayViewedIndex))
           : screen === "game" && transition
             ? transition.before
             : game,
-    [screen, save, replayIndex, game, transition, tutorialState],
+    [screen, save, replayViewedIndex, game, transition, tutorialState],
   );
   const resultKey = viewed
     ? `${viewed.seed}:${viewed.round}:${viewed.phase}`
@@ -428,8 +417,6 @@ export default function App() {
   };
   const openPostGameMenu = (page: "home" | "new") => {
     setInspectResult(false);
-    setReplayPlaying(false);
-    setReplayPaused(false);
     setTransition(null);
     setMarketNotice(null);
     clear();
@@ -492,7 +479,7 @@ export default function App() {
       next,
       tutorialSlots,
       tutorialSave.events.length,
-      { mobile: true, reduced: reducedMotion },
+      { mobile: true, reduced: reducedMotion, speed: animationSpeed },
     );
     transitionRemaining.current = nextTransition.duration;
     setTransition(nextTransition);
@@ -519,28 +506,14 @@ export default function App() {
     const nextTransition = dealTransition(state, eventLimit, {
       mobile: true,
       reduced: reducedMotion,
+      speed: animationSpeed,
     });
     transitionRemaining.current = nextTransition.duration;
     setTransition(nextTransition);
     setMarketSlots(initialMarketSlots());
   }
-  function playReplayStep() {
-    if (!save || transition || modal) return;
-    const nextTransition = replayTransition(save, replayIndex, {
-      mobile: true,
-      reduced: reducedMotion,
-      revealOpponent: true,
-    });
-    if (!nextTransition) return;
-    setReplayPaused(false);
-    setInspectResult(false);
-    transitionRemaining.current = nextTransition.duration;
-    setMarketNotice(nextTransition.feedback ?? null);
-    setTransition(nextTransition);
-  }
   function seekReplay(index: number) {
-    setReplayPlaying(false);
-    setReplayPaused(false);
+    setReplayMoment("before");
     setTransition(null);
     setMarketNotice(null);
     setInspectResult(false);
@@ -549,16 +522,10 @@ export default function App() {
     );
     clear();
   }
-  function toggleReplay() {
-    if (replayRunning) {
-      setReplayPlaying(false);
-      setReplayPaused(true);
-    } else {
-      if (!transition && replayIndex >= (save?.events.length ?? 0))
-        seekReplay(0);
-      setReplayPaused(false);
-      setReplayPlaying(true);
-    }
+  function openFinishedReplay() {
+    if (game?.phase !== "finished" || !save?.events.length) return;
+    seekReplay(0);
+    setScreen("replay");
   }
   function start() {
     const seed = crypto.getRandomValues(new Uint32Array(1))[0];
@@ -584,8 +551,8 @@ export default function App() {
   }
   const p = viewed?.players[0];
   const replayMarketSlots = useMemo(
-    () => (screen === "replay" ? marketSlotsAt(save, replayIndex) : []),
-    [screen, save, replayIndex],
+    () => (screen === "replay" ? marketSlotsAt(save, replayViewedIndex) : []),
+    [screen, save, replayViewedIndex],
   );
   const visibleMarketSlots =
     transition?.marketSlots ??
@@ -646,7 +613,7 @@ export default function App() {
             : screen === "game" && turnIntro
               ? "等待开市"
               : viewed.current === 1
-                ? "米拉思考中…"
+                ? "米拉正在思考…"
                 : "轮到你了";
   const hasUnfinishedGame = !!game && game.phase !== "finished";
   const brand = (
@@ -665,7 +632,6 @@ export default function App() {
       onClick={() => {
         setScreen("menu");
         setMenu("home");
-        setReplayPlaying(false);
         if (teaching || screen === "replay") {
           setTransition(null);
           setMarketNotice(null);
@@ -704,7 +670,7 @@ export default function App() {
         </div>
       )}
       {screen === "menu" ? (
-        <main className="menu-shell">
+        <main className="menu-shell" data-menu={menu}>
           <section className="menu-copy">
             {brand}
             {menu === "home" ? (
@@ -764,24 +730,16 @@ export default function App() {
                     <span>游戏规则</span>
                     <ArrowRight size={18} />
                   </button>
-                  {!!save?.events.length && (
+                  {game?.phase === "finished" && !!save?.events.length && (
                     <button
-                      className="text-button"
-                      onClick={() => {
-                        clear();
-                        seekReplay(0);
-                        setScreen("replay");
-                      }}
+                      className="secondary menu-action"
+                      onClick={openFinishedReplay}
                     >
                       <History size={16} />
-                      {hasUnfinishedGame ? "回看这场生意" : "回看上场比赛"}
+                      <span>回看上场交易</span>
+                      <ArrowRight size={18} />
                     </button>
                   )}
-                </div>
-                <div className="menu-meta">
-                  <span>2 位商人</span>
-                  <span>1 局定胜负 / 三局两胜</span>
-                  <span>本地 AI · 无需联网</span>
                 </div>
               </>
             ) : (
@@ -877,19 +835,37 @@ export default function App() {
                 </div>
               </>
             )}
-            <footer className="menu-footer">
-              一场关于取舍、眼光与时机的双人对决
+            <footer className="menu-footer menu-credits">
+              <span>
+                原作设计 ·{" "}
+                <a
+                  href="https://www.spacecowboys-games.com/game/jaipur/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Sébastien Pauchon
+                </a>
+              </span>
+              <span>网页开发 · franzyu © {new Date().getFullYear()}</span>
             </footer>
           </section>
           <section className="menu-art menu-illustration" aria-hidden="true">
-            <img
-              className="menu-palace-image"
-              src={menuIllustration}
-              alt=""
-              width="1000"
-              height="1250"
-              fetchPriority="high"
-            />
+            <picture>
+              {menu === "home" && (
+                <source
+                  media="(max-width: 620px)"
+                  srcSet={menuMobileIllustration}
+                />
+              )}
+              <img
+                className="menu-palace-image"
+                src={menuIllustration}
+                alt=""
+                width="1000"
+                height="1250"
+                fetchPriority="high"
+              />
+            </picture>
             <div className="menu-art-location">RAJASTHAN, INDIA</div>
             <div className="menu-art-caption">买进风物，卖出眼光。</div>
           </section>
@@ -902,119 +878,109 @@ export default function App() {
             active &&
             (market.length > 0 || hand.length > 0 || selection.camels > 0)
           }
-          className={`game-shell portrait-table ${teaching ? "tutorial-game" : ""} ${(screen === "game" || screen === "replay" || teaching) && viewed.phase === "playing" ? "viewport-table" : ""} ${transition?.kind === "deal" ? "mobile-dealing" : ""}`}
+          className={`game-shell portrait-table ${screen === "replay" ? "replay-table" : ""} ${teaching ? "tutorial-game" : ""} ${(screen === "game" || teaching) && viewed.phase === "playing" ? "viewport-table" : ""} ${transition?.kind === "deal" ? "mobile-dealing" : ""}`}
         >
-          <header className="game-header">
-            <div className="game-identity">
-              {brand}
-              <span
-                className="opponent-level"
-                aria-label={
-                  teaching
-                    ? "练习对局"
-                    : `当前对手难度：${DIFFICULTY_NAME[save?.difficulty ?? difficulty]}`
-                }
-              >
-                {teaching
-                  ? "练习对局"
-                  : `米拉 · ${DIFFICULTY_NAME[save?.difficulty ?? difficulty]}`}
-                {memory && " · 辅助模式"}
-              </span>
-            </div>
-            <div className="header-round">
-              第 <TableNumber value={viewed.round} /> 轮 <span>·</span>{" "}
-              <>
-                第{" "}
-                <TableNumber
-                  value={
-                    viewed.phase === "playing" ? viewed.turn + 1 : viewed.turn
-                  }
-                />{" "}
-                手<span>·</span>
-              </>
-              {viewed.targetSeals === 1 ? "1 局定胜负" : "三局两胜"}
-              {viewed.targetSeals !== 1 && (
-                <span
-                  className="match-seals"
-                  aria-label={`胜局：你 ${viewed.seals[0]}，米拉 ${viewed.seals[1]}`}
+          {screen !== "replay" && (
+            <>
+              <header className="game-header">
+                <div className="game-identity">
+                  {brand}
+                  <span
+                    className="opponent-level"
+                    aria-label={
+                      teaching
+                        ? "练习对局"
+                        : `当前对手难度：${DIFFICULTY_NAME[save?.difficulty ?? difficulty]}`
+                    }
+                  >
+                    {teaching
+                      ? "练习对局"
+                      : `米拉 · ${DIFFICULTY_NAME[save?.difficulty ?? difficulty]}`}
+                    {memory && " · 辅助模式"}
+                  </span>
+                </div>
+                <div className="header-round">
+                  第 <TableNumber value={viewed.round} /> 轮 <span>·</span>{" "}
+                  <>
+                    第{" "}
+                    <TableNumber
+                      value={
+                        viewed.phase === "playing"
+                          ? viewed.turn + 1
+                          : viewed.turn
+                      }
+                    />{" "}
+                    手<span>·</span>
+                  </>
+                  {viewed.targetSeals === 1 ? "1 局定胜负" : "三局两胜"}
+                  {viewed.targetSeals !== 1 && (
+                    <span
+                      className="match-seals"
+                      aria-label={`胜局：你 ${viewed.seals[0]}，米拉 ${viewed.seals[1]}`}
+                    >
+                      <TableNumber value={viewed.seals[0]} /> :{" "}
+                      <TableNumber value={viewed.seals[1]} />
+                    </span>
+                  )}
+                </div>
+              </header>
+              <nav className="table-tools" aria-label="牌桌工具">
+                {returnToMenuButton}
+                <button
+                  onClick={() => setModal("log")}
+                  aria-label="查看完整行动记录"
+                  aria-haspopup="dialog"
                 >
-                  <TableNumber value={viewed.seals[0]} /> :{" "}
-                  <TableNumber value={viewed.seals[1]} />
-                </span>
-              )}
-            </div>
-            {returnToMenuButton}
-          </header>
-          <nav className="table-tools" aria-label="牌桌工具">
-            <button
-              onClick={() => setModal("log")}
-              aria-label="查看完整行动记录"
-              aria-haspopup="dialog"
-            >
-              <History size={16} />
-              <span>历史行动</span>
-            </button>
-            <button
-              onClick={() => setModal("supply")}
-              aria-label="查看筹码盘"
-              aria-haspopup="dialog"
-              title="3 类筹码售罄即收市"
-            >
-              <Coins size={16} />
-              <span>筹码盘</span>
-            </button>
-            <button
-              onClick={() => setModal("rules")}
-              aria-label="查看游戏规则"
-              aria-haspopup="dialog"
-            >
-              <BookOpen size={16} />
-              <span>游戏规则</span>
-            </button>
-          </nav>
+                  <History size={16} />
+                  <span>历史行动</span>
+                </button>
+                <button
+                  onClick={() => setModal("supply")}
+                  aria-label="查看筹码盘"
+                  aria-haspopup="dialog"
+                  title="3 类筹码售罄即收市"
+                >
+                  <Coins size={16} />
+                  <span>筹码盘</span>
+                </button>
+                <button
+                  onClick={() => setModal("rules")}
+                  aria-label="查看游戏规则"
+                  aria-haspopup="dialog"
+                >
+                  <BookOpen size={16} />
+                  <span>游戏规则</span>
+                </button>
+              </nav>
+            </>
+          )}
           {screen === "replay" && (
-            <div className="replay-bar">
-              <b>比赛回放</b>
-              <button
-                aria-label="上一步"
-                disabled={!replayIndex && !replayAnimating}
-                onClick={() => {
-                  seekReplay(replayAnimating ? replayIndex : replayIndex - 1);
-                }}
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button
-                aria-label={replayRunning ? "暂停回放" : "播放回放"}
-                onClick={toggleReplay}
-              >
-                {replayRunning ? <Pause size={18} /> : <Play size={18} />}
-              </button>
-              <button
-                aria-label="下一步"
-                disabled={
-                  replayAnimating || replayIndex === (save?.events.length ?? 0)
-                }
-                onClick={() => {
-                  setReplayPlaying(false);
-                  playReplayStep();
-                }}
-              >
-                <ChevronRight size={20} />
-              </button>
-              <input
-                aria-label="回放进度"
-                type="range"
-                min="0"
-                max={save?.events.length ?? 0}
-                value={replayIndex}
-                onChange={(e) => {
-                  seekReplay(Number(e.target.value));
-                }}
-              />
-              <span>
-                {replayIndex} / {save?.events.length}
+            <div
+              className="replay-board-position"
+              role="group"
+              aria-label="牌桌显示时点"
+            >
+              {returnToMenuButton}
+              <span aria-live="polite">
+                {replayIndex === 0
+                  ? "开市局面"
+                  : `第 ${replayIndex} 步 · 行动${replayMoment === "before" ? "前" : "后"}`}
               </span>
+              <div>
+                {(["before", "after"] as const).map((moment) => (
+                  <button
+                    key={moment}
+                    aria-pressed={replayMoment === moment}
+                    disabled={replayIndex === 0}
+                    onClick={() => {
+                      setReplayMoment(moment);
+                      setInspectResult(false);
+                    }}
+                  >
+                    行动{moment === "before" ? "前" : "后"}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {viewed.phase !== "playing" && !showEndNotice && (
@@ -1047,6 +1013,15 @@ export default function App() {
                     >
                       主菜单
                     </button>
+                    {screen !== "replay" && !!save?.events.length && (
+                      <button
+                        className="secondary"
+                        title="从开局回看本场对局"
+                        onClick={openFinishedReplay}
+                      >
+                        局面回放
+                      </button>
+                    )}
                   </>
                 )}
                 <button
@@ -1054,7 +1029,6 @@ export default function App() {
                   onClick={() => {
                     setDismissedResult("");
                     setInspectResult(true);
-                    setReplayPlaying(false);
                   }}
                 >
                   查看结算
@@ -1074,12 +1048,15 @@ export default function App() {
                 onInspect={() => setModal("scores")}
                 revealOpponent={screen === "replay"}
                 actionSummary={
-                  <aside className="table-notes" aria-label="对手本手行动">
-                    {actionLedger}
-                  </aside>
+                  screen === "replay" ? undefined : (
+                    <aside className="table-notes" aria-label="对手本手行动">
+                      {actionLedger}
+                    </aside>
+                  )
                 }
               />
               <div className="market-zone" role="group" aria-label="公共集市">
+                <MarketArchitecture />
                 <div className="table-supply">
                   <MobileSupply
                     state={numberState ?? viewed}
@@ -1161,6 +1138,9 @@ export default function App() {
                 </section>
               </div>
               <section className="hand-panel">
+                {screen !== "replay" && (
+                  <PlayerLastAction action={lastActions[0]} />
+                )}
                 <div
                   className="hand-and-herd player-hand-and-herd"
                   style={
@@ -1173,19 +1153,21 @@ export default function App() {
                     <PlayerReserve
                       state={numberState ?? viewed}
                       actor={0}
-                      camelPayment={{
-                        selected: selection.camels,
-                        active:
-                          active &&
-                          (!teaching || tutorialAllowsCamels(tutorialStep)),
-                        onChange: (count) =>
-                          selectCards(selectCamels(viewed, selection, count)),
-                      }}
                       onInspect={() => setModal("scores")}
                       revealOpponent={screen === "replay"}
                     />
                   </div>
-                  <div className="hand-cards" data-motion-anchor="your-hand">
+                  <div
+                    className="hand-cards"
+                    data-motion-anchor="your-hand"
+                    role="group"
+                    aria-label={`你的手牌，${p.hand.length} 张，上限 7 张`}
+                  >
+                    <div className="hand-capacity-guide" aria-hidden="true">
+                      {Array.from({ length: 7 }, (_, index) => (
+                        <span className="hand-capacity-slot" key={index} />
+                      ))}
+                    </div>
                     <span
                       className="card small hand-card-measure"
                       data-motion-anchor="hand-measure"
@@ -1232,6 +1214,22 @@ export default function App() {
                       : undefined
                   }
                   status={turnStatus}
+                  thinking={viewed.current === 1 && !transition && !aiError}
+                  settling={!!transition}
+                  camelPayment={{
+                    count: p.camels,
+                    selected:
+                      transition?.action.actor === 0
+                        ? transition.action.outgoing.filter(
+                            (good) => good === "camel",
+                          ).length
+                        : selection.camels,
+                    active:
+                      active &&
+                      (!teaching || tutorialAllowsCamels(tutorialStep)),
+                    onChange: (count) =>
+                      selectCards(selectCamels(viewed, selection, count)),
+                  }}
                   onClear={() => selectCards(emptySelection())}
                   confirmationBlocked={
                     teaching &&
@@ -1269,6 +1267,58 @@ export default function App() {
               </div>
             </section>
           </div>
+          {screen === "replay" && (
+            <div className="replay-bar" role="group" aria-label="比赛回放控制">
+              <b>比赛回放</b>
+              <button
+                aria-label="上一步"
+                disabled={!replayIndex && !replayAnimating}
+                onClick={() => {
+                  seekReplay(replayAnimating ? replayIndex : replayIndex - 1);
+                }}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button
+                aria-label="下一步"
+                disabled={
+                  !replayAnimating && replayIndex >= (save?.events.length ?? 0)
+                }
+                onClick={() =>
+                  seekReplay(transition?.replayTarget ?? replayIndex + 1)
+                }
+              >
+                <ChevronRight size={20} />
+              </button>
+              <input
+                aria-label="回放进度"
+                type="range"
+                min="0"
+                max={save?.events.length ?? 0}
+                value={replayIndex}
+                aria-valuetext={`选择复盘第 ${replayIndex} 步，共 ${save?.events.length ?? 0} 步`}
+                style={
+                  {
+                    "--replay-progress": `${save?.events.length ? (replayIndex / save.events.length) * 100 : 0}%`,
+                  } as CSSProperties
+                }
+                onChange={(e) => {
+                  seekReplay(Number(e.target.value));
+                }}
+              />
+              <span>
+                {replayIndex} / {save?.events.length}
+              </span>
+            </div>
+          )}
+          {screen === "replay" && save && (
+            <ReplayValueChart
+              save={save}
+              index={replayIndex}
+              moment={replayMoment}
+              onSeek={seekReplay}
+            />
+          )}
           <footer className="game-footer">
             <span>斋普尔 · 每一笔交易，都是一次取舍。</span>
             <span>
@@ -1333,7 +1383,7 @@ export default function App() {
       {showResult && !showEndNotice && viewed && (
         <ResultDialog
           state={viewed}
-          lastAction={history.at(-1)?.action}
+          history={history}
           onClose={closeResult}
           onNext={
             screen === "game"

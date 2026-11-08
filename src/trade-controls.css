@@ -1,0 +1,267 @@
+/* Keep payment, reset and confirmation within one short reach. */
+.game-shell.portrait-table .table-tools {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.game-shell.portrait-table .table-tools > button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding-inline: 4px;
+  color: #536559;
+  white-space: nowrap;
+}
+.game-shell.portrait-table .table-tools > button > svg {
+  width: 15px;
+  height: 15px;
+}
+.game-shell.portrait-table .hand-panel {
+  padding-bottom: 0;
+}
+.game-shell.portrait-table .action-panel.direct-selection[data-overview] {
+  --trade-type-size: 13px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: 40px minmax(76px, auto);
+  gap: 8px;
+  height: auto;
+  min-height: 136px;
+  padding: 8px 0 max(4px, env(safe-area-inset-bottom));
+  border-top: 1px solid #cbd5c9;
+}
+.game-shell.portrait-table
+  .action-panel.direct-selection[data-overview]
+  > .action-description {
+  grid-area: 2 / 1 / 3 / -1;
+  align-self: stretch;
+  min-height: 0;
+}
+.game-shell.portrait-table
+  .action-panel.direct-selection[data-overview]
+  > :is(.clear-button, .confirm) {
+  display: inline-flex;
+  flex-direction: row;
+  grid-row: 1;
+  align-self: end;
+  height: 40px;
+  min-height: 40px;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+}
+.game-shell.portrait-table .action-panel.direct-selection > .clear-button {
+  grid-column: 2;
+  padding: 4px;
+}
+.game-shell.portrait-table
+  .action-panel.direct-selection
+  > .clear-button
+  > svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.game-shell.portrait-table .action-panel.direct-selection > .confirm {
+  grid-column: 3;
+  justify-content: center;
+  padding-inline: 6px;
+}
+.game-shell.portrait-table .camel-payment-control {
+  grid-area: 1 / 1;
+  justify-self: start;
+  align-self: end;
+  width: 100%;
+}
+.game-shell.portrait-table .camel-choice-payment {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+}
+.game-shell.portrait-table .camel-choice-stepper {
+  height: 40px;
+  border-radius: 6px;
+  width: 100%;
+  justify-content: space-between;
+}
+.game-shell.portrait-table .camel-choice-stepper > button {
+  width: auto;
+  min-width: 22px;
+  flex: 1;
+  height: 38px;
+}
+.game-shell.portrait-table .camel-choice-stepper > output {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  min-width: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.game-shell.portrait-table .camel-choice-stepper .table-number {
+  vertical-align: baseline;
+}
+.game-shell.portrait-table .action-overview {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 8px;
+}
+/* One control language: shared surface, border, corners and enabled ink. */
+.game-shell.portrait-table
+  .action-panel.direct-selection
+  > :is(.clear-button, .confirm),
+.game-shell.portrait-table .action-panel .camel-choice-stepper {
+  border: 1px solid #acbfad;
+  border-radius: 6px;
+  background: #e4ebe1;
+  color: #365244;
+  box-shadow: none;
+}
+.game-shell.portrait-table
+  .action-panel.direct-selection
+  > :is(.clear-button, .confirm):disabled {
+  border-color: #acbfad;
+  background: #e4ebe1;
+  color: #365244;
+  opacity: 0.45;
+}
+.game-shell.portrait-table
+  .action-panel.direct-selection
+  > :is(.clear-button, .confirm):hover:not(:disabled),
+.game-shell.portrait-table .camel-choice-stepper > button:hover:not(:disabled) {
+  border-color: #8aa58d;
+  background: #d4e0d1;
+  color: #294c38;
+}
+.game-shell.portrait-table .action-panel .direct-guidance.is-thinking {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-rows: 20px 20px;
+  align-content: start;
+  column-gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #e2e9df;
+}
+.game-shell.portrait-table
+  .direct-guidance.is-thinking
+  > .selection-intent-icon {
+  grid-area: 1 / 1 / -1 / 2;
+  align-self: center;
+  width: 24px;
+  height: 28px;
+  margin: 0;
+  color: #97773a;
+  stroke-width: 2;
+  animation: thinking-hourglass 3.2s ease-in-out infinite;
+}
+.game-shell.portrait-table .direct-guidance.is-thinking > b {
+  grid-area: 1 / 2;
+  align-self: center;
+  margin: 0;
+  color: #365244;
+}
+.game-shell.portrait-table .direct-guidance.is-thinking > .thinking-detail {
+  display: block;
+  grid-area: 2 / 2;
+  color: #68776a;
+}
+@keyframes thinking-hourglass {
+  0%,
+  35% {
+    transform: rotate(0deg);
+  }
+  65%,
+  100% {
+    transform: rotate(180deg);
+  }
+}
+.game-shell[data-paused="true"] .is-thinking > svg {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-shell.portrait-table .direct-guidance.is-thinking > svg {
+    animation: none;
+  }
+}
+@media (max-width: 360px) {
+  .game-shell.portrait-table .action-panel.direct-selection[data-overview] {
+    --trade-type-size: 11px;
+    grid-template-rows: 40px minmax(84px, auto);
+    column-gap: 5px;
+  }
+  .game-shell.portrait-table .table-tools > button {
+    font-size: 11px;
+    gap: 3px;
+  }
+  .game-shell.portrait-table .camel-choice-stepper > button {
+    min-width: 16px;
+  }
+}
+
+/* Every trade label shares one type treatment, including numbers and states.
+   Color and icons provide hierarchy without changing the face or weight. */
+.game-shell.portrait-table
+  .action-panel.direct-selection[data-overview]
+  :is(
+    .action-description,
+    .action-overview,
+    span,
+    button,
+    output,
+    b,
+    strong,
+    small
+  ) {
+  font-family: var(--font-ui);
+  font-size: var(--trade-type-size);
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+
+/* Keep the first text line fixed across overview, errors and ready states. */
+.game-shell.portrait-table
+  .action-panel.direct-selection[data-overview]
+  > .action-description.direct-guidance:not(.is-thinking) {
+  height: auto;
+  padding: 6px 0;
+  grid-template-columns: 16px minmax(0, 1fr);
+  grid-template-rows: 20px minmax(20px, auto);
+  align-content: start;
+  align-items: start;
+  column-gap: 6px;
+  row-gap: 4px;
+}
+.game-shell.portrait-table
+  .action-panel.direct-selection[data-overview]
+  .direct-guidance:not(.is-thinking)
+  > .selection-intent-icon {
+  grid-area: 1 / 1;
+  align-self: center;
+  margin: 0;
+}
+.game-shell.portrait-table
+  .action-panel.direct-selection[data-overview]
+  .direct-guidance:not(.is-thinking)
+  > :is(b, .invalid, .selection-next-step, .selection-reward) {
+  align-self: start;
+  margin: 0;
+}
+.game-shell.portrait-table
+  .action-panel.direct-selection[data-overview]
+  .direct-guidance
+  > .selection-reward {
+  height: auto;
+  min-height: 20px;
+}
+.game-shell.portrait-table .action-instruction {
+  display: grid;
+  grid-template-rows: 20px auto;
+  align-content: start;
+  align-items: start;
+}
+.game-shell.portrait-table .action-instruction > strong {
+  min-height: 20px;
+}

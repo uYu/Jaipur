@@ -1,0 +1,50 @@
+/* Three compact triplets share equal space: precious, ordinary, then bonuses. */
+.game-shell.portrait-table
+  .table-supply
+  .mobile-supply.supply-tabletop
+  > summary {
+  --stock-item-gap: 2px;
+  --stock-group-gap: clamp(10px, 3cqw, 24px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--stock-group-gap);
+  width: 100%;
+  max-width: calc(
+    var(--chip-size, 34px) * 9 + var(--stock-item-gap) * 6 +
+      var(--stock-group-gap) * 2
+  );
+  margin-inline: auto;
+}
+.game-shell.portrait-table .supply-tabletop .supply-strip {
+  grid-column: 1 / 3;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) calc(
+      var(--stock-group-gap) - var(--stock-item-gap) * 2
+    ) repeat(3, minmax(0, 1fr));
+  column-gap: var(--stock-item-gap);
+}
+.game-shell.portrait-table .supply-tabletop .supply-counter {
+  grid-row: 1;
+}
+.game-shell.portrait-table .supply-tabletop .supply-counter:nth-child(1) {
+  grid-column: 1;
+}
+.game-shell.portrait-table .supply-tabletop .supply-counter:nth-child(2) {
+  grid-column: 2;
+}
+.game-shell.portrait-table .supply-tabletop .supply-counter:nth-child(3) {
+  grid-column: 3;
+}
+.game-shell.portrait-table .supply-tabletop .supply-counter:nth-child(4) {
+  grid-column: 5;
+}
+.game-shell.portrait-table .supply-tabletop .supply-counter:nth-child(5) {
+  grid-column: 6;
+}
+.game-shell.portrait-table .supply-tabletop .supply-counter:nth-child(6) {
+  grid-column: 7;
+}
+.game-shell.portrait-table .supply-tabletop .stock-bonus-bank {
+  grid-column: 3;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--stock-item-gap);
+  padding-left: 0;
+}

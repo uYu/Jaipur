@@ -9,27 +9,26 @@ export function PremiumChipRim() {
         r="19"
         fill="var(--card-bg)"
         stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      <circle
+        cx="20"
+        cy="20"
+        r="17.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.8"
+        strokeDasharray="4.25 9.4945"
+        transform="rotate(-12 20 20)"
+      />
+      <circle
+        cx="20"
+        cy="20"
+        r="15.5"
+        fill="none"
+        stroke="currentColor"
         strokeWidth=".9"
-        strokeOpacity=".75"
-      />
-      <circle
-        cx="20"
-        cy="20"
-        r="16.4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth=".65"
-        opacity=".65"
-      />
-      <circle
-        cx="20"
-        cy="20"
-        r="18"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth=".6"
-        strokeDasharray="1 7"
-        opacity=".5"
+        opacity=".8"
       />
     </svg>
   );

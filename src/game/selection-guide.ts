@@ -56,7 +56,7 @@ export function selectionGuide(state: State, selection: Selection) {
       };
     }
     if (error && action.count < 2) {
-      hint = `再选 1 张${LABEL[action.good]}，高级货物至少 2 张起售。`;
+      hint = `至少再选 1 张${LABEL[action.good]}，可一次出售 2 张或更多。`;
     } else if (error) {
       hint = error;
       problem = true;

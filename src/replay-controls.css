@@ -1,0 +1,142 @@
+/* A 44px hit area on every replay control, including the full range track. */
+.game-shell .replay-bar {
+  gap: 10px;
+  padding: 8px 12px;
+}
+.game-shell .replay-bar > b {
+  font-family: var(--font-display);
+  font-size: var(--type-compact);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.game-shell .replay-bar > button {
+  display: inline-flex;
+  flex: 0 0 44px;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid #c8cbbb;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  touch-action: manipulation;
+}
+.game-shell .replay-bar > button > svg {
+  width: 24px;
+  height: 24px;
+}
+.game-shell .replay-bar > button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.game-shell .replay-bar > button:disabled {
+  opacity: 0.4;
+}
+.game-shell .replay-bar > span {
+  font-family: var(--font-numeric);
+  font-size: var(--type-label);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.game-shell .replay-bar input[type="range"] {
+  appearance: none;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+}
+.game-shell .replay-bar input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 6px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0 var(--replay-progress),
+    #c6c8ba var(--replay-progress) 100%
+  );
+}
+.game-shell .replay-bar input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin-top: -9px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 1px 3px #304e4433;
+}
+.game-shell .replay-bar input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 6px;
+  background: #c6c8ba;
+}
+.game-shell .replay-bar input[type="range"]::-moz-range-progress {
+  height: 6px;
+  border-radius: 6px;
+  background: var(--accent);
+}
+.game-shell .replay-bar input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+}
+@media (max-width: 700px) {
+  .game-shell .replay-bar {
+    display: grid;
+    grid-template-columns: minmax(68px, 1fr) repeat(2, 44px) max-content;
+    gap: 0 6px;
+    padding: 8px 10px;
+  }
+  .game-shell .replay-bar input[type="range"] {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
+  .game-shell .replay-bar > span {
+    grid-column: 4;
+    grid-row: 1;
+  }
+}
+
+.game-shell .replay-board-position {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 0;
+  padding: 0 2px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.replay-board-position > div {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.game-shell .replay-board-position button {
+  min-width: 58px;
+  min-height: 44px;
+  padding: 5px 9px;
+  border: 1px solid #d8d8c9;
+  border-radius: 6px;
+  background: #f5f3e9;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.game-shell .replay-board-position button[aria-pressed="true"] {
+  border-color: #95af9f;
+  background: #e8eee3;
+  color: #345f4b;
+}
+.game-shell .replay-board-position button:disabled {
+  opacity: 0.5;
+}

@@ -1,0 +1,284 @@
+.game-shell .replay-value {
+  margin: 6px 0 10px;
+  padding: 8px 12px;
+  border: 1px solid #d6d6c6;
+  border-radius: 10px;
+  background: #f5f3e9;
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 12px;
+}
+.replay-value > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 28px;
+  cursor: pointer;
+}
+.replay-value > summary::before {
+  content: "▸";
+  color: #8e8065;
+}
+.replay-value[open] > summary::before {
+  content: "▾";
+}
+.replay-value > summary > span {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+}
+.replay-value > summary strong {
+  margin-left: auto;
+  font-family: var(--font-numeric);
+  font-size: 18px;
+  color: #28664f;
+  font-variant-numeric: tabular-nums;
+}
+.replay-value > summary small {
+  color: var(--text-secondary);
+}
+.replay-value-plot {
+  position: relative;
+  height: 120px;
+  margin: 2px 0 8px;
+}
+.replay-value-plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.replay-value-plot svg text {
+  fill: #7a8172;
+  font: 10px var(--font-numeric);
+}
+.replay-value-plot .value-grid {
+  stroke: #e4e3d5;
+}
+.replay-value-plot .value-zero {
+  stroke: #c5c8b8;
+  stroke-dasharray: 4 4;
+}
+.replay-value-plot .value-line {
+  fill: none;
+  stroke: #34735d;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+}
+.replay-value-plot .value-cursor {
+  stroke: #b39963;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+.replay-value-plot .value-current {
+  fill: #28664f;
+  stroke: #fffdf5;
+  stroke-width: 2;
+}
+.replay-value-plot .value-drop {
+  fill: #b96f57;
+  stroke: #f5f3e9;
+  stroke-width: 1;
+}
+.replay-value-plot input[type="range"] {
+  position: absolute;
+  top: 0;
+  left: 5%;
+  width: 92.35%;
+  height: 100%;
+  opacity: 0;
+  margin: 0;
+  cursor: crosshair;
+  touch-action: none;
+}
+.replay-value-plot:focus-within {
+  outline: 2px solid #b39963;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.replay-value-review {
+  border-top: 1px solid #e0dfd2;
+  padding-top: 8px;
+}
+.review-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 7px;
+  line-height: 1.5;
+}
+.review-heading > b {
+  font-weight: 600;
+}
+.review-heading > span {
+  flex-shrink: 0;
+  color: #477259;
+  font-variant-numeric: tabular-nums;
+}
+.review-heading > .value-fell {
+  color: #a85542;
+}
+.review-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.review-choice {
+  padding: 8px 10px;
+  background: #fffdf7;
+  border: 1px solid #dfdacb;
+  border-radius: 7px;
+  min-width: 0;
+}
+.review-choice.is-recommended {
+  background: #eef2e8;
+  border-color: #d2dccb;
+}
+.review-choice-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.review-choice-heading > b {
+  font-size: 12px;
+  font-weight: 600;
+}
+.review-choice-heading > span {
+  font-size: 11px;
+  color: #7c8174;
+  white-space: nowrap;
+}
+.review-choice-heading strong {
+  font: 600 15px var(--font-numeric);
+  color: #42644f;
+  font-variant-numeric: tabular-nums;
+}
+.review-move {
+  display: grid;
+  gap: 5px;
+}
+.review-move > div {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+}
+.review-move > div > span:first-child {
+  font-size: 11px;
+  color: #7b8072;
+  white-space: nowrap;
+}
+.review-goods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.review-good {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 27px;
+  padding: 1px 5px 1px 2px;
+  background: var(--card-bg);
+  color: var(--good);
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.review-good > .goods-art {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin: 0;
+}
+.review-good b {
+  font: 500 12px var(--font-numeric);
+}
+.review-good-name {
+  font-size: 11px;
+}
+.review-empty {
+  margin: 0;
+  color: #7b8072;
+  font-size: 11px;
+}
+.replay-value-drops {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.replay-value-drops > span {
+  color: var(--text-secondary);
+}
+.game-shell .replay-value button {
+  min-height: 44px;
+  padding: 5px 9px;
+  border: 1px solid #ddc8b7;
+  border-radius: 6px;
+  background: #f6ece0;
+  color: #775344;
+  font-size: 12px;
+}
+.replay-value-drops button b {
+  font-family: var(--font-numeric);
+  font-weight: 500;
+}
+.replay-value-progress {
+  color: var(--text-secondary);
+  margin: 6px 0;
+}
+.replay-value-help {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.replay-value-help summary {
+  cursor: pointer;
+  min-height: 24px;
+  line-height: 24px;
+}
+.replay-value-help p {
+  margin: 4px 0;
+  line-height: 1.6;
+}
+@media (max-width: 700px) {
+  .game-shell .replay-value {
+    padding: 6px 10px;
+  }
+  .replay-value-plot {
+    height: 100px;
+  }
+  .review-comparison {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+  }
+  .review-choice {
+    padding: 6px 8px;
+  }
+  .review-choice-heading {
+    margin-bottom: 4px;
+  }
+  .review-good-name {
+    display: none;
+  }
+  .replay-value-drops {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px 6px;
+  }
+  .replay-value-drops > span {
+    grid-column: 1 / -1;
+  }
+  .game-shell .replay-value-drops > button {
+    padding: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+}

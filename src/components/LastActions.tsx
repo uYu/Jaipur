@@ -97,7 +97,13 @@ function TradeFlow({ action }: { action: Presentation }) {
   );
 }
 
-export function ActionSummary({ action }: { action: Presentation }) {
+export function ActionSummary({
+  action,
+  showIncome = true,
+}: {
+  action: Presentation;
+  showIncome?: boolean;
+}) {
   const Icon = {
     take: Hand,
     camels: ArrowDownToLine,
@@ -111,7 +117,7 @@ export function ActionSummary({ action }: { action: Presentation }) {
     <div className="action-summary" aria-label={actionCaption(action)}>
       <span className="action-summary-verb">
         <Icon size={17} aria-hidden="true" />
-        {verb}
+        <span className="action-summary-verb-label">{verb}</span>
       </span>
       <span className="action-summary-goods">
         <span className="action-summary-items">
@@ -131,7 +137,7 @@ export function ActionSummary({ action }: { action: Presentation }) {
             </span>
           </>
         )}
-        {action.type === "sell" && (
+        {action.type === "sell" && showIncome && (
           <>
             <ArrowRight
               className="action-summary-arrow"

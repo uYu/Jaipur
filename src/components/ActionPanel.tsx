@@ -5,6 +5,7 @@ import {
   Check,
   Coins,
   Hand,
+  Hourglass,
   Info,
   MousePointer2,
   RotateCcw,
@@ -15,6 +16,7 @@ import {
   selectionGuide,
 } from "../game/selection-guide.ts";
 import type { State } from "../game/types.ts";
+import { CamelPayment } from "./CamelPile.tsx";
 
 export function ActionPanel({
   state,
@@ -26,6 +28,9 @@ export function ActionPanel({
   confirmationBlocked = false,
   status,
   turnNumber,
+  camelPayment,
+  thinking = false,
+  settling = false,
 }: {
   state: State;
   selection: Selection;
@@ -36,6 +41,14 @@ export function ActionPanel({
   confirmationBlocked?: boolean;
   status?: string;
   turnNumber?: number;
+  camelPayment: {
+    count: number;
+    selected: number;
+    active: boolean;
+    onChange: (count: number) => void;
+  };
+  thinking?: boolean;
+  settling?: boolean;
 }) {
   const guide = selectionGuide(state, selection);
   const { action, error, hasSelection } = guide;
@@ -51,18 +64,20 @@ export function ActionPanel({
           ? hint || "先点教程「下一步」，核对预览后再确认。"
           : ""
       : "";
-  const Icon = blockedReason
-    ? Info
-    : guide.intent === "sell"
-      ? Coins
-      : guide.intent === "exchange"
-        ? ArrowLeftRight
-        : guide.intent === "idle"
-          ? MousePointer2
-          : Hand;
+  const Icon = thinking
+    ? Hourglass
+    : blockedReason
+      ? Info
+      : guide.intent === "sell"
+        ? Coins
+        : guide.intent === "exchange"
+          ? ArrowLeftRight
+          : guide.intent === "idle"
+            ? MousePointer2
+            : Hand;
   const description = (
     <div
-      className={`action-description direct-guidance ${active && guide.problem ? "has-error" : ""}`}
+      className={`action-description direct-guidance ${active && guide.problem ? "has-error" : ""} ${thinking ? "is-thinking" : ""}`}
       aria-live="polite"
       data-ready={active && !!action && !error}
       data-choosing={!hasSelection}
@@ -97,6 +112,9 @@ export function ActionPanel({
             aria-hidden="true"
           />
           <b>{active ? guide.title : (status ?? "等待对手行动")}</b>
+          {thinking && (
+            <span className="thinking-detail">正在权衡下一笔生意</span>
+          )}
         </>
       )}
       {turnNumber !== undefined && (
@@ -136,6 +154,7 @@ export function ActionPanel({
       data-overview={overview}
     >
       {description}
+      <CamelPayment {...camelPayment} />
       <button
         className="clear-button"
         aria-label="清空选择"
@@ -157,17 +176,21 @@ export function ActionPanel({
         }}
       >
         <Check size={16} aria-hidden="true" />
-        {action?.type === "camels"
-          ? "收下全部骆驼"
-          : action?.type === "sell"
-            ? "确认出售"
-            : action?.type === "exchange"
-              ? "确认交换"
-              : action?.type === "take"
-                ? "确认拿取"
-                : hasSelection
-                  ? "继续选牌"
-                  : "请先选牌"}
+        {settling
+          ? "正在交易…"
+          : thinking
+            ? "等待米拉"
+            : action?.type === "camels"
+              ? "确认收驼"
+              : action?.type === "sell"
+                ? "确认出售"
+                : action?.type === "exchange"
+                  ? "确认交换"
+                  : action?.type === "take"
+                    ? "确认拿取"
+                    : hasSelection
+                      ? "继续选牌"
+                      : "请先选牌"}
       </button>
     </section>
   );

@@ -6,13 +6,15 @@ import {
   Coins,
   Award,
   Sigma,
-  Layers,
-  Hand,
   Home,
   Eye,
 } from "lucide-react";
 import type { State } from "../game/types.ts";
-import { actionCaption, type Presentation } from "../game/presentation.ts";
+import type { ActionRecord } from "../game/receipts.ts";
+import {
+  ACTION_STATISTIC_ROWS,
+  actionStatistics,
+} from "../game/action-statistics.ts";
 import { GoodsArt } from "./Art.tsx";
 
 function ScoreSymbol({
@@ -35,59 +37,6 @@ function ScoreSymbol({
   );
 }
 
-function TokenEquation({
-  values,
-  total,
-  bonus = false,
-}: {
-  values: number[];
-  total: number;
-  bonus?: boolean;
-}) {
-  const counts = new Map<number, number>();
-  values.forEach((n) => counts.set(n, (counts.get(n) ?? 0) + 1));
-  const groups = [...counts].sort(([a], [b]) => b - a);
-  return (
-    <div
-      className="result-token-row"
-      aria-label={`${bonus ? "奖励" : "货物"}筹码 ${values.length} 枚，合计 ${total} 卢比`}
-    >
-      <ScoreSymbol kind={bonus ? "bonus" : "goods"} />
-      <div className="result-token-equation">
-        {groups.length ? (
-          groups.map(([value, count], index) => (
-            <span className="result-token-term" key={value}>
-              {index > 0 && (
-                <span className="result-token-plus" aria-hidden="true">
-                  ＋
-                </span>
-              )}
-              <span
-                className="result-token-factor"
-                title={`${value} 卢比 × ${count} 枚`}
-                aria-label={`面值 ${value} 卢比，共 ${count} 枚`}
-              >
-                <span
-                  className={`result-token${bonus ? " result-token-bonus" : ""}`}
-                >
-                  {value}
-                </span>
-                <span>×{count}</span>
-              </span>
-            </span>
-          ))
-        ) : (
-          <span className="result-token-empty" title="没有获得此类筹码">
-            —
-          </span>
-        )}
-        <span className="result-token-sum">
-          ＝ <b>{total}</b>
-        </span>
-      </div>
-    </div>
-  );
-}
 export function resultTitle(state: State) {
   if (state.phase === "finished")
     return state.seals[0] >= (state.targetSeals ?? 2)
@@ -106,18 +55,22 @@ export function ResultDialog({
   onNext,
   onNew,
   onMenu,
-  lastAction,
+  history,
 }: {
   state: State;
   onClose: () => void;
   onNext?: () => void;
   onNew?: () => void;
   onMenu?: () => void;
-  lastAction?: Presentation;
+  history: readonly ActionRecord[];
 }) {
   const ref = useRef<HTMLDialogElement>(null),
     result = state.results.at(-1)!;
   const finished = state.phase === "finished";
+  const statistics = actionStatistics(
+    history,
+    finished ? undefined : state.round,
+  );
   useEffect(() => {
     const dialog = ref.current!;
     const previous = document.activeElement as HTMLElement | null;
@@ -225,39 +178,18 @@ export function ResultDialog({
                   <ScoreSymbol kind="camel" />
                   骆驼
                 </dt>
-                <dd>{result.camel === i ? 5 : 0}</dd>
+                <dd
+                  className="result-camel-breakdown"
+                  aria-label={`骆驼 ${state.players[i].camels} 头，骆驼奖励 ${result.camel === i ? 5 : 0} 卢比`}
+                >
+                  <span>{state.players[i].camels} 头</span>
+                  <span>+{result.camel === i ? 5 : 0}</span>
+                </dd>
               </div>
             </dl>
           </section>
         ))}
       </div>
-      <div
-        className="result-camel-note"
-        title="骆驼比较头数，较多的一方共加 5 卢比；平手都不加分"
-        aria-label={`骆驼：你 ${state.players[0].camels} 头，米拉 ${state.players[1].camels} 头；${result.camel === null ? "双方不加分" : `${result.camel === 0 ? "你" : "米拉"}加 5 卢比`}`}
-      >
-        <ScoreSymbol kind="camel" />
-        <span>
-          你 <b>{state.players[0].camels}</b>
-        </span>
-        <span>
-          {state.players[0].camels === state.players[1].camels
-            ? "＝"
-            : state.players[0].camels > state.players[1].camels
-              ? "＞"
-              : "＜"}
-        </span>
-        <span>
-          米拉 <b>{state.players[1].camels}</b>
-        </span>
-        <ArrowRight size={14} aria-hidden="true" />
-        <b className="result-camel-award">
-          {result.camel === null
-            ? "双方 +0"
-            : `${result.camel === 0 ? "你" : "米拉"} +5`}
-        </b>
-      </div>
-      <p className="result-reason">{result.reason}</p>
       {result.scores[0] === result.scores[1] && (
         <div
           className="result-tie"
@@ -277,50 +209,29 @@ export function ResultDialog({
           </b>
         </div>
       )}
-      <details className="result-score-details">
-        <summary>筹码明细</summary>
-        <div>
-          <div className="result-rule-symbols">
-            <span
-              title="一次卖出至少 3 张同类货物，可领取 1 枚对应奖励，领完则不再发放"
-              aria-label="卖出至少 3 张同类货物，可领 1 枚奖励"
-            >
-              <Layers size={18} aria-hidden="true" />
-              <b>3+</b>
-              <span>同类</span>
-              <ArrowRight size={14} aria-hidden="true" />
-              <ScoreSymbol kind="bonus" />
-              <b>×1</b>
-            </span>
-            <span title="未卖出的手牌不计分" aria-label="未卖出手牌，零分">
-              <Hand size={18} aria-hidden="true" />
-              <span>未售</span>
-              <ArrowRight size={14} aria-hidden="true" />
-              <b>0</b>
-            </span>
-          </div>
-          {[0, 1].map((i) => (
-            <section key={i}>
-              <h3>{i === 0 ? "你" : "米拉"}</h3>
-              <TokenEquation
-                values={state.players[i].goods}
-                total={result.goods[i]}
-              />
-              <TokenEquation
-                values={state.players[i].bonuses}
-                total={result.bonuses[i]}
-                bonus
-              />
-            </section>
-          ))}
-          {lastAction && (
-            <p className="result-last-action" title="收市前最后一手">
-              {lastAction.actor === 0 ? "你" : "米拉"} ·{" "}
-              {actionCaption(lastAction)}
-            </p>
-          )}
-        </div>
-      </details>
+      <section className="result-action-statistics">
+        <table>
+          <caption>
+            {finished ? "整场行动统计" : `第 ${state.round} 轮行动统计`}（次）
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">行动</th>
+              <th scope="col">你</th>
+              <th scope="col">米拉</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ACTION_STATISTIC_ROWS.map(({ type, label }) => (
+              <tr key={type}>
+                <th scope="row">{label}</th>
+                <td>{statistics[0][type]}</td>
+                <td>{statistics[1][type]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
       <div className="result-actions">
         {!finished && onNext ? (
           <button className="primary" onClick={onNext}>

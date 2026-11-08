@@ -4,7 +4,8 @@ import type { Flight } from "../game/flights.ts";
 import { Card } from "./Card.tsx";
 import { GoodsArt, JaipurMark, PremiumChipRim } from "./Art.tsx";
 import { precious } from "../game/data.ts";
-import { handSlotOffset } from "../game/hand-layout.ts";
+import { handSlotOffset, publicHandDepartures } from "../game/hand-layout.ts";
+import type { Card as GoodCard } from "../game/types.ts";
 import { useReducedMotion } from "../hooks/useReducedMotion.ts";
 const NO_CHECKPOINTS: number[] = [];
 export function ActionAnimation({
@@ -80,26 +81,45 @@ export function ActionAnimation({
       flights.forEach(({ to }) =>
         destinationCounts.set(to, (destinationCounts.get(to) ?? 0) + 1),
       );
-      const usedOpponentCards = new Set<HTMLElement>();
+      // Departure and compaction must agree on the same visible cards. In
+      // assisted mode known goods can be anywhere after the unknown backs.
+      const opponentCards = tabletop
+        ? Array.from(
+            find("opponent-hand")?.querySelectorAll<HTMLElement>(
+              ".opponent-hand-card",
+            ) ?? [],
+          )
+        : [];
+      const outgoing = flights.filter(
+        (flight) => flight.from === "opponent-hand" && !flight.layout,
+      );
+      const removed = publicHandDepartures(
+        opponentCards.map(
+          (card) => (card.dataset.visibleGood as GoodCard | undefined) ?? null,
+        ),
+        outgoing.map((flight) => flight.good!),
+      );
+      const sources = new Map(
+        outgoing.map((flight, index) => [
+          flight,
+          opponentCards[removed[index]],
+        ]),
+      );
+      const survivors = opponentCards.filter(
+        (_, index) => !removed.includes(index),
+      );
       flights.forEach((flight, i) => {
-        const sourceGroup = find(flight.from);
+        const sourceGroup =
+          flight.layout && flight.to === "opponent-hand"
+            ? survivors[flight.slot ?? 0]
+            : find(flight.from);
         // Outgoing opponent cards become public through the action. Choose
         // generic back positions without reading the concealed hand order.
         const fanCards =
           tabletop && flight.from === "opponent-hand"
             ? sourceGroup?.querySelectorAll<HTMLElement>(".opponent-hand-card")
             : undefined;
-        const fanSource = fanCards?.length
-          ? (Array.from(fanCards).find(
-              (card) =>
-                !usedOpponentCards.has(card) &&
-                !card.classList.contains("card-back") &&
-                !!flight.good &&
-                card.classList.contains(flight.good),
-            ) ??
-            Array.from(fanCards).find((card) => !usedOpponentCards.has(card)))
-          : undefined;
-        if (fanSource) usedOpponentCards.add(fanSource);
+        const fanSource = sources.get(flight);
         const source = fanSource
             ? fanSource
             : tabletop && flight.from.endsWith("-herd")

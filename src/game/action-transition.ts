@@ -15,7 +15,14 @@ export type TransitionOptions = {
   mobile: boolean;
   reduced: boolean;
   revealOpponent?: boolean;
+  speed?: number;
 };
+
+function playbackSpeed(options: TransitionOptions) {
+  return Number.isFinite(options.speed) && options.speed! > 0
+    ? options.speed!
+    : 1;
+}
 export type ActionTransition = {
   kind: "action" | "deal";
   eventLimit: number;
@@ -232,13 +239,14 @@ export function actionTransition(
         duration: options.reduced ? 180 : before.current === 0 ? 500 : 850,
         departureHoldMs: 0,
       };
-  // Keep the same phase ordering while giving every visible part 25% more time.
+  // Scale the shared clock so travel, holds and number arrivals stay together.
+  const pace = 1.25 / playbackSpeed(options);
   const pacedMotion = options.reduced
     ? motion
     : {
         ...motion,
-        duration: motion.duration * 1.25,
-        departureHoldMs: motion.departureHoldMs * 1.25,
+        duration: motion.duration * pace,
+        departureHoldMs: motion.departureHoldMs * pace,
       };
   return {
     kind: "action",
@@ -270,7 +278,11 @@ export function dealTransition(
       bonus: null,
     },
     flights: options.mobile ? [] : dealFlights(state),
-    duration: options.mobile ? 350 : options.reduced ? 500 : 2700,
+    duration: options.reduced
+      ? options.mobile
+        ? 350
+        : 500
+      : (options.mobile ? 350 : 2700) / playbackSpeed(options),
     departureHoldMs: 0,
     caption: "正在发牌：牌堆 → 双方手牌…",
   };

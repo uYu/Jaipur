@@ -4,21 +4,29 @@ import { DouzeroNetwork } from "./douzero-network.ts";
 import { findEndgameWinningAction } from "./endgame.ts";
 
 let network: Promise<DouzeroNetwork> | undefined;
-function loadNetwork() {
-  network ??= fetch(new URL("./models/legacy-round-147126.bin", import.meta.url))
-    .then(async (response) => {
-      if (!response.ok) throw Error("高难对手加载失败，请重试");
-      const model = new DouzeroNetwork(await response.arrayBuffer());
-      if (model.version !== 147126) throw Error("对手数据版本不匹配，请刷新重试");
-      return model;
-    });
+export function loadDouzeroNetwork() {
+  network ??= fetch(
+    new URL("./models/legacy-round-147126.bin", import.meta.url),
+  ).then(async (response) => {
+    if (!response.ok) throw Error("高难对手加载失败，请重试");
+    const model = new DouzeroNetwork(await response.arrayBuffer());
+    if (model.version !== 147126) throw Error("对手数据版本不匹配，请刷新重试");
+    return model;
+  });
+  // A failed fetch can be retried from the replay analysis panel.
+  network.catch(() => {
+    network = undefined;
+  });
   return network;
 }
 
-export async function chooseDouzeroAction(observation: Observation, history: number[][]) {
+export async function chooseDouzeroAction(
+  observation: Observation,
+  history: number[][],
+) {
   const win = findEndgameWinningAction(observation);
   if (win) return win;
-  const model = await loadNetwork();
+  const model = await loadDouzeroNetwork();
   return scoreActions(model, observation, history);
 }
 
@@ -32,10 +40,22 @@ export function chooseDouzeroActionFromModel(
   return scoreActions(model, observation, history);
 }
 
-function scoreActions(model: DouzeroNetwork, observation: Observation, history: number[][]) {
+function scoreActions(
+  model: DouzeroNetwork,
+  observation: Observation,
+  history: number[][],
+) {
   const actions = dmcActions(observation);
-  const state = dmcState(observation, { ownSeals: 0, opponentSeals: 0, round: 0 });
-  const scores = model.score(history, state, actions.map((action) => dmcAction(observation, action)));
+  const state = dmcState(observation, {
+    ownSeals: 0,
+    opponentSeals: 0,
+    round: 0,
+  });
+  const scores = model.score(
+    history,
+    state,
+    actions.map((action) => dmcAction(observation, action)),
+  );
   let best = 0;
   for (let i = 1; i < scores.length; i++)
     if (scores[i] > scores[best]) best = i;
