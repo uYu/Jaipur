@@ -2,7 +2,6 @@ import { useSkin } from "./Skin.tsx";
 import { useId, useState } from "react";
 import {
   ArrowLeftRight,
-  Award,
   Check,
   Coins,
   Hand,
@@ -164,11 +163,7 @@ export function ActionPanel({
       )}
       {reward && (
         <span className="selection-reward">
-          <Award size={14} aria-hidden="true" />
-          <span>
-            {reward.tier === 5 ? "5+" : reward.tier}{t("张奖励筹码 ×1（")}{reward.min}–
-            {reward.max}{t("卢比）")}
-          </span>
+          {t`奖励 ${reward.min}–${reward.max} 卢比`}
         </span>
       )}
     </div>

@@ -836,24 +836,6 @@
     margin-top: 0;
   }
   .game-shell.portrait-table
-    .action-panel
-    .direct-guidance
-    > .selection-reward {
-    grid-column: 2 / -1;
-    grid-row: 2;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    height: 18px;
-    font-size: 12px;
-    line-height: 18px;
-    color: #79653b;
-    white-space: nowrap;
-  }
-  .game-shell.portrait-table .selection-reward > svg {
-    flex: none;
-  }
-  .game-shell.portrait-table
     .action-panel.direct-selection
     > :is(.clear-button, .confirm) {
     height: 32px;

@@ -809,7 +809,7 @@ export default function App({
         separateOverview={bazaar}
         hint={
           showOpeningHint
-            ? t("市场拿货、手牌卖货，或等量换货。选好后确认。")
+            ? t("市场拿货、手牌卖货，或等量换货。")
             : undefined
         }
         status={turnStatus}

@@ -1038,8 +1038,7 @@
     > .action-panel.direct-selection[data-overview] {
     --trade-type-size: clamp(11px, 3.2vw, 15px);
     grid-template-columns: minmax(0, 1.34fr) minmax(0, 0.85fr) minmax(0, 1.12fr);
-    /* Keep two lines of feedback in place as the selection changes. */
-    grid-template-rows: 44px max(44px, 2.75rem);
+    grid-template-rows: 44px 24px;
     align-items: start;
     gap: 3px 6px;
     min-height: 0;
@@ -1055,17 +1054,8 @@
     align-self: stretch;
     min-height: 0;
     height: auto;
-    overflow: auto;
     padding: 2px 0 0;
     background: none;
-    grid-template-rows: auto auto;
-  }
-  .bazaar-board.game-shell.portrait-table
-    .action-panel
-    .direct-guidance
-    > .selection-reward {
-    height: auto;
-    white-space: normal;
   }
   .bazaar-board.game-shell.portrait-table .action-panel .direct-guidance > b {
     color: var(--bazaar-ink);
@@ -1306,8 +1296,6 @@
       line-height: 14px;
     }
     .hand-panel > .action-panel.direct-selection[data-overview] {
-      height: auto;
-      grid-template-rows: 44px minmax(23px, auto);
       margin-top: 3px;
       padding-top: 3px;
     }

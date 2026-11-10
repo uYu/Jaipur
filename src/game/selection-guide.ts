@@ -70,7 +70,7 @@ export function selectionGuide(state: State, selection: Selection, copy: SkinCop
       };
     }
     if (error && action.count < 2) {
-      hint = t`至少再选 1 张${labels[action.good]}，可一次出售 2 张或更多。`;
+      hint = t`再选 1 张${labels[action.good]}即可出售。`;
     } else if (error) {
       hint = error;
       problem = true;
