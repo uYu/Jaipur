@@ -369,6 +369,13 @@ html[data-skin="hardware"] .game-shell.portrait-table .action-panel {
 html[data-skin="hardware"]
   .game-shell.portrait-table
   .action-panel
+  .direct-guidance[data-your-turn="true"]
+  > :is(b, .selection-intent-icon) {
+  color: #185345;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  .action-panel
   :is(.confirm, .clear-button, .camel-picker) {
   box-shadow:
     0 2px #294758,
@@ -431,8 +438,8 @@ html[data-skin="hardware"]
 }
 html[data-skin="hardware"]
   body
-  :is(.modal, .turn-intro, .result-dialog)
-  :is(h1, h2, h3, .turn-intro-reason, .turn-intro-hint) {
+  :is(.modal, .result-dialog)
+  :is(h1, h2, h3) {
   color: var(--text);
 }
 html[data-skin="hardware"]
@@ -473,6 +480,8 @@ html[data-skin="hardware"]
   .turn-intro
   :is(
     .turn-intro-round,
+    .turn-intro-reason,
+    .turn-intro-hint,
     .turn-intro-choices,
     .turn-intro-order > svg,
     #round-end-detail,

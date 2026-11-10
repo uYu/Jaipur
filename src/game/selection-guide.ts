@@ -5,16 +5,23 @@ import { selectedAction } from "./selection.ts";
 import type { Selection } from "./selection.ts";
 
 export const ACTION_INSTRUCTIONS = [
-  { intent: "take", label: "拿货", text: "拿1张市场货物，或收全部骆驼" },
+  {
+    intent: "take",
+    label: "拿货",
+    text: "拿1张市场货物，或收全部骆驼",
+    short: "拿 1 张或全收驼",
+  },
   {
     intent: "sell",
     label: "卖货",
     text: "卖同类牌得货款。一次卖至少3张，另加奖励。",
+    short: "同类 · 3+ 有奖",
   },
   {
     intent: "exchange",
     label: "交换",
     text: "选至少2张市场货物，等量手牌或骆驼换",
+    short: "2 张起，等量换",
   },
 ] as const;
 

@@ -285,3 +285,6 @@
 .game-shell.portrait-table .action-instruction > strong {
   min-height: 20px;
 }
+.action-instruction-short {
+  display: none;
+}

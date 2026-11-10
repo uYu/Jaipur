@@ -31,7 +31,7 @@ export function ActionOverview() {
   const { t } = useSkin();
   return (
     <div className="action-overview">
-      {ACTION_INSTRUCTIONS.map(({ intent, label, text }) => {
+      {ACTION_INSTRUCTIONS.map(({ intent, label, text, short }) => {
         const GuideIcon = {
           take: Hand,
           sell: Coins,
@@ -43,7 +43,8 @@ export function ActionOverview() {
               <GuideIcon size={14} aria-hidden="true" />
               {t(label)}
             </strong>
-            <span>{t(text)}</span>
+            <span className="action-instruction-detail">{t(text)}</span>
+            <span className="action-instruction-short">{t(short)}</span>
           </span>
         );
       })}
@@ -122,6 +123,7 @@ export function ActionPanel({
       aria-live="polite"
       data-ready={ready}
       data-choosing={!hasSelection}
+      data-your-turn={active && !hasSelection && !hint}
       data-overview={overview && !separateOverview}
       data-explaining={!!blockedReason || !!hint}
       data-reward={!!reward}

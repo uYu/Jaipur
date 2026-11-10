@@ -184,8 +184,8 @@
     background: #382320aa;
     backdrop-filter: blur(2px);
   }
-  body:has(.bazaar-board)
-    :is(.turn-intro h2, .result-dialog .result-heading h2) {
+  body:has(.bazaar-board) .turn-intro h2,
+  body:has(.bazaar-board) .result-dialog .result-heading h2 {
     padding: 6px 9px;
     border: 1px solid #573022;
     border-radius: 5px;
@@ -1192,8 +1192,23 @@
       [data-bazaar-density="tight"],
       [data-bazaar-density="minimal"]
     ) {
-    .table-column > .action-overview {
+    .table-column > .action-overview .action-instruction {
+      min-height: 0;
+      grid-template-rows: auto auto;
+      gap: 2px;
+      padding: 2px 3px 3px;
+      font-size: 11px;
+      line-height: 1.15;
+    }
+    .table-column > .action-overview .action-instruction > strong {
+      min-height: 16px;
+      line-height: 16px;
+    }
+    .table-column > .action-overview .action-instruction-detail {
       display: none;
+    }
+    .table-column > .action-overview .action-instruction-short {
+      display: block;
     }
     .market-zone {
       gap: 3px;
@@ -1207,6 +1222,8 @@
       line-height: 14px;
     }
     .hand-panel > .action-panel.direct-selection[data-overview] {
+      height: auto;
+      grid-template-rows: 44px minmax(23px, auto);
       margin-top: 3px;
       padding-top: 3px;
     }
@@ -1219,11 +1236,37 @@
     --bazaar-bottom-space: 3px;
     background-size: 80% 1px, 80% 2px, auto, auto;
   }
-  .bazaar-board.game-shell.portrait-table[data-bazaar-density="minimal"]
-    .table-column
-    .hand-panel > .action-panel.direct-selection[data-overview] {
-    height: auto;
-    grid-template-rows: 44px minmax(32px, auto);
+  .bazaar-board.game-shell.portrait-table[data-bazaar-density="minimal"] {
+    &:not(.tutorial-game) .game-header {
+      min-height: 64px;
+      padding-block: 1px 4px;
+    }
+    .game-header .brand {
+      min-height: 28px;
+      padding-block: 1px 2px;
+    }
+    .game-header .opponent-level {
+      line-height: 12px;
+    }
+    .table-tools {
+      margin-bottom: 2px;
+    }
+    .table-notes {
+      padding-bottom: 1px;
+      margin-bottom: 1px;
+    }
+    :is(.seat-opponent, .hand-panel) {
+      padding-block: 4px 5px;
+    }
+    .market-zone {
+      padding-block: 2px;
+    }
+    .table-supply .mobile-supply > summary {
+      grid-template-rows: 16px auto;
+    }
+    .bazaar-supply-title {
+      line-height: 12px;
+    }
   }
 }
 
