@@ -22,7 +22,10 @@ import { CamelPile } from "./CamelPile.tsx";
 import { MoneyPile } from "./MoneyPile.tsx";
 import { TableNumber } from "./TableNumber.tsx";
 import { CardFace } from "./Card.tsx";
-import type { OpponentMemory } from "../game/opponent-memory.ts";
+import type {
+  OpponentMemory,
+  ReplayCardVisibility,
+} from "../game/opponent-memory.ts";
 
 function ScoreIcon({
   kind,
@@ -246,18 +249,30 @@ function OpponentHandFan({
   hand,
   count,
   knownOnly = false,
+  replayVisibility,
 }: {
   hand: readonly (Good | null)[] | null;
   count: number;
   knownOnly?: boolean;
+  replayVisibility?: readonly ReplayCardVisibility[];
 }) {
   const { t, labels } = useSkin();
+  const summary = replayVisibility
+    ? "，复盘中已揭晓"
+    : knownOnly
+      ? `，其中 ${hand?.filter(Boolean).length ?? 0} 张已知，其余保密`
+      : hand === null
+        ? "，内容保密"
+        : "，已公开";
   return (
     <span
       className="opponent-hand-fan"
       data-motion-anchor="opponent-hand"
       role="group"
-      aria-label={t`米拉的手牌，共 ${count} 张${knownOnly ? `，其中 ${hand?.filter(Boolean).length ?? 0} 张已知，其余保密` : hand === null ? "，内容保密" : "，已公开"}`}
+      aria-label={t`米拉的手牌，共 ${count} 张${summary}`}
+      aria-describedby={
+        replayVisibility?.length ? "replay-opponent-hand-key" : undefined
+      }
       title={
         knownOnly
           ? t("仅显示通过公开行动记住的货物，不代表实际手牌顺序")
@@ -275,18 +290,26 @@ function OpponentHandFan({
       ) : (
         Array.from({ length: count }, (_, index) => {
           const good = hand?.[index] ?? undefined;
+          const visibility = replayVisibility?.[index];
+          const visibilityLabel =
+            visibility === "hidden"
+              ? "，当时隐藏"
+              : visibility === "known"
+                ? "，当时已知"
+                : "";
           return (
             <span
               key={index}
               className={`opponent-hand-card${good === undefined ? " card-back" : ` card ${good}${precious(good) ? " premium-card" : ""}`}`}
               data-motion-anchor={`opponent-hand-${index}`}
               data-known={knownOnly && good !== undefined ? "true" : undefined}
+              data-replay-visibility={visibility}
               data-visible-good={good}
               role="img"
               aria-label={
                 good === undefined
                   ? t("背面朝上的手牌")
-                  : `${labels[good]}${precious(good) ? t("，高级货物，至少 2 张起售") : ""}`
+                  : `${labels[good]}${visibilityLabel}${precious(good) ? t("，高级货物，至少 2 张起售") : ""}`
               }
               style={
                 {
@@ -300,7 +323,14 @@ function OpponentHandFan({
                   <JaipurMark />
                 </span>
               ) : (
-                <CardFace good={good} />
+                <>
+                  <CardFace good={good} />
+                  {visibility === "hidden" && (
+                    <span className="replay-hidden-card-mark" aria-hidden="true">
+                      <LockKeyhole />
+                    </span>
+                  )}
+                </>
               )}
             </span>
           );
@@ -372,6 +402,7 @@ export function OpponentSeat({
   revealOpponent = false,
   actionSummary,
   memory,
+  replayHandVisibility,
 }: {
   state: State;
   reserveState?: State;
@@ -379,6 +410,7 @@ export function OpponentSeat({
   revealOpponent?: boolean;
   actionSummary?: ReactNode;
   memory?: OpponentMemory;
+  replayHandVisibility?: readonly ReplayCardVisibility[];
 }) {
   const { t } = useSkin();
   const cards = playerCardsDisplay(
@@ -396,9 +428,21 @@ export function OpponentSeat({
         ...memory.hand,
       ]
     : cards.hand;
+  const knownCount =
+    replayHandVisibility?.filter((visibility) => visibility === "known").length ??
+    0;
   return (
     <section className="player-seat seat-opponent" aria-label={t("米拉的座位")}>
       {actionSummary}
+      {!!replayHandVisibility?.length && (
+        <div className="replay-hand-key" id="replay-opponent-hand-key">
+          <span>当时已知 <b>{knownCount}</b> 张</span>
+          <span>
+            <LockKeyhole aria-hidden="true" />
+            复盘揭晓 <b>{replayHandVisibility.length - knownCount}</b> 张
+          </span>
+        </div>
+      )}
       <div
         className="opponent-cards-and-herd"
         style={
@@ -409,6 +453,7 @@ export function OpponentSeat({
           hand={faces}
           count={cards.handCount}
           knownOnly={knownOnly}
+          replayVisibility={replayHandVisibility}
         />
         <PlayerReserve
           state={reserveState}
@@ -466,16 +511,44 @@ function HandSummary({
   );
 }
 
+function ReplayHandSummary({
+  hand,
+  visibility,
+}: {
+  hand: Good[];
+  visibility: readonly ReplayCardVisibility[];
+}) {
+  const known = hand.filter((_, index) => visibility[index] === "known");
+  const hidden = hand.filter((_, index) => visibility[index] !== "known");
+  return (
+    <div className="score-replay-hand">
+      <section>
+        <h4>当时已知 · {known.length} 张</h4>
+        <HandSummary hand={known} count={known.length} />
+      </section>
+      <section data-replay-visibility="hidden">
+        <h4>
+          <LockKeyhole aria-hidden="true" />
+          复盘揭晓 · {hidden.length} 张
+        </h4>
+        <HandSummary hand={hidden} count={hidden.length} />
+      </section>
+    </div>
+  );
+}
+
 export function ScoreDetails({
   state,
   receipts,
   revealOpponent = false,
   memory,
+  replayHandVisibility,
 }: {
   state: State;
   receipts: [Presentation | null, Presentation | null];
   revealOpponent?: boolean;
   memory?: OpponentMemory;
+  replayHandVisibility?: readonly ReplayCardVisibility[];
 }) {
   const { skin, t } = useSkin();
   return (
@@ -521,11 +594,18 @@ export function ScoreDetails({
               {cards.knownHand && (
                 <p className="score-hand-note">{t("已知手牌 · 仅记录公开行动")}</p>
               )}
-              <HandSummary
-                hand={cards.hand}
-                knownHand={cards.knownHand}
-                count={cards.handCount}
-              />
+              {!own && replayHandVisibility && cards.hand ? (
+                <ReplayHandSummary
+                  hand={cards.hand}
+                  visibility={replayHandVisibility}
+                />
+              ) : (
+                <HandSummary
+                  hand={cards.hand}
+                  knownHand={cards.knownHand}
+                  count={cards.handCount}
+                />
+              )}
             </section>
             <section
               className="score-detail-finance"
@@ -601,6 +681,11 @@ export function ScoreDetails({
               : t("米拉的累计得分和奖励面值在收市时揭晓。你的当前得分含货物和奖励，驼队奖励在收市时计算。")
             : t("本轮得分已揭晓，含货物、奖励，以及驼队领先者获得的 5 卢比。")}
       </p>
+      {replayHandVisibility && (
+        <p className="score-privacy-note">
+          当时已知的牌按公开行动能确认的张数标记。带锁的牌在对局时隐藏。
+        </p>
+      )}
     </div>
   );
 }

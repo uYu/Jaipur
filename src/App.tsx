@@ -85,7 +85,10 @@ import { readPreferences, writePreferences } from "./game/preferences.ts";
 import { useReducedMotion } from "./hooks/useReducedMotion.ts";
 import { useViewportHeight } from "./hooks/useViewportHeight.ts";
 import { useMobileLayout } from "./hooks/useMobileLayout.ts";
-import { opponentMemory } from "./game/opponent-memory.ts";
+import {
+  opponentHandVisibility,
+  opponentMemory,
+} from "./game/opponent-memory.ts";
 const menuIllustration = new URL(
   "./assets/jaipur-palace-camel-v2.jpg",
   import.meta.url,
@@ -429,6 +432,12 @@ export default function App({
         : undefined,
     [screen, save?.informationMode, history, viewed],
   );
+  const replayHandVisibility = useMemo(() => {
+    if (screen !== "replay" || !viewed) return undefined;
+    const hand = viewed.players[1].hand;
+    const known = opponentMemory(history, viewed.round, hand.length).hand;
+    return opponentHandVisibility(hand, known);
+  }, [screen, history, viewed]);
   const numberMemory =
     memory && viewed && numberState
       ? {
@@ -1259,6 +1268,7 @@ export default function App({
                 state={viewed}
                 reserveState={numberState ?? viewed}
                 memory={numberMemory}
+                replayHandVisibility={replayHandVisibility}
                 onInspect={() => setModal("scores")}
                 revealOpponent={screen === "replay"}
                 actionSummary={
@@ -1679,6 +1689,7 @@ export default function App({
                 <ScoreDetails
                   state={numberState ?? viewed}
                   memory={numberMemory}
+                  replayHandVisibility={replayHandVisibility}
                   receipts={receipts}
                   revealOpponent={screen === "replay"}
                 />

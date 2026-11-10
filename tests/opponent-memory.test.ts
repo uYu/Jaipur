@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { opponentMemory } from "../src/game/opponent-memory.ts";
+import { opponentHandVisibility, opponentMemory } from "../src/game/opponent-memory.ts";
 import type { ActionRecord } from "../src/game/receipts.ts";
 import type { Presentation } from "../src/game/presentation.ts";
 import { newGame, applyAction, legalActions } from "../src/game/engine.ts";
@@ -28,6 +28,12 @@ const record = (action: Partial<Presentation>, round = 1): ActionRecord => ({
 
 test("public memory keeps initial goods unknown and derives initial camels from public count", () => {
   assert.deepEqual(opponentMemory([], 1, 3), { hand: [], camels: 2, goods: 0 });
+});
+test("replay marks only the known number of indistinguishable cards", () => {
+  assert.deepEqual(
+    opponentHandVisibility(["spice", "diamond", "spice", "gold"], ["spice", "gold"]),
+    ["known", "hidden", "hidden", "known"],
+  );
 });
 test("takes and exchanges add known cards; payments and sales remove known duplicates conservatively", () => {
   const history = [

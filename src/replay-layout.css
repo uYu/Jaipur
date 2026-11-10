@@ -57,6 +57,80 @@
 .game-shell.portrait-table.replay-table .opponent-cards-and-herd {
   min-height: 0;
 }
+.replay-hand-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 12px;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.replay-hand-key > span,
+.score-replay-hand h4 {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.replay-hand-key svg,
+.score-replay-hand h4 svg {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  color: #354c61;
+}
+.replay-table .opponent-hand-card[data-replay-visibility="hidden"] {
+  outline: 1px dashed #647589;
+  outline-offset: -3px;
+}
+.replay-table
+  .opponent-hand-card[data-replay-visibility="hidden"]
+  > :is(.goods-art, .bazaar-pixel-art) {
+  filter: saturate(0.55);
+}
+.replay-hidden-card-mark {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: -15px;
+  inset-inline-end: -1px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border: 1px solid #f5f9fe;
+  border-radius: 4px;
+  background: #203a53;
+  box-shadow: 0 1px 2px #14283b55;
+  color: #fff;
+}
+.replay-hidden-card-mark > svg {
+  width: 11px;
+  height: 11px;
+}
+.score-replay-hand {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+.score-replay-hand > section {
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+.score-replay-hand > [data-replay-visibility="hidden"] {
+  border-style: dashed;
+  background: color-mix(in srgb, #647589 9%, var(--surface));
+}
+.score-replay-hand h4 {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.player-score-details .score-replay-hand .score-hand-cards,
+.score-replay-hand .score-hand-note {
+  margin-top: 4px;
+}
 .game-shell.portrait-table.replay-table .replay-bar {
   display: grid;
   grid-template-columns: 44px 44px minmax(0, 1fr) max-content;

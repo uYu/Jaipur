@@ -6,6 +6,7 @@ import { advance, replay } from "../src/game/storage.ts";
 import { actionSummaries } from "../src/game/receipts.ts";
 import { marketSlotsAt } from "../src/game/opponent-turn.ts";
 import { nextMarketSlots } from "../src/game/market-layout.ts";
+import { opponentHandVisibility, opponentMemory } from "../src/game/opponent-memory.ts";
 import { chooseAction, observe } from "../src/game/ai.ts";
 import type { Save } from "../src/game/types.ts";
 
@@ -61,4 +62,19 @@ test("the opening view has no negative history index in either display mode", ()
   assert.equal(replayBoardIndex(0, "before"), 0);
   assert.equal(replayBoardIndex(0, "after"), 0);
   assert.equal(replayBoardIndex(1, "before"), 0);
+});
+
+test("replay only marks an opponent pickup as known after its public action", () => {
+  const save = { ...createTutorialSave(), events: TUTORIAL_ACTIONS };
+  const visibilityAt = (index: number) => {
+    const state = replay(save, index);
+    const hand = state.players[1].hand;
+    const { history } = actionSummaries(save, index, true);
+    return opponentHandVisibility(
+      hand,
+      opponentMemory(history, state.round, hand.length).hand,
+    );
+  };
+  assert.deepEqual(visibilityAt(replayBoardIndex(6, "before")), ["hidden"]);
+  assert.deepEqual(visibilityAt(replayBoardIndex(6, "after")), ["hidden", "known"]);
 });

@@ -8,6 +8,22 @@ export type OpponentMemory = {
   goods: number;
 };
 
+export type ReplayCardVisibility = "known" | "hidden";
+
+/** Public knowledge is a count per good, not the identity of an individual card. */
+export function opponentHandVisibility(
+  hand: readonly Good[],
+  knownHand: readonly Good[],
+): ReplayCardVisibility[] {
+  const remaining = [...knownHand];
+  return hand.map((good) => {
+    const index = remaining.indexOf(good);
+    if (index === -1) return "hidden";
+    remaining.splice(index, 1);
+    return "known";
+  });
+}
+
 /** Remember only public actions. No concealed hand or bonus values are inputs. */
 export function opponentMemory(
   history: readonly ActionRecord[],
