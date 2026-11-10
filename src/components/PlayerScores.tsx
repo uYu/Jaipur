@@ -271,7 +271,7 @@ function OpponentHandFan({
       role="group"
       aria-label={t`米拉的手牌，共 ${count} 张${summary}`}
       aria-describedby={
-        replayVisibility?.length ? "replay-opponent-hand-key" : undefined
+        replayVisibility ? "replay-opponent-hand-key" : undefined
       }
       title={
         knownOnly
@@ -434,7 +434,7 @@ export function OpponentSeat({
   return (
     <section className="player-seat seat-opponent" aria-label={t("米拉的座位")}>
       {actionSummary}
-      {!!replayHandVisibility?.length && (
+      {replayHandVisibility && (
         <div className="replay-hand-key" id="replay-opponent-hand-key">
           <span>当时已知 <b>{knownCount}</b> 张</span>
           <span>

@@ -1,12 +1,27 @@
-/* Replay is a compact study surface: position first, then navigation and analysis. */
+/* Keep replay controls and the board stable as the analysis changes below. */
+html:has(.replay-table) {
+  scrollbar-gutter: stable;
+}
 .game-shell.portrait-table.replay-table {
   padding: 4px 8px 8px;
   max-width: 880px;
   margin: 0 auto;
 }
+.replay-toolbar {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+@media (min-width: 700px) {
+  .replay-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+  }
+}
 .game-shell.portrait-table.replay-table .replay-board-position {
   gap: 6px;
-  margin: 0 0 4px;
+  margin: 0;
   padding: 0;
 }
 .replay-table .replay-board-position > span {
@@ -133,9 +148,9 @@
 }
 .game-shell.portrait-table.replay-table .replay-bar {
   display: grid;
-  grid-template-columns: 44px 44px minmax(0, 1fr) max-content;
+  grid-template-columns: 44px 44px minmax(0, 1fr) max-content 44px;
   gap: 6px;
-  margin: 4px 0;
+  margin: 0;
   padding: 2px 8px;
 }
 .game-shell.replay-table .replay-bar > b {
@@ -152,6 +167,8 @@
 .game-shell.replay-table .replay-bar > span {
   grid-column: 4;
   grid-row: 1;
+  min-width: 8ch;
+  text-align: right;
 }
 .game-shell.replay-table .replay-value {
   margin: 0;
@@ -168,6 +185,7 @@
   display: none;
 }
 .replay-table .replay-value-review {
+  min-block-size: 112px;
   padding-top: 4px;
 }
 .replay-table .review-heading {

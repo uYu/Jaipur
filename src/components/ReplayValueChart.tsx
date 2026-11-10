@@ -309,13 +309,7 @@ export function ReplayValueChart({
                   {drops.map((p) => (
                     <button
                       key={p.index}
-                      onClick={(event) => {
-                        onSeek(p.index);
-                        const disclosure =
-                          event.currentTarget.closest("details");
-                        if (disclosure) disclosure.open = false;
-                        window.scrollTo({ top: 0, behavior: "auto" });
-                      }}
+                      onClick={() => onSeek(p.index)}
                     >
                       第 {p.index} 步 <b>−{p.decision!.loss.toFixed(2)}</b>
                     </button>
