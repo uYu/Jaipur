@@ -117,3 +117,24 @@
 .menu-credits a:hover {
   text-decoration: underline;
 }
+
+@media (min-width: 861px) and (max-height: 900px) {
+  .menu-shell[data-menu="new"] {
+    padding-block: 24px;
+  }
+  .menu-shell[data-menu="new"] .menu-copy > .brand {
+    margin-bottom: 14px;
+  }
+  .menu-shell[data-menu="new"] .menu-copy > .back {
+    margin-top: 0;
+  }
+  .menu-shell[data-menu="new"] .menu-copy > :is(.back, .eyebrow, h2, .menu-intro) {
+    margin-bottom: 8px;
+  }
+  .menu-shell[data-menu="new"] .menu-illustration {
+    max-height: calc(100svh - 48px);
+  }
+  .menu-shell[data-menu="new"] .menu-footer.menu-credits {
+    margin-top: 10px;
+  }
+}

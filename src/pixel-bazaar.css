@@ -159,6 +159,97 @@
     margin: 4px 4px 0;
     color: #e9c8a5;
   }
+
+  /* The setup screen puts the form in the first viewport on phones. */
+  .menu-shell[data-menu="new"] {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-areas:
+      "back title skin"
+      "setup setup setup"
+      "credits credits credits";
+    gap: 6px 4px;
+    padding-block: max(8px, env(safe-area-inset-top))
+      max(6px, env(safe-area-inset-bottom));
+  }
+  .menu-shell[data-menu="new"]
+    :is(.menu-illustration, .menu-copy > .brand, .menu-copy > .menu-intro) {
+    display: none;
+  }
+  .menu-shell[data-menu="new"] .menu-copy > .back {
+    grid-area: back;
+    align-self: center;
+    min-height: 44px;
+    gap: 4px;
+  }
+  .menu-shell[data-menu="new"] .menu-copy > h2 {
+    grid-area: title;
+    place-self: center;
+    margin: 0;
+    font-size: clamp(17px, 5vw, 22px);
+  }
+  .menu-shell[data-menu="new"] .menu-copy > button.skin-switch {
+    grid-area: skin;
+    place-self: center end;
+    min-height: 44px;
+    margin: 0;
+    background: transparent;
+    color: inherit;
+  }
+  .menu-shell[data-menu="new"] .setup {
+    grid-area: setup;
+    display: grid;
+    gap: 10px;
+    padding: 10px;
+  }
+  .menu-shell[data-menu="new"] .setup > :is(fieldset, label, .muted, .primary) {
+    margin: 0;
+  }
+  .menu-shell[data-menu="new"] .setup > label {
+    gap: 5px;
+  }
+  .menu-shell[data-menu="new"] .match-format legend {
+    margin-bottom: 5px;
+  }
+  .menu-shell[data-menu="new"] .format-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .menu-shell[data-menu="new"] .format-options label {
+    min-height: 50px;
+    gap: 5px;
+    padding: 7px 6px;
+    line-height: 1.35;
+  }
+  .menu-shell[data-menu="new"] .format-options input {
+    flex: none;
+    width: 13px;
+  }
+  .menu-shell[data-menu="new"] .format-options small {
+    margin-top: 2px;
+    font-size: 11px;
+  }
+  .menu-shell[data-menu="new"] .setup select {
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+  .menu-shell[data-menu="new"] .setup .information-mode-note {
+    margin-top: 6px;
+    line-height: 1.45;
+  }
+  .menu-shell[data-menu="new"] .setup > .muted {
+    line-height: 1.45;
+  }
+  .menu-shell[data-menu="new"] .setup > .primary {
+    padding-block: 8px;
+  }
+  .menu-shell[data-menu="new"] .menu-footer.menu-credits {
+    grid-area: credits;
+    flex-flow: row wrap;
+    gap: 3px 6px;
+    margin-top: 0;
+    font-size: 10px;
+  }
+
   body:has(.bazaar-board, .menu-shell)
     :is(.turn-intro, .result-dialog, .modal) {
     --text: #482719;
