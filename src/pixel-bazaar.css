@@ -271,14 +271,18 @@
     --bazaar-outline: #653824;
     --bazaar-bevel: #b8794d;
     --bazaar-board-gap: 8px;
+    --bazaar-seat-card-cap: 57px;
+    --bazaar-market-card-cap: 67px;
+    --bazaar-bottom-space: 24px;
     --reserve-score-width: clamp(25px, 7.5cqw, 43px);
     --reserve-gap: 4px;
     --table-felt: #fce4c2;
     --selection-gold: #a55e06;
     max-width: 600px;
-    min-height: 100svh;
+    min-height: var(--game-viewport-height, 100dvh);
     padding: 0 max(8px, env(safe-area-inset-right))
-      max(24px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+      max(var(--bazaar-bottom-space), env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
     background:
       repeating-linear-gradient(
           90deg,
@@ -520,7 +524,7 @@
 
   .bazaar-board.game-shell.portrait-table .table-column {
     --table-card-width: min(
-      57px,
+      var(--bazaar-seat-card-cap),
       calc((100cqw - var(--reserve-score-width) - 52px) / 8)
     );
     --table-hand-gap: 3px;
@@ -778,7 +782,7 @@
 
   .bazaar-board.game-shell.portrait-table .market-table {
     --table-card-width: min(
-      67px,
+      var(--bazaar-market-card-cap),
       calc((100cqw - 8px - var(--market-card-gap) * 6) / 7)
     );
     padding: 3px 3px 0;
@@ -1100,6 +1104,126 @@
     flex: none;
     width: 13px;
     color: #ffd06f;
+  }
+
+  .game-shell.portrait-table.bazaar-board[data-bazaar-density] {
+    --bazaar-board-gap: 5px;
+    --bazaar-seat-card-cap: 51px;
+    --bazaar-market-card-cap: 55px;
+    --bazaar-bottom-space: 8px;
+    background-size: 80% 3px, 80% 5px, auto, auto;
+  }
+  .bazaar-board.game-shell.portrait-table[data-bazaar-density]:not(.tutorial-game)
+    .game-header {
+    min-height: 88px;
+    gap: 2px;
+    padding-block: 2px 6px;
+  }
+  .bazaar-board.game-shell.portrait-table[data-bazaar-density] .game-header .brand {
+    min-height: 43px;
+    padding-block: 2px 6px;
+  }
+  .bazaar-board.game-shell.portrait-table[data-bazaar-density]
+    .game-header
+    .brand-icon {
+    height: 16px;
+  }
+  .bazaar-board.game-shell.portrait-table[data-bazaar-density]
+    .game-header
+    .brand-icon > svg {
+    width: 16px;
+    height: 16px;
+  }
+  .bazaar-board.game-shell.portrait-table[data-bazaar-density] .game-header .brand b {
+    font-size: clamp(20px, 5.8vw, 29px);
+  }
+  .bazaar-board.game-shell.portrait-table[data-bazaar-density] .table-tools {
+    margin-bottom: 5px;
+  }
+  .bazaar-board.game-shell.portrait-table[data-bazaar-density]
+    :is(.seat-opponent, .hand-panel) {
+    padding-block: 5px 6px;
+  }
+  .bazaar-board.game-shell.portrait-table[data-bazaar-density] .table-notes {
+    padding-bottom: 3px;
+    margin-bottom: 3px;
+  }
+  .bazaar-board[data-bazaar-density] .bazaar-market-labels {
+    margin-top: 3px;
+  }
+  .game-shell.portrait-table.bazaar-board:is(
+      [data-bazaar-density="tight"],
+      [data-bazaar-density="minimal"]
+    ) {
+    --bazaar-board-gap: 4px;
+    --bazaar-seat-card-cap: 42px;
+    --bazaar-market-card-cap: 43px;
+  }
+  .bazaar-board.game-shell.portrait-table:is(
+      [data-bazaar-density="tight"],
+      [data-bazaar-density="minimal"]
+    ):not(.tutorial-game)
+    .game-header {
+    min-height: 70px;
+  }
+  .bazaar-board.game-shell.portrait-table:is(
+      [data-bazaar-density="tight"],
+      [data-bazaar-density="minimal"]
+    )
+    .game-header {
+    .brand {
+      min-height: 32px;
+      padding-block: 2px 4px;
+    }
+    .brand-icon {
+      display: none;
+    }
+    .opponent-level {
+      margin-top: -1px;
+      padding-block: 0;
+      line-height: 14px;
+    }
+    .header-round {
+      min-height: 20px;
+      padding-block: 0;
+    }
+  }
+  .bazaar-board.game-shell.portrait-table:is(
+      [data-bazaar-density="tight"],
+      [data-bazaar-density="minimal"]
+    ) {
+    .table-column > .action-overview {
+      display: none;
+    }
+    .market-zone {
+      gap: 3px;
+      padding-block: 4px;
+    }
+    .table-supply .mobile-supply > summary {
+      grid-template-rows: 18px auto;
+      row-gap: 1px;
+    }
+    :is(.bazaar-supply-title, .bazaar-market-labels > *) {
+      line-height: 14px;
+    }
+    .hand-panel > .action-panel.direct-selection[data-overview] {
+      margin-top: 3px;
+      padding-top: 3px;
+    }
+  }
+  .bazaar-board[data-bazaar-density="minimal"] .bazaar-market-labels {
+    display: none;
+  }
+  .game-shell.portrait-table.bazaar-board[data-bazaar-density="minimal"] {
+    --bazaar-board-gap: 3px;
+    --bazaar-bottom-space: 3px;
+    background-size: 80% 1px, 80% 2px, auto, auto;
+  }
+  .bazaar-board.game-shell.portrait-table[data-bazaar-density="minimal"]
+    .table-column
+    .hand-panel > .action-panel.direct-selection[data-overview] {
+    height: auto;
+    grid-template-rows: 44px minmax(32px, auto);
   }
 }
 

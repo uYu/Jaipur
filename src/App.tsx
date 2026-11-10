@@ -154,7 +154,7 @@ export default function App({
   const mobile = useMobileLayout();
   const teaching = screen === "tutorial";
   const bazaar = mobile && (screen === "game" || teaching);
-  const boardRef = useViewportHeight(screen !== "menu" && !bazaar);
+  const boardRef = useViewportHeight(screen !== "menu", bazaar);
   const [tutorialSave, setTutorialSave] = useState(createTutorialSave);
   const [tutorialFromGame, setTutorialFromGame] = useState(false);
   const [tutorialStarted, setTutorialStarted] = useState(false);

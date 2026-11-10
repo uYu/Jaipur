@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 
 /** Follow the visible area as mobile browser toolbars open and close. */
-export function useViewportHeight(active: boolean) {
+export function useViewportHeight(active: boolean, bazaar: boolean) {
   const ref = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     const element = ref.current;
@@ -15,6 +15,14 @@ export function useViewportHeight(active: boolean) {
         Math.min(window.innerHeight, viewport?.height ?? window.innerHeight),
       );
       element.style.setProperty("--game-viewport-height", `${available}px`);
+      if (bazaar) {
+        delete element.dataset.bazaarDensity;
+        for (const density of ["compact", "tight", "minimal"]) {
+          if (element.getBoundingClientRect().height <= available + 1) break;
+          element.dataset.bazaarDensity = density;
+        }
+        return;
+      }
       // Measure the natural table before redistributing spare portrait height.
       element.style.removeProperty("--table-viewport-height");
       if (!element.classList.contains("viewport-table")) return;
@@ -97,6 +105,7 @@ export function useViewportHeight(active: boolean) {
       observer.disconnect();
       delete element.dataset.fit;
       delete element.dataset.density;
+      delete element.dataset.bazaarDensity;
       for (const property of [
         "--game-viewport-height",
         "--table-viewport-height",
@@ -106,6 +115,6 @@ export function useViewportHeight(active: boolean) {
       ])
         element.style.removeProperty(property);
     };
-  }, [active]);
+  }, [active, bazaar]);
   return ref;
 }

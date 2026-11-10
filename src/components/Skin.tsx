@@ -14,16 +14,16 @@ const SkinContext = createContext<
     skin: Skin;
     toggleSkin: () => void;
   }
->({ ...jaipurCopy, skin: "jaipur", toggleSkin: () => {} });
+>({ ...hardwareCopy, skin: "hardware", toggleSkin: () => {} });
 
 export function SkinProvider({ children }: { children: ReactNode }) {
   const [skin, setSkin] = useState<Skin>(() => {
     try {
-      return localStorage.getItem(storageKey) === "hardware"
-        ? "hardware"
-        : "jaipur";
+      return localStorage.getItem(storageKey) === "jaipur"
+        ? "jaipur"
+        : "hardware";
     } catch {
-      return "jaipur";
+      return "hardware";
     }
   });
   const copy = skin === "hardware" ? hardwareCopy : jaipurCopy;
