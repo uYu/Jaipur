@@ -61,7 +61,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 3px 12px;
-  margin-bottom: 12px;
+  margin-bottom: 5px;
   color: var(--text-secondary);
   font-size: 11px;
   line-height: 1.4;
@@ -91,12 +91,12 @@
 .replay-hidden-card-mark {
   position: absolute;
   z-index: 2;
-  inset-block-start: -15px;
-  inset-inline-end: -1px;
+  inset-block-start: 2px;
+  inset-inline-end: 2px;
   display: grid;
   place-items: center;
-  width: 17px;
-  height: 17px;
+  width: 14px;
+  height: 14px;
   border: 1px solid #f5f9fe;
   border-radius: 4px;
   background: #203a53;
@@ -104,8 +104,8 @@
   color: #fff;
 }
 .replay-hidden-card-mark > svg {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
 }
 .score-replay-hand {
   display: grid;

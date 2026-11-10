@@ -324,6 +324,22 @@ html[data-skin="hardware"]
   max-width: none;
   transform: none;
 }
+/* On revealed premium cards the top corner is reserved for the replay lock. */
+html[data-skin="hardware"] .game-shell.portrait-table.replay-table
+  .opponent-hand-card.premium-card[data-replay-visibility="hidden"] {
+  --replay-card-name-band: calc(2px + 1.25 * clamp(9px, 2.4cqw, 13px));
+  --replay-card-sale-band: clamp(8px, 2cqw, 10px);
+}
+html[data-skin="hardware"] .game-shell.portrait-table.replay-table
+  .opponent-hand-card.premium-card[data-replay-visibility="hidden"] > .premium-badge {
+  inset: auto 2px var(--replay-card-name-band);
+  font-size: var(--replay-card-sale-band);
+}
+html[data-skin="hardware"] .game-shell.portrait-table.replay-table
+  .opponent-hand-card.premium-card[data-replay-visibility="hidden"] > .goods-art {
+  inset-block-start: 1px;
+  height: calc(100% - var(--replay-card-name-band) - var(--replay-card-sale-band) - 1px);
+}
 html[data-skin="hardware"] .hardware-pickup-label {
   position: absolute;
   inset: 3px 1px auto;
