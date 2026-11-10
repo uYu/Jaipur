@@ -1169,90 +1169,33 @@ export default function App({
             </>
           )}
           {screen === "replay" && (
-            <header className="replay-toolbar">
-              <div
-                className="replay-board-position"
-                role="group"
-                aria-label="牌桌显示时点"
-              >
-                {returnToMenuButton}
-                <span aria-live="polite">
-                  {replayIndex === 0
-                    ? t("开市局面")
-                    : `第 ${replayIndex} 步 · 行动${replayMoment === "before" ? "前" : "后"}`}
-                </span>
-                <div>
-                  {(["before", "after"] as const).map((moment) => (
-                    <button
-                      key={moment}
-                      aria-pressed={replayMoment === moment}
-                      disabled={replayIndex === 0}
-                      onClick={() => {
-                        setReplayMoment(moment);
-                        setInspectResult(false);
-                      }}
-                    >
-                      行动{moment === "before" ? "前" : "后"}
-                    </button>
-                  ))}
-                </div>
+            <div
+              className="replay-board-position"
+              role="group"
+              aria-label="牌桌显示时点"
+            >
+              {returnToMenuButton}
+              <span aria-live="polite">
+                {replayIndex === 0
+                  ? t("开市局面")
+                  : `第 ${replayIndex} 步 · 行动${replayMoment === "before" ? "前" : "后"}`}
+              </span>
+              <div>
+                {(["before", "after"] as const).map((moment) => (
+                  <button
+                    key={moment}
+                    aria-pressed={replayMoment === moment}
+                    disabled={replayIndex === 0}
+                    onClick={() => {
+                      setReplayMoment(moment);
+                      setInspectResult(false);
+                    }}
+                  >
+                    行动{moment === "before" ? "前" : "后"}
+                  </button>
+                ))}
               </div>
-              <div
-                className="replay-bar"
-                role="group"
-                aria-label="比赛回放控制"
-              >
-                <b>比赛回放</b>
-                <button
-                  aria-label="上一步"
-                  disabled={!replayIndex && !replayAnimating}
-                  onClick={() => {
-                    seekReplay(replayAnimating ? replayIndex : replayIndex - 1);
-                  }}
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  aria-label="下一步"
-                  disabled={
-                    !replayAnimating && replayIndex >= (save?.events.length ?? 0)
-                  }
-                  onClick={() =>
-                    seekReplay(transition?.replayTarget ?? replayIndex + 1)
-                  }
-                >
-                  <ChevronRight size={20} />
-                </button>
-                <input
-                  aria-label="回放进度"
-                  type="range"
-                  min="0"
-                  max={save?.events.length ?? 0}
-                  value={replayIndex}
-                  aria-valuetext={`选择复盘第 ${replayIndex} 步，共 ${save?.events.length ?? 0} 步`}
-                  style={
-                    {
-                      "--replay-progress": `${save?.events.length ? (replayIndex / save.events.length) * 100 : 0}%`,
-                    } as CSSProperties
-                  }
-                  onChange={(e) => {
-                    seekReplay(Number(e.target.value));
-                  }}
-                />
-                <span>
-                  {replayIndex} / {save?.events.length}
-                </span>
-                <button
-                  aria-label="查看结算"
-                  aria-haspopup="dialog"
-                  title="查看结算"
-                  disabled={viewed.phase === "playing"}
-                  onClick={() => setInspectResult(true)}
-                >
-                  <Trophy size={20} aria-hidden="true" />
-                </button>
-              </div>
-            </header>
+            </div>
           )}
           {showResultBanner && (
             <div
@@ -1543,6 +1486,62 @@ export default function App({
                   : "进度自动保存在此浏览器"}
             </span>
           </footer>
+          {screen === "replay" && (
+            <div
+              className="replay-bar"
+              role="group"
+              aria-label="比赛回放控制"
+            >
+              <button
+                aria-label="上一步"
+                disabled={!replayIndex && !replayAnimating}
+                onClick={() => {
+                  seekReplay(replayAnimating ? replayIndex : replayIndex - 1);
+                }}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button
+                aria-label="下一步"
+                disabled={
+                  !replayAnimating && replayIndex >= (save?.events.length ?? 0)
+                }
+                onClick={() =>
+                  seekReplay(transition?.replayTarget ?? replayIndex + 1)
+                }
+              >
+                <ChevronRight size={20} />
+              </button>
+              <input
+                aria-label="回放进度"
+                type="range"
+                min="0"
+                max={save?.events.length ?? 0}
+                value={replayIndex}
+                aria-valuetext={`选择复盘第 ${replayIndex} 步，共 ${save?.events.length ?? 0} 步`}
+                style={
+                  {
+                    "--replay-progress": `${save?.events.length ? (replayIndex / save.events.length) * 100 : 0}%`,
+                  } as CSSProperties
+                }
+                onChange={(e) => {
+                  seekReplay(Number(e.target.value));
+                }}
+              />
+              <span>
+                {replayIndex} / {save?.events.length}
+              </span>
+              <button
+                aria-label="查看结算"
+                aria-haspopup="dialog"
+                title="查看结算"
+                disabled={viewed.phase === "playing"}
+                onClick={() => setInspectResult(true)}
+              >
+                <Trophy size={20} aria-hidden="true" />
+              </button>
+            </div>
+          )}
         </main>
       ) : null}
       {teaching && !tutorialStarted && (

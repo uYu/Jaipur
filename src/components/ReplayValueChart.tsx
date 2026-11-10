@@ -2,7 +2,7 @@ import { useSkin } from "./Skin.tsx";
 import { useEffect, useState } from "react";
 import type { Card, Save } from "../game/types.ts";
 import { GoodsArt } from "./Art.tsx";
-import { DEFAULT_DOUZERO_VERSION } from "../game/douzero-browser.ts";
+import { useModalDialog } from "../hooks/useModalDialog.ts";
 import { replayBoardIndex } from "../game/replay-position.ts";
 import type { ReplayMoment } from "../game/replay-position.ts";
 import type {
@@ -47,6 +47,41 @@ function ReviewGoods({ cards }: { cards: Card[] }) {
         );
       })}
     </span>
+  );
+}
+
+function PriorityReview({
+  drops,
+  onPick,
+  onClose,
+}: {
+  drops: readonly { index: number; loss: number }[];
+  onPick: (index: number) => void;
+  onClose: () => void;
+}) {
+  const ref = useModalDialog();
+  return (
+    <dialog
+      ref={ref}
+      className="replay-priority-dialog"
+      aria-labelledby="replay-priority-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+    >
+      <h2 id="replay-priority-title">优先复盘</h2>
+      <div className="replay-priority-steps">
+        {drops.map(({ index, loss }) => (
+          <button key={index} onClick={() => onPick(index)}>
+            第 {index} 步 <b>−{loss} 个百分点</b>
+          </button>
+        ))}
+      </div>
+      <button className="replay-priority-close" onClick={onClose}>
+        关闭
+      </button>
+    </dialog>
   );
 }
 function ReviewMove({ move }: { move: ReplayMove }) {
@@ -121,6 +156,7 @@ export function ReplayValueChart({
   );
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const [showPriorities, setShowPriorities] = useState(false);
   useEffect(() => {
     const cached = cache.get(save);
     setPoints(cached ?? []);
@@ -182,6 +218,14 @@ export function ReplayValueChart({
     <details className="replay-value" open>
       <summary>
         <span>本轮预估胜率</span>
+        {!complete && !error && (
+          <small
+            role="status"
+            aria-label={`模型分析中 ${Math.max(0, points.length - 1)} / ${total}`}
+          >
+            分析中
+          </small>
+        )}
         <strong>{estimate === null ? "—" : formatPercent(estimate)}</strong>
       </summary>
       {error ? (
@@ -304,36 +348,24 @@ export function ReplayValueChart({
               </p>
             )}
           </section>
-          {!complete && (
-            <p className="replay-value-progress" role="status">
-              模型分析中 {Math.max(0, points.length - 1)} / {total} · 可继续回放
-            </p>
+          <button
+            className="replay-priority-trigger"
+            aria-haspopup="dialog"
+            disabled={!drops.length}
+            onClick={() => setShowPriorities(true)}
+          >
+            优先复盘{drops.length > 0 ? ` · ${drops.length} 手` : ""}
+          </button>
+          {showPriorities && drops.length > 0 && (
+            <PriorityReview
+              drops={drops}
+              onPick={(index) => {
+                onSeek(index);
+                setShowPriorities(false);
+              }}
+              onClose={() => setShowPriorities(false)}
+            />
           )}
-          <div className="replay-value-extras">
-            {drops.length > 0 && (
-              <details className="replay-value-priorities">
-                <summary>优先复盘 · {drops.length} 手</summary>
-                <div className="replay-value-drops">
-                  {drops.map((p) => (
-                    <button key={p.index} onClick={() => onSeek(p.index)}>
-                      第 {p.index} 步 <b>−{p.loss} 点</b>
-                    </button>
-                  ))}
-                </div>
-              </details>
-            )}
-            <details className="replay-value-help">
-              <summary>怎么看胜率</summary>
-              <p>
-                百分比是模型对你赢下本轮的估计，平局按半胜计入。模型只使用你当时可见的信息。轮到你时按模型建议估计，行动后按实际选择估计，对手行动后重新评估。轮末按实际结果显示，赢为
-                100%，平局为 50%，输为 0%。
-              </p>
-              <p>
-                红点表示你的选择比模型建议低至少 {priorityDrop} 个百分点。估计来自高难模型
-                v{DEFAULT_DOUZERO_VERSION}，供复盘参考。
-              </p>
-            </details>
-          </div>
         </>
       )}
     </details>

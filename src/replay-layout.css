@@ -1,27 +1,17 @@
-/* Keep replay controls and the board stable as the analysis changes below. */
+/* Keep replay controls and the board stable as the analysis changes. */
 html:has(.replay-table) {
+  --replay-dock-height: calc(48px + max(2px, env(safe-area-inset-bottom)));
   scrollbar-gutter: stable;
+  scroll-padding-bottom: var(--replay-dock-height);
 }
 .game-shell.portrait-table.replay-table {
-  padding: 4px 8px 8px;
+  padding: 4px 8px calc(var(--replay-dock-height) + 12px);
   max-width: 880px;
   margin: 0 auto;
 }
-.replay-toolbar {
-  display: grid;
-  gap: 4px;
-  margin-bottom: 4px;
-}
-@media (min-width: 700px) {
-  .replay-toolbar {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: center;
-    gap: 12px;
-  }
-}
 .game-shell.portrait-table.replay-table .replay-board-position {
   gap: 6px;
-  margin: 0;
+  margin: 0 0 4px;
   padding: 0;
 }
 .replay-table .replay-board-position > span {
@@ -147,14 +137,18 @@ html:has(.replay-table) {
   margin-top: 4px;
 }
 .game-shell.portrait-table.replay-table .replay-bar {
+  position: fixed;
+  inset-inline: 8px;
+  bottom: 0;
+  z-index: 20;
+  max-width: 864px;
   display: grid;
   grid-template-columns: 44px 44px minmax(0, 1fr) max-content 44px;
   gap: 6px;
-  margin: 0;
-  padding: 2px 8px;
-}
-.game-shell.replay-table .replay-bar > b {
-  display: none;
+  margin: 0 auto;
+  padding: 2px 8px max(2px, env(safe-area-inset-bottom));
+  border: 1px solid var(--border);
+  background: var(--surface-sand);
 }
 .game-shell.replay-table .replay-bar > button {
   grid-row: 1;
@@ -190,6 +184,11 @@ html:has(.replay-table) {
 }
 .replay-table .review-heading {
   margin-bottom: 4px;
+}
+.replay-table .review-heading > b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .replay-table .review-comparison {
   display: grid;
@@ -251,34 +250,6 @@ html:has(.replay-table) {
 .replay-table .review-good-name {
   display: none;
 }
-.replay-table .replay-value-extras {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: start;
-  gap: 0 18px;
-  margin-top: 3px;
-  color: var(--text-secondary);
-  font-size: 11px;
-}
-.replay-table .replay-value-extras > details {
-  margin: 0;
-}
-.replay-table .replay-value-extras > details[open] {
-  flex-basis: 100%;
-}
-.replay-table .replay-value-extras summary {
-  cursor: pointer;
-  min-height: 28px;
-  line-height: 28px;
-}
-.replay-table .replay-value-drops {
-  display: flex;
-  gap: 6px;
-  margin: 0 0 4px;
-}
-.replay-table .replay-value-drops > button {
-  flex: 1;
-}
 @media (max-height: 740px) {
   .game-shell.portrait-table.replay-table .table-column {
     gap: 4px;
@@ -300,6 +271,7 @@ html:has(.replay-table) {
   }
   .replay-table .review-move {
     gap: 3px;
+    scrollbar-width: none;
   }
   .replay-table .review-move > .review-goods {
     gap: 2px;

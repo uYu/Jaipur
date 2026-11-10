@@ -19,7 +19,7 @@
   min-width: 44px;
   min-height: 44px;
   padding: 0;
-  border: 1px solid #c8cbbb;
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
@@ -57,7 +57,7 @@
   background: linear-gradient(
     to right,
     var(--accent) 0 var(--replay-progress),
-    #c6c8ba var(--replay-progress) 100%
+    var(--border) var(--replay-progress) 100%
   );
 }
 .game-shell .replay-bar input[type="range"]::-webkit-slider-thumb {
@@ -73,7 +73,7 @@
 .game-shell .replay-bar input[type="range"]::-moz-range-track {
   height: 6px;
   border-radius: 6px;
-  background: #c6c8ba;
+  background: var(--border);
 }
 .game-shell .replay-bar input[type="range"]::-moz-range-progress {
   height: 6px;
@@ -124,18 +124,18 @@
   min-width: 58px;
   min-height: 44px;
   padding: 5px 9px;
-  border: 1px solid #d8d8c9;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: #f5f3e9;
+  background: var(--surface-sand);
   color: var(--text-secondary);
   font-family: var(--font-ui);
   font-size: 12px;
   white-space: nowrap;
 }
 .game-shell .replay-board-position button[aria-pressed="true"] {
-  border-color: #95af9f;
-  background: #e8eee3;
-  color: #345f4b;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
 }
 .game-shell .replay-board-position button:disabled {
   opacity: 0.5;

@@ -1,9 +1,9 @@
 .game-shell .replay-value {
   margin: 6px 0 10px;
   padding: 8px 12px;
-  border: 1px solid #d6d6c6;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #f5f3e9;
+  background: var(--surface-sand);
   color: var(--text);
   font-family: var(--font-ui);
   font-size: 12px;
@@ -31,7 +31,7 @@
   margin-left: auto;
   font-family: var(--font-numeric);
   font-size: 18px;
-  color: #28664f;
+  color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
 .replay-value > summary small {
@@ -78,7 +78,7 @@
 }
 .replay-value-plot .value-drop {
   fill: #b96f57;
-  stroke: #f5f3e9;
+  stroke: var(--surface-sand);
   stroke-width: 1;
 }
 .replay-value-plot input[type="range"] {
@@ -98,7 +98,7 @@
   border-radius: 4px;
 }
 .replay-value-review {
-  border-top: 1px solid #e0dfd2;
+  border-top: 1px solid var(--border);
   padding-top: 8px;
 }
 .review-heading {
@@ -127,14 +127,13 @@
 }
 .review-choice {
   padding: 8px 10px;
-  background: #fffdf7;
-  border: 1px solid #dfdacb;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 7px;
   min-width: 0;
 }
 .review-choice.is-recommended {
-  background: #eef2e8;
-  border-color: #d2dccb;
+  background: color-mix(in srgb, var(--accent-soft) 40%, var(--surface));
 }
 .review-choice-heading {
   display: flex;
@@ -207,46 +206,48 @@
   color: #7b8072;
   font-size: 11px;
 }
-.replay-value-drops {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-}
-.replay-value-drops > span {
-  color: var(--text-secondary);
-}
-.game-shell .replay-value button {
+.game-shell .replay-value button,
+.replay-priority-dialog button {
   min-height: 44px;
   padding: 5px 9px;
-  border: 1px solid #ddc8b7;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  background: #f6ece0;
-  color: #775344;
+  background: var(--surface-sand);
+  color: var(--text);
   font-size: 12px;
 }
-.replay-value-drops button b {
-  font-family: var(--font-numeric);
-  font-weight: 500;
+.replay-priority-dialog {
+  width: min(340px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
 }
-.replay-value-progress {
-  color: var(--text-secondary);
-  margin: 6px 0;
+.replay-priority-dialog::backdrop {
+  background: #15263580;
 }
-.replay-value-help {
-  margin-top: 6px;
-  color: var(--text-secondary);
-  font-size: 11px;
+.replay-priority-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
 }
-.replay-value-help summary {
-  cursor: pointer;
-  min-height: 24px;
-  line-height: 24px;
+.replay-priority-steps {
+  display: grid;
+  gap: 6px;
 }
-.replay-value-help p {
-  margin: 4px 0;
-  line-height: 1.6;
+.replay-priority-steps > button {
+  justify-content: space-between;
+  text-align: left;
+}
+.replay-priority-steps > button > b {
+  color: #a85542;
+}
+.replay-priority-dialog .replay-priority-close {
+  width: 100%;
+  margin-top: 12px;
 }
 @media (max-width: 700px) {
   .game-shell .replay-value {
@@ -267,18 +268,5 @@
   }
   .review-good-name {
     display: none;
-  }
-  .replay-value-drops {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 3px 6px;
-  }
-  .replay-value-drops > span {
-    grid-column: 1 / -1;
-  }
-  .game-shell .replay-value-drops > button {
-    padding: 4px;
-    font-size: 11px;
-    white-space: nowrap;
   }
 }
