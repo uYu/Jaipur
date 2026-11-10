@@ -18,7 +18,7 @@ test("guidance starts at the cards and a single market good previews taking", ()
   const idle = selectionGuide(state, emptySelection());
   assert.equal(idle.action, null);
   assert.match(idle.title, /拿货：.*1张市场货物.*全部骆驼/);
-  assert.match(idle.hint, /卖货：.*手牌得分.*3张起有奖励\n交换：.*等量/);
+  assert.match(idle.hint, /卖货：.*得货款。.*至少3张，另加奖励。\n交换：.*等量/);
   assert.match(idle.hint, /交换/);
   const taking = selectionGuide(state, { market: [0], hand: [], camels: 0 });
   assert.equal(taking.action?.type, "take");

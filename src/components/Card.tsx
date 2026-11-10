@@ -1,7 +1,11 @@
+import { useSkin } from "./Skin.tsx";
 import type { Card as CardType } from "../game/types.ts";
-import { LABEL, precious } from "../game/data.ts";
+import { precious } from "../game/data.ts";
 import { GoodsArt } from "./Art.tsx";
 import { Check } from "lucide-react";
+import { hardwareModels } from "../game/skin-copy.ts";
+import { PixelArt } from "./PixelArt.tsx";
+import { TutorialTapCue } from "./TutorialTapCue.tsx";
 
 function PremiumFoil() {
   return (
@@ -26,22 +30,26 @@ function PremiumFoil() {
   );
 }
 export function CardFace({ good }: { good: CardType }) {
+  const { t, labels, skin } = useSkin();
+  const model = skin === "hardware" ? hardwareModels[good] : undefined;
   const premium = good !== "camel" && precious(good);
   return (
     <>
       {premium && <PremiumFoil />}
       {premium && (
         <span className="premium-badge">
-          <span className="premium-badge-label">高级</span>
+          <span className="premium-badge-label">{t("高级")}</span>
           <span className="premium-badge-minimum" aria-hidden="true">
             2张起售
           </span>
         </span>
       )}
       <GoodsArt good={good} cardFace />
-      <span className="card-name">{LABEL[good]}</span>
+      <PixelArt name={good} />
+      <span className="card-name">{labels[good]}</span>
+      {model && <span className="hardware-card-model">{model}</span>}
       <span className="card-sale-rule">
-        {good === "camel" ? "不占手牌" : premium ? "2张起售" : "1张起售"}
+        {good === "camel" ? t("不占手牌") : premium ? "2张起售" : "1张起售"}
       </span>
     </>
   );
@@ -55,16 +63,20 @@ export function Card({
   motionId,
   arriving = false,
   departing = false,
+  exampleTap = false,
 }: {
   good: CardType;
   motionId?: string;
   arriving?: boolean;
   departing?: boolean;
+  exampleTap?: boolean;
   selected?: boolean;
   onClick?: () => void;
   disabled?: boolean;
   small?: boolean;
 }) {
+  const { t, labels, skin } = useSkin();
+  const model = skin === "hardware" ? hardwareModels[good] : undefined;
   const premium = good !== "camel" && precious(good);
   return (
     <button
@@ -73,16 +85,17 @@ export function Card({
       disabled={disabled}
       onClick={onClick}
       title={
-        premium
-          ? "高级货物 · 至少 2 张起售"
+        model ? `${labels[good]} · ${model}${premium ? " · 2 张起售" : ""}` : premium
+          ? t("高级货物 · 至少 2 张起售")
           : good === "camel"
-            ? "骆驼 · 不占手牌"
-            : "普通货物 · 1 张起售"
+            ? t("骆驼 · 不占手牌")
+            : t("普通货物 · 1 张起售")
       }
-      aria-label={`${LABEL[good]}${premium ? "，高级货物，至少 2 张起售" : ""}${selected ? "，已选中" : ""}`}
+      aria-label={`${labels[good]}${premium ? t("，高级货物，至少 2 张起售") : ""}${selected ? "，已选中" : ""}`}
       aria-pressed={selected}
     >
       <CardFace good={good} />
+      {exampleTap && <TutorialTapCue />}
       {selected && (
         <span className="selected-check" aria-hidden="true">
           <Check size={14} strokeWidth={3} />

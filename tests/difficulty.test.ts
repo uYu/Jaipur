@@ -13,7 +13,10 @@ import { observe } from "../src/game/ai.ts";
 import { dmcEventHistory } from "../src/game/dmc-history.ts";
 import { actionError, newGame } from "../src/game/engine.ts";
 import { DouzeroNetwork } from "../src/game/douzero-network.ts";
-import { chooseDouzeroActionFromModel } from "../src/game/douzero-browser.ts";
+import {
+  chooseDouzeroActionFromModel,
+  DEFAULT_DOUZERO_MODEL_URL,
+} from "../src/game/douzero-browser.ts";
 
 test("the three visible difficulty levels retain the requested opponent policies", () => {
   assert.deepEqual(
@@ -79,10 +82,8 @@ test("saved preferences migrate the old model level and write only the new name"
   }
 });
 
-test("the actual high difficulty worker uses the former experimental model", async () => {
-  const bytes = readFileSync(
-    new URL("../src/game/models/legacy-round-147126.bin", import.meta.url),
-  );
+test("the actual high difficulty worker uses the default v114824 model", async () => {
+  const bytes = readFileSync(DEFAULT_DOUZERO_MODEL_URL);
   const buffer = bytes.buffer.slice(
     bytes.byteOffset,
     bytes.byteOffset + bytes.byteLength,
@@ -100,7 +101,10 @@ test("the actual high difficulty worker uses the former experimental model", asy
     onmessage: null as any,
   };
   globalThis.self = worker as any;
-  globalThis.fetch = async () => new Response(buffer);
+  globalThis.fetch = async (resource) => {
+    assert.match(String(resource), /\/legacy-round-114824\.bin$/);
+    return new Response(buffer);
+  };
   try {
     await import("../src/game/ai.worker.ts");
     for (const difficulty of ["hard", "experimental"]) {
@@ -109,7 +113,7 @@ test("the actual high difficulty worker uses the former experimental model", asy
       });
       const reply = messages.at(-1);
       assert.equal(reply.error, undefined);
-      assert.match(reply.algorithm, /v147126/);
+      assert.match(reply.algorithm, /v114824/);
       assert.deepEqual(reply.action, expected);
       assert.equal(actionError(state, reply.action), null);
     }

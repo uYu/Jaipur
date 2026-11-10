@@ -1,3 +1,4 @@
+import { useSkin } from "./Skin.tsx";
 import { useLayoutEffect, useRef } from "react";
 import type { ActionRecord } from "../game/receipts.ts";
 import type { RoundResult } from "../game/types.ts";
@@ -10,13 +11,14 @@ export function ActionHistory({
   records: ActionRecord[];
   results: RoundResult[];
 }) {
+  const { t } = useSkin();
   const list = useRef<HTMLOListElement>(null);
   useLayoutEffect(() => {
     if (list.current) list.current.scrollTop = list.current.scrollHeight;
   }, [records]);
   if (!records.length)
     return (
-      <p className="history-empty">还没有交易记录，开市后会显示在这里。</p>
+      <p className="history-empty">{t("还没有交易记录，开市后会显示在这里。")}</p>
     );
   return (
     <ol className="action-history" ref={list} aria-label="按时间排列的行动记录">
@@ -39,11 +41,11 @@ export function ActionHistory({
             </div>
             {result && (
               <p className="history-result">
-                本轮结算 · 你 {result.scores[0]} 卢比 · 米拉 {result.scores[1]}{" "}
-                卢比
+                本轮结算 · 你 {result.scores[0]} {t("卢比 · 米拉")} {result.scores[1]}{" "}
+                {t("卢比")}
                 {result.winner === null
                   ? " · 平局"
-                  : ` · ${result.winner === 0 ? "你" : "米拉"}获胜`}
+                  : ` · ${result.winner === 0 ? "你" : t("米拉")}获胜`}
               </p>
             )}
           </li>

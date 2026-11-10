@@ -3,14 +3,19 @@ import { dmcAction, dmcActions, dmcState } from "./dmc.ts";
 import { DouzeroNetwork } from "./douzero-network.ts";
 import { findEndgameWinningAction } from "./endgame.ts";
 
+export const DEFAULT_DOUZERO_VERSION = 114824;
+export const DEFAULT_DOUZERO_MODEL_URL = new URL(
+  "./models/legacy-round-114824.bin",
+  import.meta.url,
+);
+
 let network: Promise<DouzeroNetwork> | undefined;
 export function loadDouzeroNetwork() {
-  network ??= fetch(
-    new URL("./models/legacy-round-147126.bin", import.meta.url),
-  ).then(async (response) => {
+  network ??= fetch(DEFAULT_DOUZERO_MODEL_URL).then(async (response) => {
     if (!response.ok) throw Error("高难对手加载失败，请重试");
     const model = new DouzeroNetwork(await response.arrayBuffer());
-    if (model.version !== 147126) throw Error("对手数据版本不匹配，请刷新重试");
+    if (model.version !== DEFAULT_DOUZERO_VERSION)
+      throw Error("对手数据版本不匹配，请刷新重试");
     return model;
   });
   // A failed fetch can be retried from the replay analysis panel.

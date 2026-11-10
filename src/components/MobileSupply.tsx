@@ -1,20 +1,25 @@
+import { useSkin } from "./Skin.tsx";
 import { useLayoutEffect, useRef, useState } from "react";
 import { Award, ChevronRight, Info } from "lucide-react";
 import { GOODS } from "../game/types.ts";
 import type { State } from "../game/types.ts";
-import { LABEL, precious } from "../game/data.ts";
+import { precious } from "../game/data.ts";
 import { GoodsArt, PremiumChipRim } from "./Art.tsx";
+import { PixelArt } from "./PixelArt.tsx";
 import { TableNumber } from "./TableNumber.tsx";
 import "../chip-groups.css";
 export function MobileSupply({
   state,
   onInspect,
   tabletop = false,
+  bazaar = false,
 }: {
   state: State;
   onInspect: () => void;
   tabletop?: boolean;
+  bazaar?: boolean;
 }) {
+  const { t, labels } = useSkin();
   const panel = useRef<HTMLDetailsElement>(null);
   const [mobile, setMobile] = useState(false);
   useLayoutEffect(() => {
@@ -36,12 +41,12 @@ export function MobileSupply({
       <summary
         title={
           tabletop
-            ? "查看筹码盘"
+            ? t("查看筹码盘")
             : mobile
-              ? "点击查看完整筹码盘"
-              : "点击整个筹码面板，展开或收起明细"
+              ? t("点击查看完整筹码盘")
+              : t("点击整个筹码面板，展开或收起明细")
         }
-        aria-label={tabletop ? "查看筹码盘" : undefined}
+        aria-label={tabletop ? t("查看筹码盘") : undefined}
         aria-haspopup={mobile || tabletop ? "dialog" : undefined}
         onClick={(event) => {
           if (mobile || tabletop) {
@@ -51,9 +56,9 @@ export function MobileSupply({
         }}
       >
         <div className="supply-heading">
-          <b>{tabletop ? "筹码" : "筹码余量"}</b>
+          <b>{tabletop ? t("筹码") : t("筹码余量")}</b>
           <span>
-            {tabletop ? `售罄 ${depleted}/3` : `${depleted}/3 类售罄即收市`}
+            {tabletop ? t`售罄 ${depleted}/3` : t`${depleted}/3 类售罄即收市`}
           </span>
           <span className="supply-expand">
             {tabletop ? (
@@ -62,7 +67,7 @@ export function MobileSupply({
                 <ChevronRight size={14} aria-hidden="true" />
               </>
             ) : mobile ? (
-              "查看筹码盘 ›"
+              `${t("查看筹码盘")} ›`
             ) : (
               <>
                 <span className="supply-expand-label">点击面板展开</span>
@@ -71,12 +76,18 @@ export function MobileSupply({
             )}
           </span>
         </div>
+        {bazaar && (
+          <>
+            <b className="bazaar-supply-title">{t("货物筹码")}</b>
+            <b className="bazaar-supply-title bazaar-bonus-title">批量奖励</b>
+          </>
+        )}
         <div className="supply-strip">
           {GOODS.map((g) => (
             <div
               className={`supply-counter ${g} ${precious(g) ? "premium-stock" : ""} ${state.tokens[g].length ? "" : "counter-empty"}`}
               key={g}
-              aria-label={`${LABEL[g]}${precious(g) ? "，高级货物" : ""}，剩余 ${state.tokens[g].length} 枚${state.tokens[g].length ? `，下一枚 ${state.tokens[g][0]} 卢比` : "，已售罄"}`}
+              aria-label={`${labels[g]}${precious(g) ? t("，高级货物") : ""}，${t`剩余 ${state.tokens[g].length} 枚`}${state.tokens[g].length ? t`，下一枚 ${state.tokens[g][0]} 卢比` : t("，已售罄")}`}
             >
               <span
                 className="counter-quote"
@@ -88,19 +99,19 @@ export function MobileSupply({
                   className={`counter-name${tabletop ? " stock-good-name" : ""}`}
                   title={
                     precious(g)
-                      ? `${LABEL[g]} · 高级货物，至少 2 张起售`
-                      : LABEL[g]
+                      ? t`${labels[g]} · 高级货物，至少 2 张起售`
+                      : labels[g]
                   }
                   aria-hidden="true"
                 >
-                  <GoodsArt good={g} cardFace />
-                  <span>{LABEL[g]}</span>
+                  {bazaar ? <PixelArt name={g} /> : <GoodsArt good={g} cardFace />}
+                  <span>{labels[g]}</span>
                 </span>
                 <span className="counter-next">
                   {tabletop ? (
                     <>
                       <small>
-                        下<span className="counter-next-suffix">枚</span>
+                        下<span className="counter-next-suffix">{t("枚")}</span>
                       </small>
                       <span className="stock-chip-face" aria-hidden="true">
                         <b>
@@ -122,7 +133,7 @@ export function MobileSupply({
                   ) : state.tokens[g].length ? (
                     <>
                       <small>
-                        下<span className="counter-next-suffix">枚</span>
+                        下<span className="counter-next-suffix">{t("枚")}</span>
                       </small>
                       <b>
                         <TableNumber value={state.tokens[g][0]} />
@@ -136,12 +147,12 @@ export function MobileSupply({
                       ))}
                     </>
                   ) : (
-                    <small>售罄</small>
+                    <small>{t("已售罄")}</small>
                   )}
                 </span>
                 <span
                   className="counter-remaining"
-                  title={`剩余 ${state.tokens[g].length} 枚`}
+                  title={t`剩余 ${state.tokens[g].length} 枚`}
                   aria-hidden={tabletop || undefined}
                 >
                   <small>{tabletop ? "×" : "剩"}</small>
@@ -156,7 +167,7 @@ export function MobileSupply({
         <div
           className={`supply-bonuses${tabletop ? " stock-bonus-bank" : ""}`}
           role={tabletop ? "group" : undefined}
-          aria-label={tabletop ? "奖励筹码余量" : undefined}
+          aria-label={tabletop ? t("奖励筹码余量") : undefined}
         >
           {tabletop ? (
             <span className="stock-bonus-label" aria-hidden="true">
@@ -173,7 +184,7 @@ export function MobileSupply({
               data-motion-anchor={`bonus-${n}`}
               aria-label={
                 tabletop
-                  ? `${n}${n === 5 ? "张及以上" : "张"}奖励，剩余 ${state.bonus[n].length} 枚`
+                  ? `${n}${n === 5 ? "张及以上" : "张"}奖励，剩余 ${state.bonus[n].length} ${t("枚")}`
                   : undefined
               }
             >
@@ -195,7 +206,7 @@ export function MobileSupply({
                     </span>
                     <span
                       className="stock-bonus-count"
-                      title={`剩余 ${state.bonus[n].length} 枚`}
+                      title={`剩余 ${state.bonus[n].length} ${t("枚")}`}
                       aria-hidden="true"
                     >
                       <small>×</small>
@@ -208,7 +219,7 @@ export function MobileSupply({
               ) : (
                 <>
                   {n}
-                  {n === 5 ? "+" : ""}张 <b>{state.bonus[n].length}</b>枚
+                  {n === 5 ? "+" : ""}张 <b>{state.bonus[n].length}</b>{t("枚")}
                 </>
               )}
             </span>
@@ -229,22 +240,23 @@ export function SupplyDetails({
   motionAnchors?: boolean;
   showRewardCards?: boolean;
 }) {
+  const { t, labels } = useSkin();
   return (
     <div className="supply-details">
-      <p>左起领取 · 高级货物至少2张起售</p>
+      <p>{t("左起领取 · 高级货物至少2张起售")}</p>
       {GOODS.map((good) => (
         <div
           className={`supply-detail-row ${good} ${state.tokens[good].length ? "" : "supply-detail-empty"}`}
           key={good}
         >
-          <b>{LABEL[good]}</b>
+          <b>{labels[good]}</b>
           <span>
             {state.tokens[good].length ? (
               state.tokens[good].map((value, i) => (
                 <i
                   className={`coin ${precious(good) ? "premium-detail-coin" : ""} ${i === 0 ? "supply-next-coin" : ""}`}
                   key={i}
-                  title={i === 0 ? "下一枚" : undefined}
+                  title={i === 0 ? t("下一枚") : undefined}
                   data-motion-anchor={
                     motionAnchors ? `token-${good}-${i}` : undefined
                   }
@@ -260,7 +272,7 @@ export function SupplyDetails({
                 </i>
               ))
             ) : (
-              <span className="supply-sold-out">已售罄</span>
+              <span className="supply-sold-out">{t("已售罄")}</span>
             )}
           </span>
         </div>
@@ -274,17 +286,17 @@ export function SupplyDetails({
                 {n === 5 ? "+" : ""}张奖励
               </b>
               <span>
-                剩 <strong>{state.bonus[n].length}</strong> 枚
+                剩 <strong>{state.bonus[n].length}</strong> {t("枚")}
               </span>
-              <small>{n === 3 ? "1–3" : n === 4 ? "4–6" : "8–10"} 卢比</small>
+              <small>{n === 3 ? "1–3" : n === 4 ? "4–6" : "8–10"} {t("卢比")}</small>
             </section>
           ))}
         </div>
       )}
       <p>
         {showRewardCards
-          ? "三类售罄收市 · 驼队领先 +5卢比"
-          : "批量奖励：3张 1–3 · 4张 4–6 · 5+张 8–10卢比。驼队领先 +5卢比。"}
+          ? t("三类售罄收市 · 驼队领先 +5卢比")
+          : t("批量奖励：3张 1–3 · 4张 4–6 · 5+张 8–10卢比。驼队领先 +5卢比。")}
       </p>
     </div>
   );

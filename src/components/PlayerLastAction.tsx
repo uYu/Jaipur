@@ -1,3 +1,4 @@
+import { useSkin } from "./Skin.tsx";
 import type { Presentation } from "../game/presentation.ts";
 import { sum } from "../game/data.ts";
 import { ActionSummary } from "./LastActions.tsx";
@@ -5,6 +6,7 @@ import { useLayoutEffect, useRef } from "react";
 import { Award, Coins, Sigma } from "lucide-react";
 
 export function PlayerLastAction({ action }: { action: Presentation | null }) {
+  const { t } = useSkin();
   const container = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     const element = container.current;
@@ -34,18 +36,18 @@ export function PlayerLastAction({ action }: { action: Presentation | null }) {
       ref={container}
     >
       <div className="table-last-action" aria-live="polite">
-        <span className="table-action-actor">上次行动</span>
+        <span className="table-action-actor">你</span>
         {action ? (
           <div className="player-last-action-content">
             <ActionSummary action={action} showIncome={!exactSale} />
             {exactSale && (
               <div
                 className="player-last-sale"
-                aria-label={`货款 ${goods} 卢比，额外奖励 ${bonus} 卢比，合计 ${goods + bonus} 卢比`}
+                aria-label={t`货款 ${goods} 卢比，额外奖励 ${bonus} 卢比，合计 ${goods + bonus} 卢比`}
               >
                 <span>
                   <Coins aria-hidden="true" />
-                  <span className="player-last-amount-label">货款</span>{" "}
+                  <span className="player-last-amount-label">{t("货款")}</span>{" "}
                   <b>{goods}</b>
                 </span>
                 <span className="player-last-bonus">

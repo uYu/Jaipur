@@ -1,0 +1,1127 @@
+.bazaar-pixel-art {
+  display: none;
+}
+.bazaar-motion-setting {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+}
+.bazaar-motion-setting input {
+  accent-color: #37684b;
+}
+
+@media (max-width: 860px) {
+  body:has(.bazaar-board, .menu-shell) {
+    background: #543b3a;
+  }
+  .menu-shell[data-menu] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 12px;
+    max-width: 600px;
+    min-height: 100svh;
+    padding: 12px max(12px, env(safe-area-inset-right))
+      max(22px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
+    background:
+      repeating-linear-gradient(0deg, transparent 0 15px, #3f242520 15px 17px),
+      linear-gradient(#503638, #765044);
+    color: #fff0d4;
+  }
+  .menu-shell[data-menu] .menu-copy {
+    display: contents;
+  }
+  .menu-shell[data-menu] .menu-illustration {
+    grid-area: 1 / 1;
+    aspect-ratio: 3 / 1;
+    min-height: 126px;
+    height: auto;
+    margin: 0;
+    border: 2px solid #b8794d;
+    border-radius: 8px;
+    box-shadow: 0 2px #39241f;
+    background: #d6a166;
+  }
+  .menu-shell[data-menu] .menu-palace-image {
+    object-fit: cover;
+    object-position: right center;
+  }
+  .menu-shell[data-menu] .menu-illustration::after {
+    inset: 0;
+    border: 1px solid #ffeac6;
+  }
+  .menu-shell[data-menu] .menu-copy > .brand {
+    grid-area: 1 / 1;
+    place-self: start center;
+    z-index: 1;
+    gap: 6px;
+    margin: 10px 0 0;
+    padding: 4px 13px;
+    border: 2px solid #e4a353;
+    border-radius: 6px;
+    background: #522e25;
+    box-shadow:
+      0 2px #39241f,
+      inset 0 0 0 1px #f7d9a0;
+    color: #ffe5a0;
+  }
+  .menu-shell[data-menu] .brand .brand-icon {
+    color: inherit;
+  }
+  .menu-shell[data-menu] .brand-icon > svg {
+    width: 23px;
+    height: 23px;
+  }
+  .menu-shell[data-menu] .brand b {
+    font-size: 22px;
+    font-weight: 800;
+  }
+  .menu-shell[data-menu]
+    :is(.menu-art-location, .menu-art-caption, .menu-copy > .eyebrow) {
+    display: none;
+  }
+  .menu-shell[data-menu] .menu-copy > :is(h1, h2) {
+    margin: 0 4px;
+    color: #fff1cf;
+    font-size: clamp(27px, 8vw, 42px);
+    font-weight: 750;
+    line-height: 1.24;
+  }
+  .menu-shell[data-menu] .menu-copy h1 span {
+    color: #ffd284;
+  }
+  .menu-shell[data-menu] .menu-copy > .menu-intro {
+    margin: 0 4px;
+    color: #ffe4c1;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .menu-shell[data-menu] :is(.menu-buttons, .setup) {
+    width: 100%;
+  }
+  .menu-shell[data-menu] .menu-buttons {
+    gap: 8px;
+  }
+  .menu-shell[data-menu] .menu-buttons > .menu-action {
+    border-color: #442923;
+    background: #6d4e47;
+    color: #fff0d5;
+    box-shadow:
+      0 2px #39241f,
+      inset 0 0 0 2px #cda58e;
+  }
+  .menu-shell[data-menu]
+    :is(.menu-buttons > .menu-action.primary, .setup > .primary) {
+    border: 1px solid #63401f;
+    background: #ffca63;
+    color: #492713;
+    box-shadow:
+      0 2px #39241f,
+      inset 0 0 0 2px #fff1a8;
+  }
+  .menu-shell[data-menu] button:focus-visible {
+    outline: 2px solid #ffd284;
+    outline-offset: 2px;
+  }
+  .menu-shell[data-menu] .menu-copy > .back {
+    justify-self: start;
+    margin: 0;
+    color: #ffe4c1;
+  }
+  .menu-shell[data-menu] .setup {
+    padding: 12px;
+    border: 2px solid #b8794d;
+    border-radius: 8px;
+    background: #fce4c2;
+    color: #482719;
+    box-shadow:
+      0 2px #39241f,
+      inset 0 0 0 1px #fff3d4;
+  }
+  .menu-shell[data-menu] .setup .format-options label {
+    border-color: #ca9b71;
+    background: #fff3da;
+    color: #482719;
+  }
+  .menu-shell[data-menu] .setup .format-options label.chosen {
+    border-color: #986033;
+    background: #ffdfa0;
+    box-shadow: inset 0 0 0 1px #986033;
+  }
+  .menu-shell[data-menu]
+    .setup
+    :is(.muted, .information-mode-note, .format-options small) {
+    color: #674731;
+  }
+  .menu-shell[data-menu] .menu-footer.menu-credits {
+    margin: 4px 4px 0;
+    color: #e9c8a5;
+  }
+  body:has(.bazaar-board, .menu-shell)
+    :is(.turn-intro, .result-dialog, .modal) {
+    --text: #482719;
+    --text-secondary: #674731;
+    --surface: #fce4c2;
+    --surface-sand: #f4cf9f;
+    --border: #ca9b71;
+    --accent: #8d4e24;
+    border: 2px solid #b8794d;
+    border-radius: 9px;
+    background: linear-gradient(145deg, #fff0d4, #fce4c2 55%, #ffdcb3);
+    color: var(--text);
+    box-shadow:
+      0 0 0 1px #3b221d,
+      0 4px #3d241f,
+      0 20px 48px #37231c80,
+      inset 0 0 0 2px #ffeac6,
+      inset 0 0 0 3px #ce9b6f;
+  }
+  body:has(.bazaar-board, .menu-shell)
+    :is(.turn-intro, .result-dialog)::backdrop,
+  body:has(.bazaar-board, .menu-shell) .modal-backdrop {
+    background: #382320aa;
+    backdrop-filter: blur(2px);
+  }
+  body:has(.bazaar-board)
+    :is(.turn-intro h2, .result-dialog .result-heading h2) {
+    padding: 6px 9px;
+    border: 1px solid #573022;
+    border-radius: 5px;
+    background: #663f34;
+    box-shadow: inset 0 0 0 1px #b8794d;
+    color: #fff0cd;
+    font-size: clamp(20px, 6vw, 28px);
+    line-height: 1.35;
+    text-shadow: 0 1px #37201d;
+  }
+  body:has(.bazaar-board) .turn-intro {
+    padding: 18px 16px 16px;
+  }
+  body:has(.bazaar-board)
+    :is(
+      .turn-intro-reason,
+      .turn-intro-hint,
+      .turn-intro-choices,
+      .round-end-notice #round-end-detail,
+      .round-end-tutorial
+    ) {
+    color: #5b3c2b;
+  }
+  body:has(.bazaar-board) .turn-intro-choices {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+  body:has(.bazaar-board) .turn-intro-order {
+    gap: 8px;
+  }
+  body:has(.bazaar-board) .turn-intro-order > span {
+    padding: 8px;
+    border: 1px solid #b8794d;
+    border-radius: 5px;
+    background: #f2cd9e;
+    color: #593421;
+  }
+  body:has(.bazaar-board) .turn-intro-order > .turn-intro-first {
+    border-color: #2b4834;
+    background: #3c674a;
+    color: #fff2cc;
+  }
+  body:has(.bazaar-board) :is(.turn-intro, .result-dialog) button.primary,
+  body:has(.bazaar-board) .result-banner button.primary {
+    border: 1px solid #63401f;
+    background: #ffca63;
+    color: #492713;
+    box-shadow:
+      0 2px #39241f,
+      inset 0 0 0 2px #fff1a8;
+  }
+  body:has(.bazaar-board, .menu-shell)
+    :is(.turn-intro, .result-dialog, .modal)
+    :is(button.secondary, .result-close, .modal-close) {
+    border: 1px solid #a77149;
+    border-radius: 5px;
+    background: #f6d5ab;
+    color: #482719;
+  }
+  .bazaar-board .result-banner,
+  body:has(.bazaar-board)
+    .result-dialog
+    :is(.result-seals, .round-scorecards > section) {
+    border-color: #b8794d;
+    border-radius: 6px;
+    background: #f7d5a6;
+    color: #482719;
+  }
+  body:has(.bazaar-board) .result-dialog .round-scorecards > .round-winner {
+    border-color: #a77636;
+    background: #ffe2a2;
+  }
+  body:has(.bazaar-board) .result-dialog .result-action-statistics {
+    border-color: #ca9b71;
+    background: #fff0d4;
+  }
+  body:has(.bazaar-board) .result-action-statistics :is(th, td) {
+    border-bottom-color: #d8af89;
+  }
+  .game-shell.portrait-table.bazaar-board {
+    --bazaar-ink: #482719;
+    --bazaar-paper: #fce4c2;
+    --bazaar-outline: #653824;
+    --bazaar-bevel: #b8794d;
+    --bazaar-board-gap: 8px;
+    --reserve-score-width: clamp(25px, 7.5cqw, 43px);
+    --reserve-gap: 4px;
+    --table-felt: #fce4c2;
+    --selection-gold: #a55e06;
+    max-width: 600px;
+    min-height: 100svh;
+    padding: 0 max(8px, env(safe-area-inset-right))
+      max(24px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    background:
+      repeating-linear-gradient(
+          90deg,
+          #e4a353 0 3px,
+          #ad5143 3px 9px,
+          #6d3b42 9px 12px,
+          #ad5143 12px 18px
+        )
+        bottom 2px center / 80% 6px no-repeat,
+      linear-gradient(#ecb875 0 2px, #be6048 2px 6px, #9c483b 6px 100%) bottom
+        center / 80% 18px no-repeat,
+      repeating-linear-gradient(0deg, transparent 0 15px, #3f242520 15px 17px),
+      linear-gradient(#503638 45%, #765044 100%);
+    color: var(--bazaar-ink);
+  }
+
+  .bazaar-board.game-shell.portrait-table .game-header {
+    --plaque: polygon(
+      0 36%,
+      4% 36%,
+      4% 25%,
+      9% 25%,
+      9% 17%,
+      31% 17%,
+      31% 9%,
+      41% 9%,
+      41% 4%,
+      46% 4%,
+      46% 0,
+      54% 0,
+      54% 4%,
+      59% 4%,
+      59% 9%,
+      69% 9%,
+      69% 17%,
+      91% 17%,
+      91% 25%,
+      96% 25%,
+      96% 36%,
+      100% 36%,
+      100% 75%,
+      96% 75%,
+      96% 85%,
+      91% 85%,
+      91% 93%,
+      84% 93%,
+      84% 100%,
+      16% 100%,
+      16% 93%,
+      9% 93%,
+      9% 85%,
+      4% 85%,
+      4% 75%,
+      0 75%
+    );
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 5px;
+    min-height: clamp(126px, 32vw, 190px);
+    margin-inline: min(-8px, calc(-1 * env(safe-area-inset-left)));
+    padding: 4px 8px 10px;
+    border: 0;
+    background: #d6a166 url("./assets/jaipur-pixel-bazaar.jpg") right center /
+      cover no-repeat;
+  }
+  .bazaar-board.game-shell.portrait-table .game-header > .game-identity {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+  }
+  .bazaar-board.game-shell.portrait-table .game-header .brand {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0;
+    width: clamp(144px, 38vw, 225px);
+    min-height: clamp(66px, 17.5vw, 100px);
+    padding: 6px 8px 9px;
+    filter: drop-shadow(0 2px #512b20);
+    color: #ffe5a0;
+  }
+  .bazaar-board .game-header .brand::before,
+  .bazaar-board .game-header .brand::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    clip-path: var(--plaque);
+    background: linear-gradient(#fff4bd, #efae52 44%, #9b532b 70%, #f8be65);
+  }
+  .bazaar-board .game-header .brand::after {
+    inset: 4px;
+    z-index: -1;
+    background: linear-gradient(155deg, #663025, #382020 65%, #623128);
+  }
+  .bazaar-board.game-shell.portrait-table .game-header .brand-icon {
+    display: grid;
+    place-items: center;
+    width: 23px;
+    height: 22px;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    color: #ffe08a;
+  }
+  .bazaar-board .game-header .brand-icon > svg {
+    width: 22px;
+    height: 22px;
+  }
+  .bazaar-board.game-shell.portrait-table .game-header .brand b {
+    color: inherit;
+    font-size: clamp(25px, 7vw, 40px);
+    font-weight: 900;
+    line-height: 1.08;
+    letter-spacing: 0.18em;
+    padding-left: 0.18em;
+    text-shadow: 0 2px #251315;
+  }
+  .bazaar-board.game-shell.portrait-table .game-header .opponent-level {
+    z-index: 1;
+    margin-top: -5px;
+    border: 2px solid #9b5d3c;
+    border-radius: 5px;
+    padding: 1px 10px;
+    background: #ffe0aa;
+    box-shadow:
+      inset 0 0 0 1px #fff2d2,
+      0 1px #522d21;
+    color: var(--bazaar-ink);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 17px;
+  }
+  .bazaar-board.game-shell.portrait-table.tutorial-game {
+    align-content: start;
+  }
+  .bazaar-board.game-shell.portrait-table.tutorial-game .game-header {
+    min-height: 54px;
+    justify-content: center;
+    padding-block: 4px;
+    background-position: right 42%;
+  }
+  .bazaar-board.game-shell.portrait-table.tutorial-game
+    .game-header
+    :is(.brand, .header-round) {
+    display: none;
+  }
+  .bazaar-board.game-shell.portrait-table.tutorial-game
+    .game-header
+    .opponent-level {
+    margin: 0;
+    padding: 4px 10px;
+    border-color: #eab16a;
+    background: #502d2a;
+    box-shadow: inset 0 0 0 1px #855239, 0 2px #482722;
+    color: #fff0c9;
+    font-size: 14px;
+  }
+  .bazaar-board.game-shell.portrait-table .game-header .header-round {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    min-height: 24px;
+    padding: 1px 9px;
+    border: 1px solid #f4bb66;
+    border-radius: 5px;
+    background: #502d2a;
+    box-shadow:
+      0 2px #482722,
+      inset 0 0 0 1px #915833;
+    color: #fff0c9;
+    font-size: clamp(11px, 3vw, 15px);
+    font-weight: 750;
+    line-height: 16px;
+    text-shadow: 0 1px #241414;
+  }
+  .bazaar-board .header-round > span:not(.table-number) {
+    margin-inline: 0;
+    color: #ffe09a;
+  }
+  .bazaar-board .header-round > svg {
+    flex: none;
+    margin-right: 3px;
+    color: #ffd894;
+  }
+  .bazaar-board .bazaar-header-tools {
+    position: absolute;
+    inset: 7px 9px auto;
+    display: flex;
+    gap: 4px;
+    pointer-events: none;
+  }
+  .bazaar-board .bazaar-header-tools > button {
+    --key-ink: #fff0c3;
+    --key-edge: #ffcc76;
+    --key-fill: #6b382b;
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 40px;
+    padding: 0;
+    font: 900 21px/1 var(--font-ui);
+    pointer-events: auto;
+  }
+  .bazaar-board .bazaar-header-tools > button:first-child {
+    margin-right: auto;
+  }
+  .bazaar-board.game-shell.portrait-table .table-tools {
+    position: relative;
+    z-index: 1;
+    gap: 5px;
+    margin: -3px 0 9px;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .bazaar-board.game-shell.portrait-table .table-tools > button {
+    --key-ink: #fff0d5;
+    --key-edge: #cda58e;
+    --key-fill: #6d4e47;
+    min-height: 40px;
+    gap: clamp(2px, 1vw, 6px);
+    padding-inline: 2px;
+    font-size: clamp(10px, 3vw, 15px);
+    font-weight: 750;
+    text-shadow: 0 1px #37201d;
+  }
+  .bazaar-board.game-shell.portrait-table .table-tools > .return-to-menu {
+    --key-ink: #492713;
+    --key-edge: #fff1a8;
+    --key-fill: #ffca63;
+    text-shadow: 0 1px #ffe6a0;
+  }
+
+  .bazaar-board.game-shell.portrait-table .table-column {
+    --table-card-width: min(
+      57px,
+      calc((100cqw - var(--reserve-score-width) - 52px) / 8)
+    );
+    --table-hand-gap: 3px;
+    --text: var(--bazaar-ink);
+    --board-muted: #79503a;
+    --board-quiet: #79503a;
+    gap: var(--bazaar-board-gap);
+    padding: 0;
+    background: transparent;
+  }
+  .bazaar-board.game-shell.portrait-table .game-grid {
+    margin-top: 0;
+  }
+  .bazaar-board .seat-opponent,
+  .bazaar-board.game-shell.portrait-table .hand-panel,
+  .bazaar-board.game-shell.portrait-table .market-zone {
+    border: 2px solid var(--bazaar-bevel);
+    border-radius: 9px;
+    padding: 8px 9px 9px;
+    background: linear-gradient(
+      145deg,
+      #fff0d4,
+      var(--bazaar-paper) 55%,
+      #ffdcb3
+    );
+    box-shadow:
+      0 0 0 1px #3b221d,
+      0 3px #3d241f,
+      inset 0 0 0 2px #ffeac6,
+      inset 0 0 0 3px #ce9b6f;
+  }
+  .bazaar-board.game-shell.portrait-table .table-notes {
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+    border-color: #b881555c;
+  }
+  .bazaar-board.game-shell.portrait-table .table-notes .table-last-action {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: 7px;
+    color: var(--bazaar-ink);
+  }
+  .bazaar-board.game-shell.portrait-table .table-notes .table-action-actor {
+    align-self: center;
+    padding: 1px 7px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #3c7453, #28523d);
+    box-shadow: inset 0 0 0 1px #336447;
+    color: #fff0c3;
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 19px;
+    text-shadow: 0 1px #153b2d;
+  }
+  .bazaar-board .table-last-action .ledger-empty {
+    color: var(--bazaar-ink);
+    font-size: 12px;
+    font-weight: 650;
+  }
+  .bazaar-board.game-shell.portrait-table .hand-capacity-guide {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .bazaar-board.game-shell.portrait-table .hand-capacity-slot {
+    border: 1px dashed #9e6b4cb5;
+    background: #f6c49122;
+  }
+  .bazaar-board :is(.opponent-hand-fan, .hand-and-herd.player-hand-and-herd) {
+    min-height: calc(var(--table-card-width) * 1.5 + 6px);
+  }
+
+  .bazaar-board.game-shell.portrait-table .market-zone {
+    --market-card-gap: clamp(3px, 1cqw, 6px);
+    container-type: inline-size;
+    gap: 5px;
+    margin: 0;
+    padding: 6px 5px 6px;
+    background:
+      repeating-linear-gradient(
+        0deg,
+        transparent 0 14px,
+        #9555343b 14px 15px,
+        #ffce904d 15px 16px
+      ),
+      linear-gradient(120deg, #de9857, #f4be82 50%, #c77c49);
+  }
+  .bazaar-board.game-shell.portrait-table
+    .table-supply
+    .mobile-supply
+    > summary {
+    --chip-size: clamp(22px, 8.5cqw, 45px);
+    --chip-count-top: calc(var(--chip-size) + 1px);
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    grid-template-rows: 23px auto;
+    column-gap: 3px;
+    row-gap: 3px;
+    max-width: none;
+    padding: 0 2px 3px;
+    border: 1px solid #a2633d;
+    border-radius: 5px;
+    background: linear-gradient(125deg, #ffe6c3, #f7c793);
+  }
+  .bazaar-board .supply-heading {
+    display: none;
+  }
+  .bazaar-board .bazaar-supply-title,
+  .bazaar-board .bazaar-market-labels > * {
+    padding: 1px 3px;
+    border: 1px solid #64351f;
+    border-radius: 4px;
+    background: linear-gradient(#965232, #713921);
+    box-shadow: inset 0 0 0 1px #ba7b50;
+    color: #fff0cd;
+    font: 750 12px/18px var(--font-ui);
+    text-align: center;
+    text-shadow: 0 1px #3b2019;
+    white-space: nowrap;
+  }
+  .bazaar-board .bazaar-supply-title {
+    grid-area: 1 / 1;
+  }
+  .bazaar-board .bazaar-bonus-title {
+    grid-area: 1 / 2;
+  }
+  .bazaar-board.game-shell.portrait-table .supply-tabletop .supply-strip {
+    grid-area: 2 / 1;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 3px;
+    padding: 3px 2px 0;
+  }
+  .bazaar-board.game-shell.portrait-table
+    .supply-tabletop
+    .supply-counter:nth-child(n) {
+    grid-column: auto;
+  }
+  .bazaar-board.game-shell.portrait-table .stock-bonus-bank {
+    display: grid;
+    grid-area: 2 / 2;
+    gap: 2px;
+    padding: 3px 0 0 3px;
+    border-left: 1px solid #b87751;
+  }
+  .bazaar-board.game-shell.portrait-table
+    :is(.supply-counter, .stock-bonus-group) {
+    --chip-row-height: calc(var(--chip-size) + 17px);
+    gap: 0;
+  }
+  .bazaar-board .diamond,
+  .bazaar-flights .card.diamond {
+    --card-bg: #ffd6d2;
+    --card-color: #9c2331;
+    --chip-tone: #f78b87;
+  }
+  .bazaar-board .gold,
+  .bazaar-flights .card.gold {
+    --card-bg: #ffe3a0;
+    --card-color: #875007;
+    --chip-tone: #ffd26a;
+  }
+  .bazaar-board .silver,
+  .bazaar-flights .card.silver {
+    --card-bg: #cbe8f5;
+    --card-color: #245683;
+    --chip-tone: #7fc4f1;
+  }
+  .bazaar-board .cloth,
+  .bazaar-flights .card.cloth {
+    --card-bg: #ebd3f2;
+    --card-color: #6c3a85;
+    --chip-tone: #cf9ae5;
+  }
+  .bazaar-board .spice,
+  .bazaar-flights .card.spice {
+    --card-bg: #cde8c7;
+    --card-color: #286242;
+    --chip-tone: #9ad49e;
+  }
+  .bazaar-board .leather,
+  .bazaar-flights .card.leather {
+    --card-bg: #f6c79f;
+    --card-color: #954c25;
+    --chip-tone: #f6aa68;
+  }
+  .bazaar-board .camel,
+  .bazaar-flights .card.camel {
+    --card-bg: #ffdbad;
+    --card-color: #8b522e;
+  }
+  .bazaar-board.game-shell.portrait-table
+    :is(.counter-quote, .stock-bonus-chip)[data-stack] {
+    position: relative;
+    align-self: start;
+    flex-direction: row;
+    border: 1px solid var(--card-color, #a9692f);
+    background: radial-gradient(
+      circle at 40% 35%,
+      var(--card-bg, #fff3cd),
+      var(--chip-tone, #ffd991) 75%
+    );
+    color: var(--card-color, #6d381b);
+    box-shadow:
+      0 2px color-mix(in srgb, currentColor, #37211e 45%),
+      inset 0 0 0 1px #fffae3b0;
+  }
+  .bazaar-board.game-shell.portrait-table
+    :is(.counter-quote, .stock-bonus-chip)::before {
+    inset: 2px;
+    border: 1px dashed currentColor;
+    opacity: 0.58;
+  }
+  .bazaar-board .counter-quote .premium-chip-rim,
+  .bazaar-board .stock-bonus-chip > svg {
+    display: none;
+  }
+  .bazaar-board.game-shell.portrait-table .counter-quote[data-stack] {
+    flex-direction: column;
+  }
+  .bazaar-board .stock-good-name > .bazaar-pixel-art {
+    display: block;
+    width: clamp(8px, 3.2cqw, 17px);
+    height: auto;
+  }
+  .bazaar-board .stock-chip-face {
+    height: auto;
+  }
+  .bazaar-board.game-shell.portrait-table .stock-chip-face > b {
+    background: none;
+    font-size: clamp(11px, 3.8cqw, 20px);
+    font-weight: 850;
+    line-height: 1;
+  }
+  .bazaar-board.game-shell.portrait-table .stock-bonus-tier > b {
+    font-size: clamp(11px, 3.9cqw, 20px);
+    font-weight: 800;
+    line-height: 1;
+  }
+  .bazaar-board.game-shell.portrait-table .stock-bonus-tier > small {
+    font-size: clamp(7px, 2.1cqw, 11px);
+    color: #6e3c21;
+  }
+  .bazaar-board.game-shell.portrait-table
+    :is(.counter-remaining, .stock-bonus-count),
+  .bazaar-board.game-shell.portrait-table
+    :is(.counter-remaining, .stock-bonus-count)
+    > :is(small, b) {
+    color: #593421;
+    font-size: 11px;
+    font-weight: 750;
+  }
+  .bazaar-board .counter-empty .counter-quote,
+  .bazaar-board .stock-bonus-chip[data-stack="0"] {
+    opacity: 0.55;
+  }
+
+  .bazaar-board.game-shell.portrait-table .market-table {
+    --table-card-width: min(
+      67px,
+      calc((100cqw - 8px - var(--market-card-gap) * 6) / 7)
+    );
+    padding: 3px 3px 0;
+  }
+  .bazaar-board.game-shell.portrait-table .market-row {
+    grid-template-columns: var(--table-card-width) minmax(0, max-content) var(
+        --table-card-width
+      );
+    justify-content: center;
+    gap: var(--market-card-gap);
+  }
+  .bazaar-board.game-shell.portrait-table .market-row .market-cards {
+    min-height: calc(var(--table-card-width) * 1.5);
+    max-width: none;
+    gap: var(--market-card-gap);
+  }
+  .bazaar-board .market-sale-sign {
+    width: 96%;
+    background: none;
+  }
+  .bazaar-board .market-sale-sign > .bazaar-pixel-art {
+    display: block;
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 2px #713d2c60);
+  }
+  .bazaar-board .bazaar-market-labels {
+    display: grid;
+    grid-template-columns: 1fr 1.55fr 1fr;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
+  }
+  .bazaar-board .bazaar-market-labels > b {
+    border-color: #a36b37;
+    background: #ffda87;
+    box-shadow: inset 0 0 0 1px #fff3b9;
+    color: #4d2816;
+    text-shadow: 0 1px #ffecb4;
+  }
+
+  :is(.bazaar-board.game-shell.portrait-table, .bazaar-flights)
+    :is(.card, .camel-pile-card)
+    > .goods-art {
+    display: none;
+  }
+  :is(.bazaar-board.game-shell.portrait-table, .bazaar-flights)
+    :is(.card, .camel-pile-card)
+    > .bazaar-pixel-art {
+    display: block;
+    flex: none;
+    width: 72%;
+    max-width: 54px;
+    height: auto;
+    aspect-ratio: 1;
+  }
+  .bazaar-board.game-shell.portrait-table
+    :is(.card, .camel-pile-card, .opponent-hand-card, .market-deck),
+  .flight-layer.bazaar-flights .flight-card > .card {
+    border: 1px solid var(--card-color, #633d2a);
+    border-radius: 5px;
+    background: linear-gradient(155deg, #fff6d8 0%, var(--card-bg) 45%);
+    box-shadow:
+      0 2px 0 #4d2d21,
+      inset 0 0 0 1px #fff8e7,
+      inset 0 0 0 2px #81442636;
+  }
+  .bazaar-board.game-shell.portrait-table .card {
+    padding: 0;
+  }
+  :is(.bazaar-board.game-shell.portrait-table, .bazaar-flights)
+    .card.premium-card
+    > .bazaar-pixel-art {
+    transform: translateY(-8%);
+  }
+  :is(.bazaar-board.game-shell.portrait-table, .bazaar-flights) .card::before {
+    inset: 3px;
+    border-radius: 3px;
+  }
+  :is(.bazaar-board, .bazaar-flights) .card > .premium-foil {
+    inset: 2px;
+    width: calc(100% - 4px);
+    height: calc(100% - 4px);
+  }
+  :is(.bazaar-board.game-shell.portrait-table, .bazaar-flights)
+    .card
+    > .premium-badge {
+    inset: auto 1px 1px;
+    padding: 1px 0;
+    border: 0;
+    border-radius: 0 0 3px 3px;
+    background: var(--card-color);
+    color: #fff4d9;
+    height: auto;
+    font-size: clamp(7px, 2.05cqw, 11px);
+    font-weight: 750;
+    line-height: 1.15;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .bazaar-board.game-shell.portrait-table
+    :is(.opponent-hand-card.card-back, .market-deck),
+  .flight-layer.bazaar-flights .flight-back {
+    border: 1px solid #0d302b;
+    border-radius: 5px;
+    background:
+      repeating-linear-gradient(135deg, transparent 0 4px, #b1dec00c 4px 5px),
+      linear-gradient(135deg, #17544f, #07312f 75%);
+    color: #dfebcf;
+    box-shadow:
+      0 2px 0 #3a241b,
+      inset 0 0 0 1px #d6d8ae,
+      inset 0 0 0 3px #245550;
+  }
+  .bazaar-board .market-deck-symbol {
+    color: #b9d6af;
+  }
+  .bazaar-board.game-shell.portrait-table .market-deck > b {
+    background: none;
+    color: #fff6d7;
+    font-weight: 850;
+  }
+  .bazaar-board .camel-pile-count {
+    border: 1px solid #775033;
+    background: #fff1cb;
+    color: #39251d;
+    box-shadow: 0 1px #795038;
+    font-weight: 850;
+  }
+  .bazaar-board .camel-pile-empty .camel-pile-stack {
+    filter: grayscale(1);
+    opacity: 0.57;
+  }
+  .bazaar-board .money-pile-tabletop .money-pile-face > svg {
+    color: #65371d;
+  }
+  .bazaar-board .money-pile-tabletop .money-pile-face svg path:first-child {
+    fill: #f1a747;
+  }
+  .bazaar-board .money-pile-tabletop .money-pile-face svg path:nth-child(2) {
+    fill: #ffbe5e;
+  }
+  .bazaar-board.game-shell.portrait-table
+    .money-pile-tabletop
+    .money-pile-value {
+    background: none;
+    color: #2c221d;
+    font-weight: 850;
+  }
+  .bazaar-board.game-shell.portrait-table .card.selected {
+    outline: 2px solid #9b530e;
+    outline-offset: 1px;
+    transform: translateY(-2px);
+  }
+  .bazaar-board.game-shell.portrait-table .card.selected .selected-check {
+    background: #f8c650;
+    color: #412611;
+  }
+
+  .bazaar-board.game-shell.portrait-table
+    .hand-panel
+    > .action-panel.direct-selection[data-overview] {
+    --trade-type-size: clamp(11px, 3.2vw, 15px);
+    grid-template-columns: minmax(0, 1.34fr) minmax(0, 0.85fr) minmax(0, 1.12fr);
+    /* Keep two lines of feedback in place as the selection changes. */
+    grid-template-rows: 44px max(44px, 2.75rem);
+    align-items: start;
+    gap: 3px 6px;
+    min-height: 0;
+    margin-top: 5px;
+    padding: 7px 0 0;
+    border-top: 1px solid #b881555c;
+    background: none;
+  }
+  .bazaar-board.game-shell.portrait-table
+    .action-panel.direct-selection
+    > .direct-guidance {
+    grid-area: 2 / 1 / 3 / -1;
+    align-self: stretch;
+    min-height: 0;
+    height: auto;
+    overflow: auto;
+    padding: 2px 0 0;
+    background: none;
+    grid-template-rows: auto auto;
+  }
+  .bazaar-board.game-shell.portrait-table
+    .action-panel
+    .direct-guidance.is-thinking
+    > .selection-intent-icon {
+    width: 18px;
+    height: 22px;
+  }
+  .bazaar-board.game-shell.portrait-table
+    .action-panel
+    .direct-guidance
+    > .selection-reward {
+    height: auto;
+    white-space: normal;
+  }
+  .bazaar-board.game-shell.portrait-table .action-panel .direct-guidance > b {
+    color: var(--bazaar-ink);
+  }
+  .bazaar-board.game-shell.portrait-table
+    .action-panel.direct-selection[data-overview]
+    > :is(.clear-button, .confirm),
+  .bazaar-board.game-shell.portrait-table .action-panel .camel-choice-stepper {
+    height: 44px;
+    min-height: 44px;
+  }
+  .bazaar-board.game-shell.portrait-table .action-panel .camel-choice-stepper {
+    --key-fill: #c8ddae;
+    --key-ink: #28472d;
+    --key-edge: #e7f5d5;
+  }
+  .bazaar-board.game-shell.portrait-table
+    .action-panel
+    .camel-choice-stepper
+    > button {
+    min-width: 16px;
+    height: 40px;
+    color: inherit;
+    background: none;
+  }
+  .bazaar-board.game-shell.portrait-table
+    .action-panel
+    .camel-choice-stepper
+    > output {
+    gap: 1px;
+    color: inherit;
+    font-weight: 750;
+  }
+  .bazaar-board.game-shell.portrait-table
+    .action-panel.direct-selection
+    > .clear-button {
+    --key-fill: #ead2af;
+    --key-ink: #4e3326;
+    --key-edge: #fff1d6;
+  }
+  .bazaar-board.game-shell.portrait-table
+    .action-panel.direct-selection
+    > .confirm {
+    --key-fill: #426e36;
+    --key-ink: #fff2cc;
+    --key-edge: #cbe084;
+    font-weight: 800;
+    text-shadow: 0 1px #234520;
+  }
+  .bazaar-board.game-shell.portrait-table
+    .action-panel.direct-selection
+    > .clear-button:disabled,
+  .bazaar-board.game-shell.portrait-table
+    .action-panel.direct-selection
+    > .confirm[aria-disabled="true"] {
+    opacity: 1;
+    filter: saturate(0.66);
+  }
+
+  /* Shared bevel for toolbar, header and transaction buttons. */
+  .bazaar-board.game-shell.portrait-table
+    :is(
+      .bazaar-header-tools > button,
+      .table-tools > button,
+      .action-panel.direct-selection > .clear-button,
+      .action-panel.direct-selection > .confirm,
+      .action-panel .camel-choice-stepper
+    ) {
+    border: 1px solid #583827;
+    border-radius: 6px;
+    background: var(--key-fill);
+    color: var(--key-ink);
+    box-shadow:
+      0 2px 0 #3a2520,
+      inset 0 0 0 2px var(--key-edge),
+      inset 0 -3px 0 2px #43271b35;
+  }
+  .bazaar-board.game-shell.portrait-table
+    :is(.bazaar-header-tools, .table-tools, .action-panel)
+    button:focus-visible,
+  .bazaar-board
+    :is(.card, .reserve-money, .mobile-supply > summary):focus-visible {
+    outline: 2px solid #245e83;
+    outline-offset: 2px;
+  }
+  .bazaar-board
+    :is(.bazaar-header-tools, .table-tools, .action-panel)
+    button:active:not(:disabled) {
+    translate: 0 1px;
+  }
+  .bazaar-board.game-shell.portrait-table .table-column > .action-overview {
+    grid-area: auto;
+    column-gap: 6px;
+    padding: 1px 3px 0;
+  }
+  .bazaar-board.game-shell.portrait-table .action-instruction {
+    min-height: 64px;
+    gap: 3px;
+    padding: 4px 5px 5px;
+    border: 1px solid #ad724e;
+    border-radius: 7px;
+    background: linear-gradient(#ffefcf, #f8d0a0);
+    box-shadow:
+      0 2px 0 #472a22,
+      inset 0 0 0 1px #ffe9be;
+    color: var(--bazaar-ink);
+    font: 550 clamp(10px, 2.85vw, 14px)/1.4 var(--font-ui);
+  }
+  .bazaar-board.game-shell.portrait-table .action-instruction strong {
+    width: 100%;
+    gap: 4px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: #663f34;
+    color: #fff2ce;
+    font-size: clamp(11px, 3vw, 15px);
+    line-height: 18px;
+  }
+  .bazaar-board.game-shell.portrait-table .action-instruction strong > svg {
+    flex: none;
+    width: 13px;
+    color: #ffd06f;
+  }
+}
+
+.game-shell[data-less-motion="true"] .direct-guidance.is-thinking > svg {
+  animation: none;
+}
+
+@media (max-width: 360px) {
+  .bazaar-board .tutorial-practice {
+    padding-block: 1px 3px;
+  }
+  .bazaar-board.game-shell.portrait-table .table-tools > button > svg {
+    width: 12px;
+    height: 12px;
+  }
+  .bazaar-board.game-shell.portrait-table .table-column {
+    --table-hand-gap: 2px;
+  }
+  .bazaar-board.game-shell.portrait-table
+    .action-panel.direct-selection
+    > .confirm
+    > svg {
+    width: 12px;
+  }
+}

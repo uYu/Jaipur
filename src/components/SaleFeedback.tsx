@@ -1,7 +1,7 @@
+import { useSkin } from "./Skin.tsx";
 import type { Presentation } from "../game/presentation.ts";
 import { saleFeedbackText } from "../game/action-feedback.ts";
 import { GoodsArt } from "./Art.tsx";
-import { LABEL } from "../game/data.ts";
 import {
   FEEDBACK_DURATION_MS,
   useFeedbackLifetime,
@@ -14,8 +14,10 @@ export function SaleFeedback({
   action: Presentation;
   paused: boolean;
 }) {
+  const copy = useSkin();
+  const { t, labels } = copy;
   const visible = useFeedbackLifetime(paused);
-  const text = saleFeedbackText(action);
+  const text = saleFeedbackText(action, copy);
   const bonusTier = Math.min(action.outgoing.length, 5);
   if (!visible) return null;
   return (
@@ -27,11 +29,11 @@ export function SaleFeedback({
       style={{ animationDuration: `${FEEDBACK_DURATION_MS}ms` }}
     >
       <span className="sale-feedback-title" aria-label={text.title}>
-        <span>{action.actor === 0 ? "你" : "米拉"}卖出</span>
+        <span>{action.actor === 0 ? "你" : t("米拉")}{t("卖出")}</span>
         <span
           className={`sale-feedback-good ${action.outgoing[0]}`}
           role="img"
-          aria-label={LABEL[action.outgoing[0]]}
+          aria-label={labels[action.outgoing[0]]}
         >
           <GoodsArt good={action.outgoing[0]} cardFace />
         </span>
@@ -41,7 +43,7 @@ export function SaleFeedback({
       <div
         className="sale-feedback-coins"
         role="group"
-        aria-label={`货物筹码 ${action.coins.join(" + ")} 卢比${action.bonus !== null ? `；${bonusTier}张奖励${action.bonus === "hidden" ? "面值保密" : `${action.bonus} 卢比`}` : ""}`}
+        aria-label={t`货物筹码 ${action.coins.join(" + ")} 卢比${action.bonus !== null ? `；${bonusTier}张奖励${action.bonus === "hidden" ? "面值保密" : t`${action.bonus} 卢比`}` : ""}`}
       >
         {action.coins.map((value, i) => (
           <span
@@ -67,7 +69,7 @@ export function SaleFeedback({
               <span className="sale-feedback-tier">{bonusTier}张奖励</span>
               <span className="sale-feedback-reward-value">
                 <b>{action.bonus === "hidden" ? "?" : action.bonus}</b>
-                <small>卢比</small>
+                <small>{t("卢比")}</small>
               </span>
             </span>
           </>

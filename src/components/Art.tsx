@@ -1,3 +1,6 @@
+import { Cpu } from "lucide-react";
+import { HardwareArt } from "./HardwareArt.tsx";
+import { useSkin } from "./Skin.tsx";
 import type { Card } from "../game/types.ts";
 import { GoodsGlyph } from "./GoodsGlyph.tsx";
 export function PremiumChipRim() {
@@ -34,6 +37,8 @@ export function PremiumChipRim() {
   );
 }
 export function JaipurMark() {
+  const { skin } = useSkin();
+  if (skin === "hardware") return <Cpu aria-hidden="true" />;
   return (
     <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
       <g
@@ -56,5 +61,7 @@ export function GoodsArt({
   good: Card;
   cardFace?: boolean;
 }) {
+  const { skin } = useSkin();
+  if (skin === "hardware") return <HardwareArt name={good} className="goods-art" />;
   return <GoodsGlyph good={good} cardFace={cardFace} />;
 }

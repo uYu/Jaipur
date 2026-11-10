@@ -1,3 +1,4 @@
+import { useSkin } from "./Skin.tsx";
 import { Coins } from "lucide-react";
 import { TableNumber } from "./TableNumber.tsx";
 
@@ -33,6 +34,7 @@ export function MoneyPile({
   tabletop?: boolean;
   goodsOnly?: boolean;
 }) {
+  const { t } = useSkin();
   const hidden = amount === null;
   return (
     <span
@@ -41,10 +43,10 @@ export function MoneyPile({
       data-digits={hidden ? undefined : String(amount).length}
       aria-label={
         hidden
-          ? "米拉的钱堆，收入保密，收市揭晓"
+          ? t("米拉的钱堆，收入保密，收市揭晓")
           : goodsOnly
-            ? `米拉的货物得分，${amount} 卢比，不含奖励筹码`
-            : `${actor === 0 ? "你的" : "米拉的"}钱堆，${amount} 卢比`
+            ? t`米拉的货物得分，${amount} 卢比，不含奖励筹码`
+            : t`${actor === 0 ? "你的" : t("米拉的")}钱堆，${amount} 卢比`
       }
     >
       <span

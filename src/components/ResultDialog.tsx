@@ -1,3 +1,5 @@
+import { useSkin } from "./Skin.tsx";
+import { jaipurCopy, type SkinCopy } from "../game/skin-copy.ts";
 import { useEffect, useRef } from "react";
 import {
   Trophy,
@@ -37,21 +39,23 @@ function ScoreSymbol({
   );
 }
 
-export function resultTitle(state: State) {
+export function resultTitle(state: State, copy: SkinCopy = jaipurCopy) {
+  const { t } = copy;
   if (state.phase === "finished")
     return state.seals[0] >= (state.targetSeals ?? 2)
       ? "你赢得了整场比赛！"
-      : "米拉赢得了整场比赛";
+      : t("米拉赢得了整场比赛");
   const winner = state.results.at(-1)?.winner;
   return winner === null
     ? "本轮平局"
     : winner === 0
       ? "你赢得了这一轮！"
-      : "米拉赢得了这一轮";
+      : t("米拉赢得了这一轮");
 }
 export function ResultDialog({
   state,
   onClose,
+  closeLabel = "继续查看回放",
   onNext,
   onNew,
   onMenu,
@@ -59,11 +63,14 @@ export function ResultDialog({
 }: {
   state: State;
   onClose: () => void;
+  closeLabel?: string;
   onNext?: () => void;
   onNew?: () => void;
   onMenu?: () => void;
   history: readonly ActionRecord[];
 }) {
+  const copy = useSkin();
+  const { t } = copy;
   const ref = useRef<HTMLDialogElement>(null),
     result = state.results.at(-1)!;
   const finished = state.phase === "finished";
@@ -109,31 +116,31 @@ export function ResultDialog({
         <p className="result-kicker">
           {finished ? "整场比赛结束" : `第 ${state.round} 轮结束`}
         </p>
-        <h2 id="result-title">{resultTitle(state)}</h2>
+        <h2 id="result-title">{resultTitle(state, copy)}</h2>
         <p id="result-summary">
           {finished
             ? state.targetSeals === 1
-              ? `${result.winner === 0 ? "你" : "米拉"}赢下本局，获得卓越印章。`
-              : `${state.seals[0] >= 2 ? "你" : "米拉"}率先获得两枚卓越印章，成为大君的御用商人。`
+              ? t`${result.winner === 0 ? "你" : t("米拉")}赢下本局，获得卓越印章。`
+              : t`${state.seals[0] >= 2 ? "你" : t("米拉")}率先获得两枚卓越印章，成为大君的御用商人。`
             : result.winner === null
-              ? "本轮不颁发印章，轮换先手继续角逐。"
-              : `${result.winner === 0 ? "你" : "米拉"}获得一枚卓越印章；下一轮由${result.winner === 0 ? "米拉" : "你"}先手。`}
+              ? t("本轮不颁发印章，轮换先手继续角逐。")
+              : t`${result.winner === 0 ? "你" : t("米拉")}获得一枚卓越印章；下一轮由${result.winner === 0 ? t("米拉") : "你"}先手。`}
         </p>
       </div>
       <div className="result-seals">
-        <span>卓越印章</span>
+        <span>{t("卓越印章")}</span>
         <b>
-          你 {state.seals[0]} <i>:</i> {state.seals[1]} 米拉
+          你 {state.seals[0]} <i>:</i> {state.seals[1]} {t("米拉")}
         </b>
         <small>
-          {state.targetSeals === 1 ? "1 局定胜负" : "先得 2 枚获胜"}
+          {state.targetSeals === 1 ? "1 局定胜负" : t("先得 2 枚获胜")}
         </small>
       </div>
       <div
         className="result-score-formula"
         role="img"
-        aria-label="货物收入加批量奖励加骆驼奖励，等于本轮总分"
-        title="货物收入 ＋ 批量奖励 ＋ 骆驼奖励 ＝ 本轮总分"
+        aria-label={t("货物收入加批量奖励加骆驼奖励，等于本轮总分")}
+        title={t("货物收入 ＋ 批量奖励 ＋ 骆驼奖励 ＝ 本轮总分")}
       >
         <ScoreSymbol kind="goods" />
         <span>＋</span>
@@ -151,38 +158,38 @@ export function ResultDialog({
             key={i}
           >
             <header>
-              <b>{i === 0 ? "你" : "米拉"}</b>
+              <b>{i === 0 ? "你" : t("米拉")}</b>
               <span>{result.winner === i ? "本轮胜者" : ""}</span>
             </header>
             <div className="round-score">
               {result.scores[i]}
-              <small>卢比</small>
+              <small>{t("卢比")}</small>
             </div>
             <dl>
               <div>
-                <dt title="货物筹码的面值之和">
+                <dt title={t("货物筹码的面值之和")}>
                   <ScoreSymbol kind="goods" />
-                  卖货
+                  {t("卖货")}
                 </dt>
                 <dd>{result.goods[i]}</dd>
               </div>
               <div>
-                <dt title="批量奖励筹码的面值之和">
+                <dt title={t("批量奖励筹码的面值之和")}>
                   <ScoreSymbol kind="bonus" />
                   奖励
                 </dt>
                 <dd>{result.bonuses[i]}</dd>
               </div>
               <div>
-                <dt title="骆驼较多的一方加 5 卢比，平手均不加分">
+                <dt title={t("骆驼较多的一方加 5 卢比，平手均不加分")}>
                   <ScoreSymbol kind="camel" />
-                  骆驼
+                  {t("骆驼")}
                 </dt>
                 <dd
                   className="result-camel-breakdown"
-                  aria-label={`骆驼 ${state.players[i].camels} 头，骆驼奖励 ${result.camel === i ? 5 : 0} 卢比`}
+                  aria-label={t`骆驼 ${state.players[i].camels} 头，骆驼奖励 ${result.camel === i ? 5 : 0} 卢比`}
                 >
-                  <span>{state.players[i].camels} 头</span>
+                  <span>{state.players[i].camels} {t("头")}</span>
                   <span>+{result.camel === i ? 5 : 0}</span>
                 </dd>
               </div>
@@ -193,10 +200,10 @@ export function ResultDialog({
       {result.scores[0] === result.scores[1] && (
         <div
           className="result-tie"
-          title="同分时先比较奖励筹码枚数，再比较货物筹码枚数；数字顺序为你 : 米拉"
-          aria-label={`同分比枚数：奖励筹码，你 ${state.players[0].bonuses.length}，米拉 ${state.players[1].bonuses.length}；货物筹码，你 ${state.players[0].goods.length}，米拉 ${state.players[1].goods.length}`}
+          title={t("同分时先比较奖励筹码枚数，再比较货物筹码枚数；数字顺序为你 : 米拉")}
+          aria-label={t`同分比枚数：奖励筹码，你 ${state.players[0].bonuses.length}，米拉 ${state.players[1].bonuses.length}；货物筹码，你 ${state.players[0].goods.length}，米拉 ${state.players[1].goods.length}`}
         >
-          <span>同分比枚数</span>
+          <span>{t("同分比枚数")}</span>
           <ScoreSymbol kind="bonus" />
           <b>
             {state.players[0].bonuses.length} :{" "}
@@ -218,13 +225,13 @@ export function ResultDialog({
             <tr>
               <th scope="col">行动</th>
               <th scope="col">你</th>
-              <th scope="col">米拉</th>
+              <th scope="col">{t("米拉")}</th>
             </tr>
           </thead>
           <tbody>
             {ACTION_STATISTIC_ROWS.map(({ type, label }) => (
               <tr key={type}>
-                <th scope="row">{label}</th>
+                <th scope="row">{t(label)}</th>
                 <td>{statistics[0][type]}</td>
                 <td>{statistics[1][type]}</td>
               </tr>
@@ -245,7 +252,7 @@ export function ResultDialog({
           </button>
         ) : (
           <button className="primary" onClick={onClose}>
-            继续查看回放
+            {closeLabel}
           </button>
         )}
         {onMenu && (
@@ -277,7 +284,7 @@ export function ResultDialog({
               <tr>
                 <th>轮次</th>
                 <th>你</th>
-                <th>米拉</th>
+                <th>{t("米拉")}</th>
                 <th>胜者</th>
               </tr>
             </thead>
@@ -292,7 +299,7 @@ export function ResultDialog({
                       ? "平局"
                       : r.winner === 0
                         ? "你"
-                        : "米拉"}
+                        : t("米拉")}
                   </td>
                 </tr>
               ))}

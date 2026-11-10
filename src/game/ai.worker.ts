@@ -1,6 +1,6 @@
 import { chooseAction } from "./ai.ts";
 import { chooseOriginalWasmAction } from "./ai-wasm.ts";
-import { chooseDouzeroAction } from "./douzero-browser.ts";
+import { chooseDouzeroAction, DEFAULT_DOUZERO_VERSION } from "./douzero-browser.ts";
 import { opponentPolicy } from "./difficulty.ts";
 
 self.onmessage = async (event) => {
@@ -14,7 +14,7 @@ self.onmessage = async (event) => {
       );
       self.postMessage({
         action,
-        algorithm: "自博弈神经策略 · v147126",
+        algorithm: `自博弈神经策略 · v${DEFAULT_DOUZERO_VERSION}`,
         elapsedMs: Math.round(performance.now() - started),
       });
       return;

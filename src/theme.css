@@ -761,8 +761,7 @@ select:focus-visible,
 }
 
 .modal,
-.result-dialog,
-.tutorial-popover {
+.result-dialog {
   background: var(--surface);
   color: var(--text);
   border-color: var(--border);
@@ -782,8 +781,7 @@ select:focus-visible,
 }
 .modal h2,
 .rules h2,
-.result-dialog h2,
-.tutorial-popover h2 {
+.result-dialog h2 {
   color: var(--text);
   font-size: 20px;
 }
@@ -889,22 +887,6 @@ select:focus-visible,
   .rules .rule-grid {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-.tutorial-popover p {
-  color: var(--text);
-  font-size: var(--type-body);
-  line-height: 1.7;
-}
-.tutorial-popover :is(.tutorial-popover-top, .tutorial-popover-bottom small) {
-  color: var(--text-secondary);
-  font-size: var(--type-label);
-}
-.tutorial-spotlight-frame {
-  border-color: var(--accent);
-}
-.tutorial-popover .tutorial-feedback {
-  color: var(--accent);
-  background: var(--accent-soft);
 }
 .supply-reward-summary > section,
 .history-column-head {

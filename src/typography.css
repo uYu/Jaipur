@@ -33,7 +33,6 @@ strong {
 .result-panel > h2,
 .result-dialog .result-heading h2,
 .turn-intro h2,
-.tutorial-popover h2,
 .tutorial-coach h1,
 .tutorial-finish > h1 {
   font-family: var(--font-display);
@@ -52,8 +51,7 @@ strong {
 .rules h2,
 .menu-copy > h2,
 .setup h2,
-.result-panel > h2,
-.tutorial-popover h2 {
+.result-panel > h2 {
   font-size: 22px;
 }
 .result-dialog .result-heading h2 {
@@ -106,7 +104,6 @@ strong {
 .menu-intro,
 .rules p,
 .rules li,
-.tutorial-popover p,
 .tutorial-coach > p,
 .tutorial-finish > p,
 .history-empty,
@@ -121,7 +118,6 @@ strong {
 .menu-footer,
 .game-shell :is(.header-round, .opponent-level),
 .turn-intro-reason,
-.tutorial-popover-bottom small,
 .score-privacy-note,
 .score-no-sale {
   font-family: var(--font-ui);

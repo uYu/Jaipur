@@ -1,5 +1,6 @@
+import { jaipurCopy, type SkinCopy } from "./skin-copy.ts";
 import type { Action, State } from "./types.ts";
-import { LABEL, sum } from "./data.ts";
+import { sum } from "./data.ts";
 import { nextMarketSlots, takenMarketIndices } from "./market-layout.ts";
 import type { Presentation } from "./presentation.ts";
 
@@ -65,20 +66,21 @@ export function boardFeedback(
   };
 }
 
-export function saleFeedbackText(action: Presentation) {
+export function saleFeedbackText(action: Presentation, copy: SkinCopy = jaipurCopy) {
+  const { t, labels } = copy;
   const goods = sum(action.coins);
   const bonus = typeof action.bonus === "number" ? action.bonus : 0;
   return {
-    title: `${action.actor === 0 ? "你" : "米拉"}卖出${LABEL[action.outgoing[0]]} ×${action.outgoing.length}`,
+    title: t`${action.actor === 0 ? "你" : t("米拉")}卖出${labels[action.outgoing[0]]} ×${action.outgoing.length}`,
     income:
       action.bonus === "hidden"
-        ? `货物 +${goods} 卢比`
-        : `收入 +${goods + bonus} 卢比`,
+        ? t`货物 +${goods} 卢比`
+        : t`收入 +${goods + bonus} 卢比`,
     detail:
       action.bonus === "hidden"
         ? "另获 1 枚奖励 · 面值保密"
         : action.bonus !== null
-          ? `货物 ${goods} + 奖励 ${bonus}`
+          ? t`货物 ${goods} + 奖励 ${bonus}`
           : "",
   };
 }

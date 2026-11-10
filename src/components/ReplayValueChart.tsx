@@ -1,7 +1,8 @@
+import { useSkin } from "./Skin.tsx";
 import { useEffect, useState } from "react";
 import type { Card, Save } from "../game/types.ts";
 import { GoodsArt } from "./Art.tsx";
-import { LABEL } from "../game/data.ts";
+import { DEFAULT_DOUZERO_VERSION } from "../game/douzero-browser.ts";
 import { replayBoardIndex } from "../game/replay-position.ts";
 import type { ReplayMoment } from "../game/replay-position.ts";
 import type { ReplayMove } from "../game/replay-value.ts";
@@ -14,6 +15,7 @@ const cache = new WeakMap<Save, ReplayValuePoint[]>();
 const format = (value: number) => `${value > 0 ? "+" : ""}${value.toFixed(2)}`;
 
 function ReviewGoods({ cards }: { cards: Card[] }) {
+  const { labels } = useSkin();
   return (
     <span className="review-goods">
       {[...new Set(cards)].map((good) => {
@@ -23,11 +25,11 @@ function ReviewGoods({ cards }: { cards: Card[] }) {
             key={good}
             className={`review-good ${good}`}
             role="img"
-            aria-label={`${LABEL[good]} ${count} 张`}
-            title={`${LABEL[good]} ×${count}`}
+            aria-label={`${labels[good]} ${count} 张`}
+            title={`${labels[good]} ×${count}`}
           >
             <GoodsArt good={good} cardFace />
-            <span className="review-good-name">{LABEL[good]}</span>
+            <span className="review-good-name">{labels[good]}</span>
             <b>×{count}</b>
           </span>
         );
@@ -36,6 +38,7 @@ function ReviewGoods({ cards }: { cards: Card[] }) {
   );
 }
 function ReviewMove({ move }: { move: ReplayMove }) {
+  const { t } = useSkin();
   const Icon =
     move.type === "sell"
       ? Coins
@@ -47,10 +50,10 @@ function ReviewMove({ move }: { move: ReplayMove }) {
       className="review-move"
       aria-label={
         move.type === "exchange"
-          ? "交换：付出换入"
+          ? t("交换：付出换入")
           : move.type === "sell"
-            ? "卖出"
-            : "拿取"
+            ? t("卖出")
+            : t("拿取")
       }
     >
       {move.give.length > 0 && <ReviewGoods cards={move.give} />}
@@ -99,6 +102,7 @@ export function ReplayValueChart({
   moment: ReplayMoment;
   onSeek: (index: number) => void;
 }) {
+  const { t } = useSkin();
   const [points, setPoints] = useState<ReplayValuePoint[]>(
     () => cache.get(save) ?? [],
   );
@@ -225,7 +229,7 @@ export function ReplayValueChart({
                 />
               )}
               <text x="34" y="130">
-                开市
+                {t("开市")}
               </text>
               <text x="662" y="130" textAnchor="end">
                 第 {total} 步
@@ -249,8 +253,8 @@ export function ReplayValueChart({
             <div className="review-heading">
               <b>
                 {index === 0
-                  ? "开市局面"
-                  : `第 ${index} 步 · ${point?.actor === 0 ? "你的行动" : point?.actor === 1 ? "米拉的行动" : "新一轮"}`}
+                  ? t("开市局面")
+                  : `第 ${index} 步 · ${point?.actor === 0 ? "你的行动" : point?.actor === 1 ? t("米拉的行动") : "新一轮"}`}
               </b>
               {point?.decision ? (
                 <span
@@ -329,7 +333,7 @@ export function ReplayValueChart({
                 值；对手行动后重新评估。红点表示你的选择低于模型最佳值至少
                 0.05，点击“优先复盘”查看。仅用你当时可见的信息；轮初尚未轮到你时留空，轮末用真实胜负
                 ±1（平局 0），各轮断开。模型为高难对手
-                v147126，其偏好仅供复盘参考。
+                v{DEFAULT_DOUZERO_VERSION}，其偏好仅供复盘参考。
               </p>
             </details>
           </div>

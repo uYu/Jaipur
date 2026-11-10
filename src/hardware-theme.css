@@ -1,0 +1,701 @@
+.skin-switch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 7px;
+  min-height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.skin-switch > svg {
+  flex: none;
+}
+.skin-switch:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+.menu-copy > .skin-switch {
+  margin: 0 0 14px;
+}
+html[data-skin="hardware"] {
+  --hardware-warehouse: url("./assets/hardware-warehouse.jpg");
+  --hardware-dark: #142638;
+  --hardware-navy: #243c55;
+  --hardware-steel: #7b92aa;
+  --hardware-panel: #edf2f7;
+  --hardware-metal: #d2dee8;
+  --hardware-white: #f7fbff;
+  --hardware-amber: #ffd56b;
+  --text: #152c41;
+  --text-secondary: #4c6175;
+  --accent: #17634f;
+  --accent-hover: #114a3b;
+  --accent-soft: #c4e0d5;
+  --surface: #fff;
+  --surface-sand: #e9f0f6;
+  --border: #b4c4d2;
+  --page: #e6edf5;
+  --action-you-bg: #e1f1ea;
+  --action-opponent-bg: #e6edf6;
+  --font-display: var(--font-ui);
+}
+
+html[data-skin="hardware"] .diamond {
+  --card-bg: #ffd6d2;
+  --card-color: #a12638;
+  --chip-tone: #f58b8e;
+}
+html[data-skin="hardware"] .gold {
+  --card-bg: #ffe4a0;
+  --card-color: #815007;
+  --chip-tone: #ffd266;
+}
+html[data-skin="hardware"] .silver {
+  --card-bg: #d2e9ff;
+  --card-color: #245786;
+  --chip-tone: #82c4f3;
+}
+html[data-skin="hardware"] .cloth {
+  --card-bg: #ead5fa;
+  --card-color: #6b3b84;
+  --chip-tone: #d3a3ec;
+}
+html[data-skin="hardware"] .spice {
+  --card-bg: #d8edd1;
+  --card-color: #2c6345;
+  --chip-tone: #a2d89f;
+}
+html[data-skin="hardware"] .leather {
+  --card-bg: #f8d4b5;
+  --card-color: #844a2a;
+  --chip-tone: #f3b77e;
+}
+html[data-skin="hardware"] .camel {
+  --card-bg: #fff0d6;
+  --card-color: #76563b;
+}
+
+html[data-skin="hardware"] .menu-shell[data-menu] .menu-illustration {
+  border: 2px solid var(--hardware-steel);
+  border-radius: 12px;
+  background:
+    linear-gradient(0deg, #14263891, transparent 40%),
+    var(--hardware-warehouse) center / cover;
+  box-shadow:
+    0 3px var(--hardware-dark),
+    inset 0 0 0 1px #e2eff8;
+}
+html[data-skin="hardware"] .menu-illustration::after {
+  border-color: #d9edff66;
+}
+html[data-skin="hardware"] :is(.menu-art-caption, .menu-art-location) {
+  color: var(--hardware-white);
+  text-shadow: 0 1px 4px #071b2e;
+}
+html[data-skin="hardware"] .menu-copy h1 span {
+  color: var(--accent);
+}
+
+html[data-skin="hardware"] .game-shell.portrait-table {
+  --bazaar-ink: var(--text);
+  --bazaar-paper: var(--hardware-panel);
+  --bazaar-outline: var(--hardware-dark);
+  --bazaar-bevel: var(--hardware-steel);
+  --board-muted: #4c6175;
+  --board-quiet: #4c6175;
+  --selection-gold: #a36c09;
+  --table-felt: var(--hardware-panel);
+}
+html[data-skin="hardware"] .game-shell.portrait-table .game-header {
+  border: 1px solid var(--hardware-steel);
+  border-radius: 9px;
+  background:
+    linear-gradient(0deg, #152d46aa, #243c5522),
+    var(--hardware-warehouse) 50% 59% / cover;
+  box-shadow: 0 2px var(--hardware-dark);
+  color: var(--hardware-white);
+}
+html[data-skin="hardware"] .game-shell.portrait-table .game-header .brand {
+  color: var(--hardware-white);
+  background: linear-gradient(#294964, #13263b);
+}
+html[data-skin="hardware"] .game-header .brand-icon {
+  color: var(--hardware-amber);
+}
+html[data-skin="hardware"] .game-header .brand b {
+  text-shadow: 0 2px #091724;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  .game-header
+  .header-round {
+  color: var(--hardware-white);
+  background: #162d44f2;
+  border-color: #7592ac;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  .game-header
+  .opponent-level {
+  color: #172d44;
+  background: #fff0d7;
+  border-color: #a88f72;
+}
+html[data-skin="hardware"] .game-shell.portrait-table .table-tools {
+  background: var(--hardware-dark);
+  gap: 4px;
+  padding: 4px;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  :is(.table-tools, .bazaar-header-tools)
+  > button {
+  --key-fill: #2d4964;
+  --key-ink: var(--hardware-white);
+  --key-edge: #8fa7be;
+  color: var(--key-ink);
+  background: linear-gradient(#385671, var(--key-fill));
+  border: 1px solid var(--key-edge);
+  box-shadow:
+    inset 0 0 0 1px #f3f9ff2e,
+    0 2px #0c1b2a;
+  text-shadow: 0 1px #10263d;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  .table-tools
+  > .return-to-menu {
+  --key-fill: #efb435;
+  --key-ink: #192e42;
+  --key-edge: #fff1b9;
+  background: linear-gradient(#ffe29a, var(--key-fill));
+  text-shadow: none;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  :is(.seat-opponent, .hand-panel, .market-zone) {
+  border: 2px solid var(--hardware-steel);
+  border-radius: 9px;
+  background: linear-gradient(
+    145deg,
+    #f5f8fc,
+    var(--hardware-panel) 65%,
+    #dae4ed
+  );
+  box-shadow:
+    0 2px 0 #122236,
+    inset 0 0 0 2px #f9fbff,
+    inset 0 0 0 3px #a8bacb;
+}
+html[data-skin="hardware"] .game-shell.portrait-table .market-zone {
+  --market-ink: var(--hardware-white);
+  background: linear-gradient(155deg, #e0e8ef, #becfdd 55%, #d3dfe9);
+}
+html[data-skin="hardware"] .market-architecture-art {
+  display: none;
+}
+html[data-skin="hardware"] .market-region-label {
+  padding-inline: 9px;
+  border-radius: 3px;
+  background: var(--hardware-navy);
+  letter-spacing: 0;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  :is(
+    .bazaar-supply-title,
+    .action-instruction strong,
+    .bazaar-market-labels > span
+  ) {
+  background: linear-gradient(#3c5a76, var(--hardware-navy));
+  color: var(--hardware-white);
+  border-color: #7692ac;
+  box-shadow: inset 0 0 0 1px #abc3d640;
+  text-shadow: 0 1px #13263c;
+}
+html[data-skin="hardware"] .bazaar-market-labels > b {
+  background: linear-gradient(#ffdf85, #efb744);
+  border-color: #bc8e34;
+  color: #283648;
+}
+html[data-skin="hardware"] .game-shell.portrait-table .market-sale-sign {
+  color: var(--hardware-navy);
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  :is(.counter-remaining, .stock-bonus-count, .counter-remaining > small) {
+  color: var(--text);
+}
+html[data-skin="hardware"] .game-shell.portrait-table .table-notes {
+  border-color: #aebdca;
+}
+html[data-skin="hardware"] .game-shell.portrait-table .table-action-actor {
+  color: #eefdf7;
+  background: linear-gradient(#237861, #125342);
+  border-radius: 4px;
+  padding-inline: 6px;
+}
+html[data-skin="hardware"] .game-shell.portrait-table .hand-capacity-slot {
+  border-color: #8195a8;
+  background: #93adc217;
+}
+html[data-skin="hardware"]
+  :is(.game-shell.portrait-table, .flight-layer)
+  :is(.card:not(.card-back), .camel-pile-card) {
+  background:
+    linear-gradient(155deg, #ffffffa0, transparent 57%), var(--card-bg);
+  border-color: var(--card-color);
+  box-shadow:
+    0 2px #27384c,
+    inset 0 0 0 1px #fffaf0,
+    inset 0 0 0 2px color-mix(in srgb, var(--card-color) 36%, transparent);
+}
+html[data-skin="hardware"]
+  :is(.game-shell.portrait-table, .flight-layer)
+  :is(.card-back, .market-deck, .flight-back) {
+  color: #effdfb;
+  border-color: #143f46;
+  background:
+    repeating-linear-gradient(135deg, transparent 0 6px, #80c8ca19 6px 7px),
+    linear-gradient(150deg, #24666a, #103940 75%);
+  box-shadow:
+    0 2px #193446,
+    inset 0 0 0 1px #c4e5e3,
+    inset 0 0 0 3px #3e777c;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  :is(.opponent-card-back-mark, .market-deck-symbol, .market-deck > b) {
+  color: #d2f5ed;
+}
+html[data-skin="hardware"] .game-shell.portrait-table .market-deck > b {
+  background: none;
+}
+
+/* Category names stay visible on small cards and the circular quote chips. */
+html[data-skin="hardware"]
+  :is(.game-shell.portrait-table, .flight-layer)
+  .card
+  > .card-name {
+  position: absolute;
+  z-index: 1;
+  inset: auto 1px 1px;
+  display: block;
+  overflow: hidden;
+  border-radius: 0 0 3px 3px;
+  background: var(--card-color);
+  color: #fff;
+  font-size: clamp(9px, 2.4cqw, 13px);
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  white-space: nowrap;
+}
+html[data-skin="hardware"]
+  :is(.game-shell.portrait-table, .flight-layer)
+  .card.premium-card
+  > .premium-badge {
+  inset: 3px 2px auto;
+  z-index: 1;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--card-color);
+  font-size: clamp(8px, 2cqw, 10px);
+  font-weight: 750;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+html[data-skin="hardware"]
+  :is(.game-shell.portrait-table, .flight-layer)
+  :is(.card > .goods-art, .card > .bazaar-pixel-art) {
+  position: absolute;
+  inset: 17% 8% auto;
+  width: 84%;
+  height: 65%;
+  max-width: none;
+  transform: none;
+}
+html[data-skin="hardware"] .hardware-pickup-label {
+  position: absolute;
+  inset: 3px 1px auto;
+  color: var(--card-color);
+  font-size: clamp(8px, 2.3cqw, 12px);
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+}
+html[data-skin="hardware"] .portrait-table .stock-good-name > svg {
+  display: none;
+}
+html[data-skin="hardware"] .portrait-table .stock-good-name > span {
+  display: block;
+  color: var(--card-color);
+  font-size: clamp(8px, 2.35cqw, 12px);
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+html[data-skin="hardware"] .hardware-card-model {
+  display: none;
+}
+html[data-skin="hardware"] .game-shell.portrait-table .money-pile-value {
+  color: #152c41;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  .table-column
+  .action-instruction {
+  background: linear-gradient(#f9fcff, var(--hardware-metal));
+  border-color: var(--hardware-steel);
+  box-shadow:
+    0 2px var(--hardware-dark),
+    inset 0 0 0 1px #f7fbff;
+}
+html[data-skin="hardware"] .game-shell.portrait-table .action-panel {
+  --text: #152c41;
+  --border: #a4b6c5;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  .action-panel
+  :is(.confirm, .clear-button, .camel-picker) {
+  box-shadow:
+    0 2px #294758,
+    inset 0 0 0 1px #f4fff044;
+}
+html[data-skin="hardware"] .game-shell.portrait-table .action-panel .confirm {
+  --key-fill: #225d4d;
+  --key-ink: #effff9;
+  --key-edge: #8db8a5;
+  background: linear-gradient(#337359, #225d4d);
+  color: #effff9;
+  border-color: #8db8a5;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  .action-panel
+  .confirm:disabled {
+  background: linear-gradient(#3a5b6b, #2c4858);
+  color: #eef5fb;
+  border-color: #819bad;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  .action-panel
+  .clear-button {
+  --key-fill: #e0e7ef;
+  --key-ink: #152c41;
+  --key-edge: #96aabc;
+  background: linear-gradient(#f8fafc, #d5dfe9);
+  color: #152c41;
+  border-color: #96aabc;
+}
+html[data-skin="hardware"]
+  .game-shell.portrait-table
+  .action-panel
+  .camel-picker {
+  --key-fill: #c3e5d7;
+  --key-ink: #163e36;
+  --key-edge: #83b39f;
+  background: linear-gradient(#e5f5eb, #badfcc);
+  color: #163e36;
+  border-color: #83b39f;
+}
+
+html[data-skin="hardware"]
+  body
+  :is(.turn-intro, .result-dialog, .modal, .result-banner) {
+  --text: #152c41;
+  --text-secondary: #4c6175;
+  --surface: #f6faff;
+  --surface-sand: #e6eef6;
+  --border: #adc0d1;
+  --accent: #17634f;
+  color: var(--text);
+  background: var(--surface);
+  border-color: #819db5;
+  box-shadow:
+    inset 0 0 0 2px #e2ebf4,
+    0 6px 24px #091c3147;
+}
+html[data-skin="hardware"]
+  body
+  :is(.modal, .turn-intro, .result-dialog)
+  :is(h1, h2, h3, .turn-intro-reason, .turn-intro-hint) {
+  color: var(--text);
+}
+html[data-skin="hardware"]
+  body
+  :is(.turn-intro, .result-dialog, .result-banner)
+  button.primary {
+  background: linear-gradient(#307960, #205640);
+  color: var(--hardware-white);
+  border-color: #83aa98;
+  text-shadow: none;
+}
+html[data-skin="hardware"]
+  body
+  :is(
+    .turn-intro-choices,
+    .turn-intro-order > span,
+    .round-scorecards > section,
+    .result-action-statistics
+  ) {
+  background: var(--surface-sand);
+  border-color: var(--border);
+  color: var(--text);
+}
+html[data-skin="hardware"] body .turn-intro::backdrop {
+  background: rgb(13 29 47 / 68%);
+}
+html[data-skin="hardware"] body .turn-intro h2 {
+  padding: 6px 9px;
+  background: var(--hardware-navy);
+  color: var(--hardware-white);
+  border: 1px solid var(--hardware-steel);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px #a8bfd94d;
+  text-shadow: none;
+}
+html[data-skin="hardware"]
+  body
+  .turn-intro
+  :is(
+    .turn-intro-round,
+    .turn-intro-choices,
+    .turn-intro-order > svg,
+    #round-end-detail,
+    .round-end-tutorial
+  ) {
+  color: var(--text-secondary);
+}
+html[data-skin="hardware"] body .turn-intro .turn-intro-first {
+  background: #deefe7;
+  color: #185345;
+  border-color: #8cb9ab;
+}
+html[data-skin="hardware"] body .turn-intro > button.primary {
+  box-shadow:
+    0 2px #184234,
+    inset 0 0 0 1px #acd5c580;
+}
+html[data-skin="hardware"] body .turn-intro > button.secondary {
+  background: var(--surface-sand);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: none;
+}
+html[data-skin="hardware"] body .turn-intro > button.secondary:hover {
+  background: var(--hardware-metal);
+}
+html[data-skin="hardware"] :is(.tutorial-practice, .tutorial-interlude > div) {
+  background: var(--hardware-panel);
+  color: var(--text);
+  border-color: var(--hardware-steel);
+}
+html[data-skin="hardware"] .tutorial-tap-cue {
+  color: #165c50;
+}
+
+@media (min-width: 861px) {
+  html[data-skin="hardware"] .game-shell.portrait-table .game-header {
+    min-height: 114px;
+    justify-content: center;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: 48px 24px;
+    gap: 0 9px;
+    padding: 13px 20px 10px;
+  }
+  html[data-skin="hardware"] .game-shell.portrait-table .game-header .brand {
+    grid-area: 1 / 1 / 2 / 3;
+    justify-self: center;
+    padding: 3px 18px;
+    border: 1px solid #7695b0;
+    border-radius: 7px;
+    box-shadow:
+      inset 0 0 0 1px #abc3dc45,
+      0 2px #102336;
+  }
+  html[data-skin="hardware"] .game-shell.portrait-table .game-header .brand b {
+    font-size: 27px;
+  }
+  html[data-skin="hardware"]
+    .game-shell.portrait-table
+    .game-header
+    .opponent-level {
+    justify-self: end;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  html[data-skin="hardware"]
+    .game-shell.portrait-table
+    .game-header
+    .header-round {
+    justify-self: start;
+    padding: 1px 8px;
+    border-radius: 4px;
+  }
+  html[data-skin="hardware"]
+    .game-shell.portrait-table
+    :is(.seat-opponent, .hand-panel) {
+    padding: 12px;
+  }
+  html[data-skin="hardware"] .game-shell.portrait-table .hardware-card-model {
+    display: block;
+    position: absolute;
+    inset: auto 2px 23%;
+    color: var(--card-color);
+    font-size: 8px;
+    line-height: 1;
+    font-weight: 750;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media (max-width: 860px) {
+  .menu-shell[data-menu] .menu-copy > .skin-switch {
+    grid-area: 1 / 1;
+    place-self: end end;
+    z-index: 2;
+    margin: 0 7px 7px 0;
+    background: rgb(24 28 36 / 75%);
+    color: #e7edf4;
+  }
+  .menu-shell[data-menu] .menu-copy > .skin-switch:hover {
+    background: rgb(24 28 36 / 90%);
+    color: #fff;
+  }
+  html[data-skin="hardware"] body,
+  html[data-skin="hardware"] .game-shell.portrait-table.bazaar-board,
+  html[data-skin="hardware"] .menu-shell[data-menu] {
+    background: linear-gradient(#14283d, #253e57);
+  }
+  html[data-skin="hardware"] .menu-shell[data-menu] .menu-copy > .brand {
+    background: linear-gradient(#385b78, #142a40);
+    border-color: #90acc5;
+    box-shadow:
+      0 2px #102334,
+      inset 0 0 0 1px #cae5fb59;
+    color: var(--hardware-white);
+  }
+  html[data-skin="hardware"]
+    .menu-shell[data-menu]
+    .menu-copy
+    > :is(h1, h2, .menu-intro, .back, .menu-footer) {
+    color: #e9f4ff;
+  }
+  html[data-skin="hardware"] .menu-shell[data-menu] .menu-copy h1 span {
+    color: var(--hardware-amber);
+  }
+  html[data-skin="hardware"]
+    .menu-shell[data-menu]
+    .menu-buttons
+    > .menu-action.secondary {
+    background: linear-gradient(#3c5b77, #2b465f);
+    border-color: #7f9bb4;
+    color: var(--hardware-white);
+    box-shadow:
+      0 2px #102334,
+      inset 0 0 0 1px #cfe5fb38;
+  }
+  html[data-skin="hardware"]
+    .menu-shell[data-menu]
+    :is(.menu-action.primary, .setup > .primary) {
+    color: #192d3d;
+    border-color: #ffedb5;
+    background: linear-gradient(#ffe29a, #efb435);
+    box-shadow:
+      0 2px #102334,
+      inset 0 0 0 1px #fff5cc;
+  }
+  html[data-skin="hardware"] .menu-shell[data-menu] .setup {
+    background: var(--hardware-panel);
+    color: var(--text);
+    border-color: var(--hardware-steel);
+    box-shadow: 0 2px #102334;
+  }
+  html[data-skin="hardware"]
+    .menu-shell[data-menu]
+    .setup
+    .format-options
+    label {
+    background: #fbfdff;
+    color: var(--text);
+    border-color: var(--border);
+  }
+  html[data-skin="hardware"]
+    .menu-shell[data-menu]
+    .setup
+    .format-options
+    label.chosen {
+    background: #dcefe7;
+    border-color: #548e76;
+  }
+  html[data-skin="hardware"]
+    .game-shell.portrait-table.bazaar-board
+    .game-header {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  html[data-skin="hardware"]
+    .bazaar-board.game-shell.portrait-table
+    .game-header
+    .brand::before {
+    background: #25445f;
+  }
+  html[data-skin="hardware"]
+    .bazaar-board.game-shell.portrait-table
+    .game-header
+    .brand::after {
+    background: #6d8daa;
+  }
+  html[data-skin="hardware"]
+    .bazaar-board.game-shell.portrait-table
+    .table-tools {
+    padding: 0;
+    background: none;
+  }
+  html[data-skin="hardware"]
+    .bazaar-board.game-shell.portrait-table
+    .table-column {
+    --board-muted: #4c6175;
+    --board-quiet: #4c6175;
+  }
+  html[data-skin="hardware"]
+    .bazaar-board.game-shell.portrait-table
+    .table-supply
+    .mobile-supply
+    > summary {
+    border-color: #91a5b9;
+    background: linear-gradient(130deg, #f1f6fa, #d3e0ea);
+  }
+  html[data-skin="hardware"]
+    .game-shell.portrait-table
+    .action-panel
+    .camel-choice-stepper {
+    --key-fill: #c3e5d7;
+    --key-ink: #163e36;
+    --key-edge: #83b39f;
+    border-color: #83b39f;
+  }
+  html[data-skin="hardware"] .game-shell.replay-table {
+    background: var(--page);
+  }
+  html[data-skin="hardware"] .bazaar-board .game-footer {
+    color: #ceddea;
+  }
+}

@@ -1194,6 +1194,11 @@ select {
   margin-top: 24px;
   min-height: 46px;
 }
+.turn-intro > .turn-intro-tutorial {
+  width: 100%;
+  justify-content: center;
+  margin-top: 8px;
+}
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -5678,212 +5683,254 @@ select {
 .menu-buttons {
   width: min(340px, 100%);
 }
-.tutorial-game,
-.tutorial-overlay {
-  overflow-anchor: none;
+.tutorial-practice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 44px minmax(54px, auto);
+  align-items: center;
+  gap: 0 8px;
+  padding: 3px 9px 5px;
+  border: 2px solid #b8794d;
+  border-radius: 7px;
+  background: linear-gradient(145deg, #fff1d5, #fce0ba);
+  box-shadow: 0 2px #3d241f, inset 0 0 0 1px #fff0d4;
+  color: #482719;
 }
-.tutorial-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  pointer-events: none;
-}
-.tutorial-shade {
-  position: absolute;
-  inset: 0;
-}
-.tutorial-popover {
-  position: fixed;
-  width: min(360px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  padding: 18px;
-  border: 1px solid #e4c279;
-  border-radius: 12px;
-  background: #fffcf3;
-  color: var(--ink);
-  box-shadow: 0 14px 50px #10281d45;
-  pointer-events: auto;
-}
-.tutorial-popover-top {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+.tutorial-practice h2 {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-  margin-bottom: 10px;
-  background: #fffcf3;
+  margin: 0;
+  font-size: 16px;
 }
-.tutorial-popover-top > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #9a6a23;
-  font-size: 11px;
-}
-.tutorial-window-controls {
-  display: flex;
-  flex: none;
-  gap: 5px;
-}
-.tutorial-window-controls > button {
-  width: 36px;
-  height: 36px;
+.tutorial-lesson-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
   border-radius: 5px;
-  background: #efece1;
+  background: #663f34;
+  color: #ffe3a6;
 }
-.tutorial-restore {
-  position: fixed;
-  top: max(8px, env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
+.tutorial-lesson-icon > .bazaar-pixel-art {
+  display: block;
+  width: 19px;
+  height: 19px;
+}
+.tutorial-practice h2 > small {
+  padding: 2px 5px;
+  border: 1px solid #ca9b71;
+  border-radius: 4px;
+  background: #fae0b4;
+  color: #79503a;
+  font-size: 12px;
+}
+.tutorial-practice p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.tutorial-practice > button {
+  gap: 4px;
   min-height: 44px;
-  gap: 6px;
-  padding: 8px 12px;
-  border: 1px solid #d6b76f;
-  border-radius: 22px;
-  background: #fffcf3;
-  color: #76551e;
-  box-shadow: 0 3px 12px #10281d25;
+  padding: 0 4px;
   font-size: 12px;
-  pointer-events: auto;
+  white-space: nowrap;
 }
-.tutorial-sale-example {
-  margin-bottom: 14px;
-  padding: 10px;
-  border-radius: 8px;
-  background: #f1ead7;
-  font-size: 12px;
+.tutorial-practice > .secondary {
+  border-color: transparent;
+  background: none;
+  color: #70482f;
+  box-shadow: none;
 }
-.tutorial-sale-example > div {
+.tutorial-detail {
+  grid-column: 1 / -1;
+  align-self: stretch;
+  display: grid;
+  align-content: center;
+}
+.tutorial-exchange-example {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  font: 700 12px/1.2 var(--font-ui);
+}
+.tutorial-exchange-example > span {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 4px 0;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #f9deb0;
 }
-.tutorial-sale-example strong {
-  flex: none;
-  font-size: 20px;
+.tutorial-exchange-example .bazaar-pixel-art {
+  display: block;
+  width: 19px;
+  height: 19px;
 }
-.tutorial-sale-example strong small {
-  font-size: 11px;
-  font-weight: 500;
+.tutorial-exchange-example > strong {
+  color: #36532d;
+  text-align: right;
 }
-.tutorial-bulk-income {
-  color: #865d1e;
-  font-weight: 600;
+.tutorial-exchange {
+  display: grid;
+  gap: 3px;
 }
-.tutorial-sale-example > p {
-  margin: 5px 0 0;
-  font-size: 11px;
-  line-height: 1.6;
+.tutorial-exchange > p {
+  font-size: 12px;
+  line-height: 1.2;
 }
-.tutorial-bonus-tiers {
+.tutorial-payment-progress {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
-  margin: 10px 0;
-  padding-top: 10px;
-  border-top: 1px solid #d8cba6;
-  text-align: center;
-  font-size: 10px;
-}
-.tutorial-bonus-tiers dd {
-  margin: 3px 0 0;
-  color: #865d1e;
-  font-size: 16px;
-  font-weight: 600;
-}
-.tutorial-sale-example > small {
-  display: block;
-  font-size: 10px;
-  line-height: 1.6;
-  color: #746c57;
-}
-.tutorial-tradeoff {
-  margin-bottom: 14px;
-  padding: 10px 12px;
-  border-left: 3px solid #b49a68;
-  border-radius: 0 6px 6px 0;
-  background: #f2eee3;
-}
-.tutorial-tradeoff > strong {
-  display: block;
-  margin-bottom: 4px;
-  color: #7d6337;
-  font-size: 11px;
-}
-.tutorial-tradeoff > p {
   margin: 0;
-  font-size: 11px;
-  line-height: 1.7;
+  padding: 0;
+  list-style: none;
 }
-.tutorial-popover h2 {
-  font-size: 19px;
-  margin: 0 0 9px;
-  line-height: 1.5;
-  outline: none;
-}
-.tutorial-popover p {
-  font-size: 13px;
-  line-height: 1.85;
-  margin: 0 0 16px;
-  color: #5e6b5c;
-}
-.tutorial-popover-bottom {
+.tutorial-payment-progress > li {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.tutorial-popover-bottom small {
-  color: #8a8c7f;
-  font-size: 9px;
-  line-height: 1.6;
-}
-.tutorial-popover .primary {
-  min-height: 42px;
-  font-size: 12px;
-  padding: 10px 14px;
-}
-.tutorial-action-cue {
-  font-size: 11px;
-  color: #976b29;
-  font-weight: 600;
-}
-@media (max-width: 620px) {
-  .tutorial-popover {
-    padding: 14px;
-  }
-  .tutorial-popover h2 {
-    font-size: 17px;
-  }
-  .tutorial-popover p {
-    font-size: 12px;
-    margin-bottom: 12px;
-  }
-}
-.tutorial-input-shield {
-  pointer-events: visiblePainted;
-}
-.tutorial-popover .tutorial-feedback {
-  padding: 8px 10px;
+  justify-content: center;
+  gap: 4px;
+  min-height: 21px;
+  padding: 2px;
+  border: 1px solid #c99565;
   border-radius: 5px;
-  background: #f1ead7;
-  color: #8b6527;
-  font-size: 12px;
-  font-weight: 600;
-  margin-bottom: 12px;
+  background: #fff7e6;
+  color: #532e1c;
+  font: 650 12px/1.15 var(--font-ui);
 }
-.tutorial-popover .tutorial-history-link {
-  color: #946d32;
-  text-decoration: underline;
-  margin: -4px 0 10px;
-  min-height: 32px;
+.tutorial-payment-progress > li[aria-current="step"] {
+  border-color: #774824;
+  background: #f6d49c;
+  box-shadow: inset 0 0 0 1px #774824;
+}
+.tutorial-payment-progress > li[data-complete="true"] {
+  border-color: #748d58;
+  background: #e4edcc;
+  color: #36532d;
+}
+.tutorial-intro.turn-intro h2 {
+  margin: 8px 0 14px;
+}
+.tutorial-intro #tutorial-intro-goal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 0;
+  color: #36532d;
+  font-size: 14px;
+  font-weight: 750;
+}
+.tutorial-intro #tutorial-intro-goal > svg {
+  flex: none;
+}
+.tutorial-intro.turn-intro .turn-intro-hint {
+  margin: 12px 0 10px;
+}
+.tutorial-intro.turn-intro .turn-intro-choices {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tutorial-intro .turn-intro-choices > span {
+  padding: 4px 6px;
+  border: 1px solid #ca9b71;
+  border-radius: 4px;
+  background: #f9deb0;
   font-size: 12px;
+}
+.tutorial-intro.turn-intro > .primary {
+  margin-top: 16px;
+}
+.tutorial-intro.turn-intro > .turn-intro-tutorial {
+  min-height: 44px;
+}
+.tutorial-tap-cue {
+  position: absolute;
+  z-index: 2;
+  inset-inline-end: -5px;
+  bottom: 8px;
+  width: 27px;
+  height: 28px;
+  pointer-events: none;
+}
+.tutorial-game .action-panel :is(.confirm, .clear-button, .camel-choice-stepper > button:has(.tutorial-tap-cue)) {
+  position: relative;
+}
+.tutorial-game .camel-choice-stepper .tutorial-tap-cue {
+  bottom: 1px;
+}
+.tutorial-tap-hand {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 1px 1px #48271970);
+}
+.tutorial-tap-cue::before {
+  position: absolute;
+  top: -3px;
+  left: 6px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #d9852b;
+  border-radius: 50%;
+  opacity: 0;
+  content: "";
+}
+.game-shell[data-less-motion="false"] .tutorial-tap-hand {
+  animation: tutorial-tap-hand 1.15s ease-in-out infinite;
+}
+.game-shell[data-less-motion="false"] .tutorial-tap-cue::before {
+  animation: tutorial-tap-ripple 1.15s ease-out infinite;
+}
+@keyframes tutorial-tap-hand {
+  0%, 100% { transform: translate(3px, 5px); }
+  43% { transform: translate(0, 0) scale(.93); }
+  55% { transform: translate(0, 1px); }
+}
+@keyframes tutorial-tap-ripple {
+  0%, 39% { opacity: 0; transform: scale(.55); }
+  43% { opacity: 1; }
+  80%, 100% { opacity: 0; transform: scale(1.6); }
+}
+.tutorial-interlude {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+  display: grid;
+  place-items: center;
+  background: #4d2d25;
+  color: #fff0d4;
+  text-align: center;
+}
+.tutorial-interlude > div {
+  display: grid;
+  gap: 4px;
+  padding: 18px 32px;
+  border: 1px solid #e4a353;
+  border-radius: 8px;
+}
+.tutorial-interlude small {
+  font-size: 13px;
+}
+.tutorial-interlude strong {
+  font: 700 26px/1.3 var(--font-display);
+}
+.tutorial-interlude[data-phase="cover"][data-reduced="false"] {
+  animation: tutorial-cover 200ms ease both;
+}
+.tutorial-interlude[data-phase="reveal"][data-reduced="false"] {
+  animation: tutorial-reveal 800ms ease both;
+}
+@keyframes tutorial-cover {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes tutorial-reveal {
+  0%, 65% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 .mobile-game-menu {

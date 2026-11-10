@@ -6,16 +6,17 @@ import { GoodsArt, JaipurMark, PremiumChipRim } from "./Art.tsx";
 import { precious } from "../game/data.ts";
 import { handSlotOffset, publicHandDepartures } from "../game/hand-layout.ts";
 import type { Card as GoodCard } from "../game/types.ts";
-import { useReducedMotion } from "../hooks/useReducedMotion.ts";
 const NO_CHECKPOINTS: number[] = [];
 export function ActionAnimation({
   flights,
   duration,
   paused,
   elapsed,
+  reduced,
   settling = false,
   saleTravel = false,
   tableTravel = false,
+  bazaar = false,
   rememberOpponent = false,
   checkpoints = NO_CHECKPOINTS,
   onCheckpoint,
@@ -24,14 +25,15 @@ export function ActionAnimation({
   duration: number;
   paused: boolean;
   elapsed: number;
+  reduced: boolean;
   settling?: boolean;
   saleTravel?: boolean;
   tableTravel?: boolean;
+  bazaar?: boolean;
   rememberOpponent?: boolean;
   checkpoints?: readonly number[];
   onCheckpoint?: (index: number) => void;
 }) {
-  const reduced = useReducedMotion();
   const tabletop = tableTravel || saleTravel;
   const layer = useRef<HTMLDivElement>(null),
     animations = useRef<Animation[]>([]),
@@ -360,7 +362,7 @@ export function ActionAnimation({
               ? sourcePadding
               : "3px";
             face.style.borderRadius = sourceRadius;
-            face.style.boxShadow = "0 2px 5px #102d2633";
+            face.style.boxShadow = bazaar ? "" : "0 2px 5px #102d2633";
           }
           if (!tabletop && flight.hideSource && !hidden.has(source)) {
             hidden.set(source, source.style.visibility);
@@ -600,6 +602,7 @@ export function ActionAnimation({
     settling,
     saleTravel,
     tabletop,
+    bazaar,
     rememberOpponent,
   ]);
   useLayoutEffect(() => {
@@ -622,7 +625,7 @@ export function ActionAnimation({
   return createPortal(
     <div
       ref={layer}
-      className={`flight-layer${tabletop ? " table-travel" : ""}${saleTravel ? " sale-travel" : ""}`}
+      className={`flight-layer${tabletop ? " table-travel" : ""}${saleTravel ? " sale-travel" : ""}${bazaar ? " bazaar-flights" : ""}`}
       aria-hidden="true"
     >
       {flights.map((flight, i) => (

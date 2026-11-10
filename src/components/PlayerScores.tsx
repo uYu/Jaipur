@@ -1,3 +1,4 @@
+import { useSkin } from "./Skin.tsx";
 import type { CSSProperties, ReactNode } from "react";
 import type { Good, State } from "../game/types.ts";
 import type { Presentation } from "../game/presentation.ts";
@@ -6,7 +7,7 @@ import {
   playerScoreDisplay,
 } from "../game/score-display.ts";
 import { GOODS } from "../game/types.ts";
-import { LABEL, precious } from "../game/data.ts";
+import { precious } from "../game/data.ts";
 import { SaleReceipt } from "./SaleReceipt.tsx";
 import {
   Award,
@@ -67,6 +68,7 @@ export function PlayerScores({
   revealOpponent?: boolean;
   actor?: 0 | 1;
 }) {
+  const { t } = useSkin();
   const actors: readonly (0 | 1)[] =
     selectedActor === undefined ? [0, 1] : [selectedActor];
   return (
@@ -77,7 +79,7 @@ export function PlayerScores({
           ? "双方得分"
           : selectedActor === 0
             ? "你的座位"
-            : "米拉的座位"
+            : t("米拉的座位")
       }
     >
       {actors.map((actor) => {
@@ -95,13 +97,13 @@ export function PlayerScores({
             <button
               className={`player-score-card ${own ? "score-you" : "score-opponent"} ${state.current === actor && state.phase === "playing" ? "score-active" : ""}`}
               onClick={onInspect}
-              aria-label={`查看${own ? "你的" : "米拉的"}得分明细`}
+              aria-label={`查看${own ? "你的" : t("米拉的")}得分明细`}
               aria-haspopup="dialog"
               data-motion-anchor={own ? "your-score" : "opponent-score"}
             >
               <span className="score-card-heading">
                 <span className="score-card-identity">
-                  <b>{own ? "你" : "米拉"}</b>
+                  <b>{own ? "你" : t("米拉")}</b>
                 </span>
                 <span
                   className="score-card-seals"
@@ -120,11 +122,11 @@ export function PlayerScores({
                   data-motion-anchor={
                     own || selectedActor === 1 ? undefined : "opponent-hand"
                   }
-                  aria-label={`手牌 ${player.hand.length}/7 张`}
+                  aria-label={t`手牌 ${player.hand.length}/7 张`}
                 >
                   <span className="score-stat-title">
                     <ScoreIcon kind="hand" />
-                    <span className="score-stat-label">手牌</span>
+                    <span className="score-stat-label">{t("手牌")}</span>
                   </span>
                   <strong>
                     {player.hand.length}
@@ -135,8 +137,8 @@ export function PlayerScores({
                   className="score-stat score-stat-income"
                   aria-label={
                     score.hidden
-                      ? "得分保密，收市揭晓"
-                      : `得分 ${score.total} 卢比`
+                      ? t("得分保密，收市揭晓")
+                      : t`得分 ${score.total} 卢比`
                   }
                 >
                   {selectedActor !== undefined ? (
@@ -171,12 +173,12 @@ export function PlayerScores({
                         : "opponent-herd"
                   }
                   aria-label={
-                    revealHerd ? `骆驼 ${player.camels} 头` : "驼队数量保密"
+                    revealHerd ? t`骆驼 ${player.camels} 头` : t("驼队数量保密")
                   }
                 >
                   <span className="score-stat-title">
                     <ScoreIcon kind="herd" />
-                    <span className="score-stat-label">骆驼</span>
+                    <span className="score-stat-label">{t("骆驼")}</span>
                   </span>
                   <strong className={!revealHerd ? "score-private" : undefined}>
                     {revealHerd ? (
@@ -249,15 +251,16 @@ function OpponentHandFan({
   count: number;
   knownOnly?: boolean;
 }) {
+  const { t, labels } = useSkin();
   return (
     <span
       className="opponent-hand-fan"
       data-motion-anchor="opponent-hand"
       role="group"
-      aria-label={`米拉的手牌，共 ${count} 张${knownOnly ? `，其中 ${hand?.filter(Boolean).length ?? 0} 张已知，其余保密` : hand === null ? "，内容保密" : "，已公开"}`}
+      aria-label={t`米拉的手牌，共 ${count} 张${knownOnly ? `，其中 ${hand?.filter(Boolean).length ?? 0} 张已知，其余保密` : hand === null ? "，内容保密" : "，已公开"}`}
       title={
         knownOnly
-          ? "仅显示通过公开行动记住的货物，不代表实际手牌顺序"
+          ? t("仅显示通过公开行动记住的货物，不代表实际手牌顺序")
           : undefined
       }
       style={{ "--fan-count": Math.max(1, count) } as CSSProperties}
@@ -268,7 +271,7 @@ function OpponentHandFan({
         ))}
       </span>
       {count === 0 ? (
-        <span className="opponent-hand-empty">暂无手牌</span>
+        <span className="opponent-hand-empty">{t("暂无手牌")}</span>
       ) : (
         Array.from({ length: count }, (_, index) => {
           const good = hand?.[index] ?? undefined;
@@ -282,8 +285,8 @@ function OpponentHandFan({
               role="img"
               aria-label={
                 good === undefined
-                  ? "背面朝上的手牌"
-                  : `${LABEL[good]}${precious(good) ? "，高级货物，至少 2 张起售" : ""}`
+                  ? t("背面朝上的手牌")
+                  : `${labels[good]}${precious(good) ? t("，高级货物，至少 2 张起售") : ""}`
               }
               style={
                 {
@@ -320,6 +323,7 @@ export function PlayerReserve({
   revealOpponent?: boolean;
   memory?: OpponentMemory;
 }) {
+  const { t } = useSkin();
   const cards = playerCardsDisplay(state, actor, revealOpponent, memory);
   const score = playerScoreDisplay(state, actor, revealOpponent, memory);
   const own = actor === 0;
@@ -328,7 +332,7 @@ export function PlayerReserve({
     <div
       className="player-reserve"
       role="group"
-      aria-label={own ? "你的驼队与钱堆" : "米拉的驼队与钱堆"}
+      aria-label={own ? t("你的驼队与钱堆") : t("米拉的驼队与钱堆")}
     >
       <CamelPile
         count={cards.camels}
@@ -337,7 +341,7 @@ export function PlayerReserve({
       <button
         className={`reserve-money reserve-money-${own ? "own" : "opponent"}`}
         onClick={onInspect}
-        aria-label={`查看${own ? "你的" : "米拉的"}得分明细`}
+        aria-label={`查看${own ? "你的" : t("米拉的")}得分明细`}
         aria-haspopup="dialog"
         data-motion-anchor={own ? "your-score" : "opponent-score"}
       >
@@ -349,10 +353,10 @@ export function PlayerReserve({
         />
         {goodsOnly && (
           <span className="reserve-score-label">
-            <span>货物分</span>
-            <span title="奖励筹码面值保密">
+            <span>{t("货物分")}</span>
+            <span title={t("奖励筹码面值保密")}>
               +<TableNumber value={score.bonusTokenCount} />
-              张筹码
+              {t("张筹码")}
             </span>
           </span>
         )}
@@ -376,6 +380,7 @@ export function OpponentSeat({
   actionSummary?: ReactNode;
   memory?: OpponentMemory;
 }) {
+  const { t } = useSkin();
   const cards = playerCardsDisplay(
     state,
     1,
@@ -392,7 +397,7 @@ export function OpponentSeat({
       ]
     : cards.hand;
   return (
-    <section className="player-seat seat-opponent" aria-label="米拉的座位">
+    <section className="player-seat seat-opponent" aria-label={t("米拉的座位")}>
       {actionSummary}
       <div
         className="opponent-cards-and-herd"
@@ -426,14 +431,15 @@ function HandSummary({
   knownHand?: Good[];
   count: number;
 }) {
+  const { t, labels } = useSkin();
   const partial = hand === null && knownHand !== undefined;
   if (hand === null && !partial)
-    return <p className="score-hand-note">手牌内容保密</p>;
+    return <p className="score-hand-note">{t("手牌内容保密")}</p>;
   hand = hand ?? knownHand!;
   const unknown = partial ? count - hand.length : 0;
   if (!hand.length && unknown)
-    return <p className="score-hand-note">{unknown} 张手牌尚未公开</p>;
-  if (!hand.length) return <p className="score-hand-note">暂无手牌</p>;
+    return <p className="score-hand-note">{unknown} {t("张手牌尚未公开")}</p>;
+  if (!hand.length) return <p className="score-hand-note">{t("暂无手牌")}</p>;
   return (
     <div className="score-hand-cards">
       {GOODS.map((good) => {
@@ -442,10 +448,10 @@ function HandSummary({
           <span
             key={good}
             className={`score-hand-good ${good}`}
-            aria-label={`${LABEL[good]} ${count} 张`}
+            aria-label={`${labels[good]} ${count} 张`}
           >
             <GoodsArt good={good} cardFace />
-            <span>{LABEL[good]}</span>
+            <span>{labels[good]}</span>
             <b>×{count}</b>
           </span>
         ) : null;
@@ -471,11 +477,12 @@ export function ScoreDetails({
   revealOpponent?: boolean;
   memory?: OpponentMemory;
 }) {
+  const { skin, t } = useSkin();
   return (
     <div className="player-score-details">
       {([0, 1] as const).map((actor) => {
         const own = actor === 0;
-        const name = own ? "你" : "米拉";
+        const name = own ? "你" : t("米拉");
         const score = playerScoreDisplay(state, actor, revealOpponent, memory);
         const cards = playerCardsDisplay(state, actor, revealOpponent, memory);
         const settled = state.phase !== "playing";
@@ -491,28 +498,28 @@ export function ScoreDetails({
             </header>
             <section
               className="score-detail-inventory"
-              aria-label={`${name}的手牌与驼队`}
+              aria-label={t`${name}的手牌与驼队`}
             >
               <dl className="score-detail-counts">
                 <div>
                   <dt>
                     <ScoreIcon kind="hand" />
-                    手牌
+                    {t("手牌")}
                   </dt>
                   <dd>{cards.handCount} / 7 张</dd>
                 </div>
                 <div>
                   <dt>
                     <ScoreIcon kind="herd" />
-                    骆驼
+                    {t("骆驼")}
                   </dt>
                   <dd>
-                    {cards.camels === null ? "数量保密" : `${cards.camels} 头`}
+                    {cards.camels === null ? "数量保密" : t`${cards.camels} 头`}
                   </dd>
                 </div>
               </dl>
               {cards.knownHand && (
-                <p className="score-hand-note">已知手牌 · 仅记录公开行动</p>
+                <p className="score-hand-note">{t("已知手牌 · 仅记录公开行动")}</p>
               )}
               <HandSummary
                 hand={cards.hand}
@@ -522,29 +529,33 @@ export function ScoreDetails({
             </section>
             <section
               className="score-detail-finance"
-              aria-label={`${name}的收入与得分`}
+              aria-label={t`${name}的收入与得分`}
             >
               <dl>
                 <div>
-                  <dt>货物{score.goods === null ? "筹码" : "收入"}</dt>
+                  <dt>
+                    {score.goods === null
+                      ? skin === "hardware" ? "已完成需求" : "货物筹码"
+                      : t("货物收入")}
+                  </dt>
                   <dd>
                     {score.goods === null
-                      ? `${score.goodsTokenCount} 枚`
-                      : `${score.goods} 卢比`}
+                      ? `${score.goodsTokenCount} ${t("枚")}`
+                      : t`${score.goods} 卢比`}
                   </dd>
                 </div>
                 <div>
-                  <dt>奖励{score.hidden ? "筹码" : "收入"}</dt>
+                  <dt>{score.hidden ? t("奖励筹码") : t("奖励收入")}</dt>
                   <dd title={score.hidden ? "奖励面值保密" : undefined}>
                     {score.hidden
-                      ? `${score.bonusTokenCount} 枚`
-                      : `${score.bonus} 卢比`}
+                      ? `${score.bonusTokenCount} ${t("枚")}`
+                      : t`${score.bonus} 卢比`}
                   </dd>
                 </div>
                 {camelPoints !== null && (
                   <div>
-                    <dt>驼队奖励</dt>
-                    <dd>{camelPoints} 卢比</dd>
+                    <dt>{t("驼队奖励")}</dt>
+                    <dd>{camelPoints} {t("卢比")}</dd>
                   </div>
                 )}
                 <div className="score-detail-total">
@@ -561,7 +572,7 @@ export function ScoreDetails({
                     ) : (
                       <>
                         {score.total ?? score.goods}
-                        <small>卢比</small>
+                        <small>{t("卢比")}</small>
                       </>
                     )}
                   </dd>
@@ -570,12 +581,12 @@ export function ScoreDetails({
             </section>
             <section
               className="score-detail-recent"
-              aria-label={`${name}的上笔出售收入`}
+              aria-label={t`${name}的上笔出售收入`}
             >
-              <p className="score-last-sale">上笔出售</p>
+              <p className="score-last-sale">{t("上笔出售")}</p>
               <SaleReceipt receipt={receipts[actor]} actor={actor} />
               {!receipts[actor] && (
-                <p className="score-no-sale">尚未出售货物</p>
+                <p className="score-no-sale">{t("尚未出售货物")}</p>
               )}
             </section>
           </section>
@@ -583,12 +594,12 @@ export function ScoreDetails({
       })}
       <p className="score-privacy-note">
         {revealOpponent && state.phase === "playing"
-          ? "回放公开双方当时的手牌、驼队和得分；驼队奖励在收市时计算。"
+          ? t("回放公开双方当时的手牌、驼队和得分；驼队奖励在收市时计算。")
           : state.phase === "playing"
             ? memory
-              ? "辅助模式仅记录公开信息：对手货物得分不含奖励，已知手牌会随出售、交换更新。起手暗牌与奖励面值仍保密；驼队数量可由公开手牌数及骆驼流转推知。"
-              : "米拉的累计得分和奖励面值在收市时揭晓。你的当前得分含货物和奖励，驼队奖励在收市时计算。"
-            : "本轮得分已揭晓，含货物、奖励，以及驼队领先者获得的 5 卢比。"}
+              ? t("辅助模式仅记录公开信息：对手货物得分不含奖励，已知手牌会随出售、交换更新。起手暗牌与奖励面值仍保密；驼队数量可由公开手牌数及骆驼流转推知。")
+              : t("米拉的累计得分和奖励面值在收市时揭晓。你的当前得分含货物和奖励，驼队奖励在收市时计算。")
+            : t("本轮得分已揭晓，含货物、奖励，以及驼队领先者获得的 5 卢比。")}
       </p>
     </div>
   );

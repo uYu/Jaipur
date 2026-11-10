@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { useSkin } from "./Skin.tsx";
 import {
   marketArchitectureMarkup,
   type MarketArchitectureLayout,
@@ -7,6 +8,7 @@ import {
 
 /** Printed scenery follows the shared layout, independently of piece motion. */
 export function MarketArchitecture() {
+  const { t } = useSkin();
   const layer = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<MarketArchitectureLayout | null>(null);
   useLayoutEffect(() => {
@@ -77,7 +79,7 @@ export function MarketArchitecture() {
             className="market-region-label market-region-heading"
             style={{ left: layout.stock.x + 3, top: 7 }}
           >
-            货物筹码
+            {t("货物筹码")}
           </span>
           <span
             className="market-region-label market-region-heading"

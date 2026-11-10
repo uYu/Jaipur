@@ -1,8 +1,9 @@
+import { useSkin } from "./Skin.tsx";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { Presentation } from "../game/presentation.ts";
 import { actionCaption } from "../game/presentation.ts";
 import type { Card } from "../game/types.ts";
-import { LABEL, sum } from "../game/data.ts";
+import { sum } from "../game/data.ts";
 import { lastActionOrder } from "../game/receipts.ts";
 import { GoodsArt } from "./Art.tsx";
 import { useFeedbackLifetime } from "../hooks/useFeedbackLifetime.ts";
@@ -17,14 +18,15 @@ import {
 } from "lucide-react";
 
 function GoodsText({ cards }: { cards: Card[] }) {
+  const { labels } = useSkin();
   return [...new Set(cards)].map((good) => (
     <span
       key={good}
       className={`ledger-good ${good} ${cards.filter((c) => c === good).length === 1 ? "single-good" : ""}`}
-      title={`${LABEL[good]}×${cards.filter((c) => c === good).length}`}
+      title={`${labels[good]}×${cards.filter((c) => c === good).length}`}
     >
       <GoodsArt good={good} cardFace />
-      <span className="ledger-item-name">{LABEL[good]}</span>
+      <span className="ledger-item-name">{labels[good]}</span>
       <span className="ledger-item-value">
         ×{cards.filter((c) => c === good).length}
       </span>
@@ -33,12 +35,13 @@ function GoodsText({ cards }: { cards: Card[] }) {
 }
 
 function Income({ action }: { action: Presentation }) {
+  const { t } = useSkin();
   return (
     <>
       <span className="ledger-income">
         <Coins aria-hidden="true" />
         <b className="ledger-item-name">{sum(action.coins)}</b>
-        <span className="ledger-item-value">卢比</span>
+        <span className="ledger-item-value">{t("卢比")}</span>
       </span>
       {action.bonus !== null && (
         <span className="ledger-bonus">
@@ -54,6 +57,7 @@ function Income({ action }: { action: Presentation }) {
 }
 
 function TradeFlow({ action }: { action: Presentation }) {
+  const { t } = useSkin();
   const Icon = {
     take: Hand,
     camels: ArrowDownToLine,
@@ -70,14 +74,14 @@ function TradeFlow({ action }: { action: Presentation }) {
           <>
             <span className="ledger-simple-verb">
               <Icon size={14} aria-hidden="true" />
-              {action.type === "sell" ? "卖货" : "交换"}
+              {action.type === "sell" ? t("卖货") : "交换"}
             </span>
             <GoodsText cards={action.outgoing} />
           </>
         ) : (
           <span className="ledger-simple-verb">
             <Icon size={14} aria-hidden="true" />
-            {action.type === "camels" ? "收驼" : "拿货"}
+            {action.type === "camels" ? t("收驼") : t("拿货")}
           </span>
         )}
       </span>
@@ -86,7 +90,7 @@ function TradeFlow({ action }: { action: Presentation }) {
           <ArrowRight className="ledger-trade-arrow" size={14} />
         )}
       </span>
-      <span className="ledger-trade-received" aria-label="收获">
+      <span className="ledger-trade-received" aria-label={t("收获")}>
         {action.type === "sell" ? (
           <Income action={action} />
         ) : (
@@ -104,17 +108,19 @@ export function ActionSummary({
   action: Presentation;
   showIncome?: boolean;
 }) {
+  const copy = useSkin();
+  const { t } = copy;
   const Icon = {
     take: Hand,
     camels: ArrowDownToLine,
     exchange: ArrowLeftRight,
     sell: Coins,
   }[action.type];
-  const verb = { take: "拿取", camels: "收驼", exchange: "交换", sell: "卖出" }[
+  const verb = { take: t("拿取"), camels: t("收驼"), exchange: "交换", sell: t("卖出") }[
     action.type
   ];
   return (
-    <div className="action-summary" aria-label={actionCaption(action)}>
+    <div className="action-summary" aria-label={actionCaption(action, copy)}>
       <span className="action-summary-verb">
         <Icon size={17} aria-hidden="true" />
         <span className="action-summary-verb-label">{verb}</span>
@@ -147,7 +153,7 @@ export function ActionSummary({
             <span className="action-summary-results">
               <span
                 className="action-summary-income"
-                aria-label={`收入 ${sum(action.coins)} 卢比`}
+                aria-label={t`收入 ${sum(action.coins)} 卢比`}
               >
                 <Coins size={16} aria-hidden="true" />
                 <b>+{sum(action.coins)}</b>
@@ -157,13 +163,13 @@ export function ActionSummary({
                   className="action-summary-bonus"
                   title={
                     action.bonus === "hidden"
-                      ? "奖励筹码 1 枚，面值保密"
-                      : `奖励筹码 1 枚，${action.bonus} 卢比`
+                      ? t("奖励筹码 1 枚，面值保密")
+                      : t`奖励筹码 1 枚，${action.bonus} 卢比`
                   }
                   aria-label={
                     action.bonus === "hidden"
-                      ? "奖励筹码 1 枚，面值保密"
-                      : `奖励筹码 1 枚，${action.bonus} 卢比`
+                      ? t("奖励筹码 1 枚，面值保密")
+                      : t`奖励筹码 1 枚，${action.bonus} 卢比`
                   }
                 >
                   <Award size={15} aria-hidden="true" />
@@ -198,11 +204,13 @@ export function ActionRow({
   flash?: boolean;
   paused?: boolean;
 }) {
+  const copy = useSkin();
+  const { t } = copy;
   const flashing = useFeedbackLifetime(paused || !flash) && flash;
   const Actor = compact ? "th" : "span";
   const actorLabel = (
     <Actor className="ledger-actor">
-      <b>{actor === 0 ? "你" : "米拉"}</b>
+      <b>{actor === 0 ? "你" : t("米拉")}</b>
       {turn != null && <small>{compact ? `#${turn}` : `第${turn}手`}</small>}
       {latest && (
         <span className="ledger-latest">{compact ? "·" : "最新"}</span>
@@ -213,7 +221,7 @@ export function ActionRow({
     return (
       <tr
         className={`compact-action ${actor === 0 ? "ledger-you" : "ledger-opponent"} ${notify ? "action-notice" : ""} ${flashing ? "action-flash" : ""}`}
-        aria-label={action ? actionCaption(action) : undefined}
+        aria-label={action ? actionCaption(action, copy) : undefined}
         title={latest ? "最新行动" : undefined}
       >
         {actorLabel}
@@ -233,7 +241,7 @@ export function ActionRow({
       {actorLabel}
       <span
         className={`ledger-description ${action ? "" : "ledger-empty"}`}
-        aria-label={action ? actionCaption(action) : undefined}
+        aria-label={action ? actionCaption(action, copy) : undefined}
       >
         {action ? <TradeFlow action={action} /> : "尚未行动"}
       </span>
@@ -264,6 +272,7 @@ export function LastActions({
   paused?: boolean;
   focusOpponent?: boolean;
 }) {
+  const { t } = useSkin();
   const container = useRef<HTMLDivElement>(null);
   const measure = useRef<HTMLTableElement>(null);
   const iconMeasure = useRef<HTMLTableElement>(null);
@@ -314,10 +323,10 @@ export function LastActions({
     return (
       <section
         className="action-ledger table-turn-note"
-        aria-label="米拉本手行动"
+        aria-label={t("米拉本手行动")}
       >
         <div className="table-last-action" aria-live="polite">
-          <span className="table-action-actor">米拉</span>
+          <span className="table-action-actor">{t("米拉")}</span>
           {actions[1] ? (
             <ActionSummary action={actions[1]} />
           ) : (

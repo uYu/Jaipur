@@ -95,6 +95,16 @@ export function useViewportHeight(active: boolean) {
       window.removeEventListener("resize", schedule);
       viewport?.removeEventListener("resize", schedule);
       observer.disconnect();
+      delete element.dataset.fit;
+      delete element.dataset.density;
+      for (const property of [
+        "--game-viewport-height",
+        "--table-viewport-height",
+        "--fit-market-width",
+        "--fit-hand-width",
+        "--action-panel-height",
+      ])
+        element.style.removeProperty(property);
     };
   }, [active]);
   return ref;

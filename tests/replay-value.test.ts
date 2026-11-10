@@ -121,14 +121,14 @@ test("invalid model output is reported rather than drawn as a value curve", () =
 
 test("the actual shipped model produces finite values and selected-action differences without altering the save", () => {
   const bytes = readFileSync(
-    new URL("../src/game/models/legacy-round-147126.bin", import.meta.url),
+    new URL("../src/game/models/legacy-round-114824.bin", import.meta.url),
   );
   const model = new DouzeroNetwork(
     bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
   );
   const before = JSON.stringify(save);
   const points = [...replayValuePoints(save, model)];
-  assert.equal(model.version, 147126);
+  assert.equal(model.version, 114824);
   assert.ok(points.some((p) => p.decision && p.decision.loss > 0.05));
   for (const p of points)
     assert.ok(p.value === null || Number.isFinite(p.value));

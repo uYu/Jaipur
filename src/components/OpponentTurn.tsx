@@ -1,7 +1,7 @@
+import { useSkin } from "./Skin.tsx";
 import { ChevronRight } from "lucide-react";
 import type { OpponentTurnDetails } from "../game/opponent-turn.ts";
 import type { Card } from "../game/types.ts";
-import { LABEL } from "../game/data.ts";
 import { ActionSummary } from "./LastActions.tsx";
 import { GoodsArt } from "./Art.tsx";
 
@@ -16,6 +16,7 @@ function MarketRow({
   changed: number[];
   after: boolean;
 }) {
+  const { labels } = useSkin();
   return (
     <div className="turn-market-row">
       <span>{after ? "市场后" : "市场前"}</span>
@@ -30,14 +31,14 @@ function MarketRow({
               className={`turn-market-card ${good ?? "empty"} ${marked ? (after ? "market-added" : "market-removed") : ""}`}
               aria-label={
                 good
-                  ? `${LABEL[good]}${marked ? (after ? "，本手补入或放回" : "，本手取走") : "，未变化"}`
+                  ? `${labels[good]}${marked ? (after ? "，本手补入或放回" : "，本手取走") : "，未变化"}`
                   : "空位"
               }
             >
               {good ? (
                 <>
                   <GoodsArt good={good} cardFace />
-                  <span>{LABEL[good]}</span>
+                  <span>{labels[good]}</span>
                 </>
               ) : (
                 <span>空位</span>
@@ -66,15 +67,16 @@ export function OpponentTurn({
   thinking: boolean;
   onHistory: () => void;
 }) {
+  const { skin, t } = useSkin();
   return (
     <section
       className={`action-ledger opponent-turn ${pending ? "turn-pending" : ""}`}
-      aria-label="米拉本手交易"
+      aria-label={t("米拉本手交易")}
       aria-busy={pending}
     >
       <div className="opponent-turn-heading">
         <h3>
-          米拉 · 本手{" "}
+          {t("米拉 · 本手")}{" "}
           <span>
             {details
               ? `第 ${details.turn} 手 · ${pending ? "正在结算" : thinking ? "上手已完成" : "已完成"}`
@@ -114,7 +116,7 @@ export function OpponentTurn({
           </div>
           <div className="turn-public-changes">
             <span>
-              货物筹码{" "}
+              {skin === "hardware" ? "已完成需求" : "货物筹码"}{" "}
               <b
                 key={`score-${details.round}-${details.turn}`}
                 className={
@@ -128,10 +130,10 @@ export function OpponentTurn({
                 {details.goodsTokenCount.before} →{" "}
                 {details.goodsTokenCount.after}
               </b>{" "}
-              枚
+              {t("枚")}
             </span>
             <span>
-              手牌{" "}
+              {t("手牌")}{" "}
               <b
                 key={`hand-${details.round}-${details.turn}`}
                 className={
@@ -159,8 +161,8 @@ export function OpponentTurn({
       ) : (
         <p className="opponent-turn-empty">
           {thinking
-            ? "米拉正在挑选这笔生意…"
-            : "米拉尚未行动，市场、筹码和手牌数量的前后变化会留在这里。"}
+            ? t("米拉正在挑选这笔生意…")
+            : t("米拉尚未行动，市场、筹码和手牌数量的前后变化会留在这里。")}
         </p>
       )}
     </section>
