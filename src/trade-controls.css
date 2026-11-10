@@ -154,37 +154,17 @@
   color: #294c38;
 }
 .game-shell.portrait-table .action-panel .direct-guidance.is-thinking {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  grid-template-rows: 20px 20px;
-  align-content: start;
-  column-gap: 10px;
-  padding: 6px 10px;
   border-radius: 8px;
   background: #e2e9df;
 }
 .game-shell.portrait-table
   .direct-guidance.is-thinking
   > .selection-intent-icon {
-  grid-area: 1 / 1 / -1 / 2;
-  align-self: center;
-  width: 24px;
-  height: 28px;
-  margin: 0;
   color: #97773a;
-  stroke-width: 2;
   animation: thinking-hourglass 3.2s ease-in-out infinite;
 }
 .game-shell.portrait-table .direct-guidance.is-thinking > b {
-  grid-area: 1 / 2;
-  align-self: center;
-  margin: 0;
   color: #365244;
-}
-.game-shell.portrait-table .direct-guidance.is-thinking > .thinking-detail {
-  display: block;
-  grid-area: 2 / 2;
-  color: #68776a;
 }
 @keyframes thinking-hourglass {
   0%,
@@ -244,7 +224,7 @@
 .game-shell.portrait-table
   .action-panel.direct-selection[data-overview]
   > .action-guidance-slot
-  > .action-description.direct-guidance:not(.is-thinking) {
+  > .action-description.direct-guidance {
   height: 100%;
   padding: 6px 0;
   grid-template-columns: 16px minmax(0, 1fr);
@@ -256,7 +236,7 @@
 }
 .game-shell.portrait-table
   .action-panel.direct-selection[data-overview]
-  .direct-guidance:not(.is-thinking)
+  .direct-guidance
   > .selection-intent-icon {
   grid-area: 1 / 1;
   align-self: center;
@@ -264,7 +244,7 @@
 }
 .game-shell.portrait-table
   .action-panel.direct-selection[data-overview]
-  .direct-guidance:not(.is-thinking)
+  .direct-guidance
   > :is(b, .invalid, .selection-next-step, .selection-reward) {
   align-self: start;
   margin: 0;

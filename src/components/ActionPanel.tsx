@@ -144,9 +144,6 @@ export function ActionPanel({
                 : guide.title
               : (status ?? (overview ? "请先选牌" : "等待对手行动"))}
           </b>
-          {thinking && (
-            <span className="thinking-detail">{t("正在权衡下一笔生意")}</span>
-          )}
         </>
       )}
       {turnNumber !== undefined && (

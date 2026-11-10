@@ -1062,13 +1062,6 @@
   }
   .bazaar-board.game-shell.portrait-table
     .action-panel
-    .direct-guidance.is-thinking
-    > .selection-intent-icon {
-    width: 18px;
-    height: 22px;
-  }
-  .bazaar-board.game-shell.portrait-table
-    .action-panel
     .direct-guidance
     > .selection-reward {
     height: auto;
