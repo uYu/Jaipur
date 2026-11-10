@@ -5,14 +5,26 @@ import { GoodsArt } from "./Art.tsx";
 import { DEFAULT_DOUZERO_VERSION } from "../game/douzero-browser.ts";
 import { replayBoardIndex } from "../game/replay-position.ts";
 import type { ReplayMoment } from "../game/replay-position.ts";
-import type { ReplayMove } from "../game/replay-value.ts";
-import type { ReplayValuePoint } from "../game/replay-value.ts";
+import type {
+  ReplayDecision,
+  ReplayMove,
+  ReplayValuePoint,
+} from "../game/replay-value.ts";
 import "../replay-value.css";
 import "../replay-layout.css";
 import { ArrowRight, Coins, Hand, ArrowDownToLine } from "lucide-react";
 
 const cache = new WeakMap<Save, ReplayValuePoint[]>();
-const format = (value: number) => `${value > 0 ? "+" : ""}${value.toFixed(2)}`;
+const priorityDrop = 2.5;
+// A round return is P(win) − P(loss), so this credits a draw as half a win.
+const winPercent = (value: number) =>
+  50 * (1 + Math.max(-1, Math.min(1, value)));
+const roundPercent = (value: number) => Number(value.toFixed(1));
+const formatPercent = (value: number) => `${roundPercent(value)}%`;
+const formatChange = (value: number) =>
+  `${value > 0 ? "+" : value < 0 ? "−" : ""}${Math.abs(value)} 个百分点`;
+const decisionDrop = (decision: ReplayDecision) =>
+  roundPercent(winPercent(decision.bestValue) - winPercent(decision.actualValue));
 
 function ReviewGoods({ cards }: { cards: Card[] }) {
   const { labels } = useSkin();
@@ -77,15 +89,16 @@ function ReviewChoice({
   value: number;
   recommended?: boolean;
 }) {
+  const estimate = formatPercent(winPercent(value));
   return (
     <div className={`review-choice ${recommended ? "is-recommended" : ""}`}>
       <b className="review-choice-label">{label}</b>
       <ReviewMove move={move} />
       <strong
         className="review-choice-value"
-        aria-label={`模型评分 ${format(value)}`}
+        aria-label={`本轮预估胜率 ${estimate}`}
       >
-        {format(value)}
+        {estimate}
       </strong>
     </div>
   );
@@ -140,36 +153,36 @@ export function ReplayValueChart({
   const point = points[index];
   const viewedIndex = replayBoardIndex(index, moment);
   const viewedPoint = points[viewedIndex];
+  const estimate =
+    viewedPoint?.value == null ? null : winPercent(viewedPoint.value);
   const previous = points[index - 1];
   const delta =
     point?.value != null &&
     previous?.value != null &&
     point.round === previous.round
-      ? point.value - previous.value
+      ? roundPercent(winPercent(point.value) - winPercent(previous.value))
       : null;
-  const extent = Math.max(1, ...points.map((p) => Math.abs(p.value ?? 0)));
+  const loss = point?.decision ? decisionDrop(point.decision) : null;
   const x = (i: number) => 34 + (i / Math.max(1, total)) * 628;
-  const y = (v: number) => 64 - (v / extent) * 46;
+  const y = (percent: number) => 110 - percent * 0.92;
   let path = "";
   points.forEach((p, i) => {
     if (p.value === null) return;
     const connected =
       i > 0 && points[i - 1].value !== null && points[i - 1].round === p.round;
-    path += `${connected ? "L" : "M"}${x(p.index)},${y(p.value)} `;
+    path += `${connected ? "L" : "M"}${x(p.index)},${y(winPercent(p.value))} `;
   });
-  const drops = points
-    .filter((p) => p.decision && p.decision.loss >= 0.05)
-    .sort((a, b) => b.decision!.loss - a.decision!.loss)
-    .slice(0, 3);
+  const marked = points.flatMap((p) => {
+    const loss = p.decision ? decisionDrop(p.decision) : 0;
+    return loss >= priorityDrop ? [{ index: p.index, value: p.value, loss }] : [];
+  });
+  const drops = [...marked].sort((a, b) => b.loss - a.loss).slice(0, 3);
   const complete = points.length === total + 1;
   return (
     <details className="replay-value" open>
       <summary>
-        <span>你的 Value 曲线</span>
-        <strong>
-          {viewedPoint?.value == null ? "—" : format(viewedPoint.value)}
-        </strong>
-        <small>越高越好</small>
+        <span>本轮预估胜率</span>
+        <strong>{estimate === null ? "—" : formatPercent(estimate)}</strong>
       </summary>
       {error ? (
         <p role="alert">
@@ -184,35 +197,32 @@ export function ReplayValueChart({
               preserveAspectRatio="none"
               aria-hidden="true"
             >
-              {[extent, 0, -extent].map((v) => (
+              {[100, 50, 0].map((v) => (
                 <g key={v}>
                   <line
                     x1="34"
                     x2="662"
                     y1={y(v)}
                     y2={y(v)}
-                    className={v === 0 ? "value-zero" : "value-grid"}
+                    className={v === 50 ? "value-zero" : "value-grid"}
                   />
                   <text x="26" y={y(v) + 4} textAnchor="end">
-                    {v.toFixed(1)}
+                    {formatPercent(v)}
                   </text>
                 </g>
               ))}
               <path d={path} className="value-line" />
-              {points
-                .filter(
-                  (p) =>
-                    p.decision && p.decision.loss >= 0.05 && p.value !== null,
-                )
-                .map((p) => (
+              {marked.map((p) =>
+                p.value === null ? null : (
                   <circle
                     key={p.index}
                     cx={x(p.index)}
-                    cy={y(p.value!)}
+                    cy={y(winPercent(p.value))}
                     r="3"
                     className="value-drop"
                   />
-                ))}
+                ),
+              )}
               <line
                 x1={x(viewedIndex)}
                 x2={x(viewedIndex)}
@@ -220,10 +230,10 @@ export function ReplayValueChart({
                 y2="113"
                 className="value-cursor"
               />
-              {viewedPoint?.value != null && (
+              {estimate !== null && (
                 <circle
                   cx={x(viewedIndex)}
-                  cy={y(viewedPoint.value)}
+                  cy={y(estimate)}
                   r="4"
                   className="value-current"
                 />
@@ -240,8 +250,8 @@ export function ReplayValueChart({
               min="0"
               max={total}
               value={index}
-              aria-label="沿价值曲线查看局面"
-              aria-valuetext={`第 ${index} 步行动${moment === "before" ? "前" : "后"}，Value ${viewedPoint?.value == null ? "待评估" : format(viewedPoint.value)}`}
+              aria-label="沿胜率曲线查看局面"
+              aria-valuetext={`第 ${index} 步行动${moment === "before" ? "前" : "后"}，本轮预估胜率 ${estimate === null ? "待评估" : formatPercent(estimate)}`}
               onChange={(e) => onSeek(Number(e.target.value))}
             />
           </div>
@@ -256,18 +266,16 @@ export function ReplayValueChart({
                   ? t("开市局面")
                   : `第 ${index} 步 · ${point?.actor === 0 ? "你的行动" : point?.actor === 1 ? t("米拉的行动") : "新一轮"}`}
               </b>
-              {point?.decision ? (
-                <span
-                  className={point.decision.loss >= 0.005 ? "value-fell" : ""}
-                >
-                  {point.decision.loss >= 0.005
-                    ? `比建议低 ${point.decision.loss.toFixed(2)}`
+              {loss !== null ? (
+                <span className={loss > 0 ? "value-fell" : ""}>
+                  {loss > 0
+                    ? `比建议低 ${loss} 个百分点`
                     : "符合模型偏好"}
                 </span>
               ) : (
                 delta !== null && (
-                  <span className={delta < -0.005 ? "value-fell" : ""}>
-                    变化 {format(delta)}
+                  <span className={delta < 0 ? "value-fell" : ""}>
+                    变化 {formatChange(delta)}
                   </span>
                 )
               )}
@@ -307,27 +315,22 @@ export function ReplayValueChart({
                 <summary>优先复盘 · {drops.length} 手</summary>
                 <div className="replay-value-drops">
                   {drops.map((p) => (
-                    <button
-                      key={p.index}
-                      onClick={() => onSeek(p.index)}
-                    >
-                      第 {p.index} 步 <b>−{p.decision!.loss.toFixed(2)}</b>
+                    <button key={p.index} onClick={() => onSeek(p.index)}>
+                      第 {p.index} 步 <b>−{p.loss} 点</b>
                     </button>
                   ))}
                 </div>
               </details>
             )}
             <details className="replay-value-help">
-              <summary>怎么看评分</summary>
+              <summary>怎么看胜率</summary>
               <p>
-                牌桌默认显示这一手行动前，可切换查看行动后的变化。曲线光标与右上
-                Value
-                对应当前牌桌时点；对照栏的两个评分对应你这一手和模型建议。固定你的视角，越高越好。轮到你时取模型最佳行动
-                Q 值；你行动后显示所选行动 Q
-                值；对手行动后重新评估。红点表示你的选择低于模型最佳值至少
-                0.05，点击“优先复盘”查看。仅用你当时可见的信息；轮初尚未轮到你时留空，轮末用真实胜负
-                ±1（平局 0），各轮断开。模型为高难对手
-                v{DEFAULT_DOUZERO_VERSION}，其偏好仅供复盘参考。
+                百分比是模型对你赢下本轮的估计，平局按半胜计入。模型只使用你当时可见的信息。轮到你时按模型建议估计，行动后按实际选择估计，对手行动后重新评估。轮末按实际结果显示，赢为
+                100%，平局为 50%，输为 0%。
+              </p>
+              <p>
+                红点表示你的选择比模型建议低至少 {priorityDrop} 个百分点。估计来自高难模型
+                v{DEFAULT_DOUZERO_VERSION}，供复盘参考。
               </p>
             </details>
           </div>
