@@ -1,0 +1,17 @@
+.model-loading {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 7%, transparent);
+  font-size: 14px;
+}
+.model-loading progress {
+  display: block;
+  width: 100%;
+  height: 10px;
+  margin: 9px 0;
+  accent-color: #487c70;
+}
+.model-loading button {
+  margin-left: 10px;
+}

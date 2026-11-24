@@ -82,7 +82,7 @@ test("saved preferences migrate the old model level and write only the new name"
   }
 });
 
-test("the actual high difficulty worker uses the default v114824 model", async () => {
+test("the actual high difficulty worker uses the default TF hand Top5 average model", async () => {
   const bytes = readFileSync(DEFAULT_DOUZERO_MODEL_URL);
   const buffer = bytes.buffer.slice(
     bytes.byteOffset,
@@ -102,7 +102,7 @@ test("the actual high difficulty worker uses the default v114824 model", async (
   };
   globalThis.self = worker as any;
   globalThis.fetch = async (resource) => {
-    assert.match(String(resource), /\/legacy-round-114824\.bin$/);
+    assert.match(String(resource), /\/history-transformer-hand-top5-average\.bin$/);
     return new Response(buffer);
   };
   try {
@@ -113,7 +113,7 @@ test("the actual high difficulty worker uses the default v114824 model", async (
       });
       const reply = messages.at(-1);
       assert.equal(reply.error, undefined);
-      assert.match(reply.algorithm, /v114824/);
+      assert.match(reply.algorithm, /Top5平均/);
       assert.deepEqual(reply.action, expected);
       assert.equal(actionError(state, reply.action), null);
     }

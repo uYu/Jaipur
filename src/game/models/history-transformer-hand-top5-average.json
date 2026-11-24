@@ -1,0 +1,56 @@
+{
+  "name": "TF＋手牌 Top5平均",
+  "version": 241551,
+  "model_spec": {
+    "width": 512,
+    "depth": 5,
+    "history_encoder": "transformer256",
+    "auxiliary": "opponent-hand"
+  },
+  "model_average": {
+    "sources": [
+      {
+        "version": 191273,
+        "checkpoint": "/data/feiyu/code/Jaipur/campaigns/history-transformer-hand-h16-b3200-gpu7-72h-20261120/runs/history-transformer256-h16-b3200-aux-opponent-hand-gpu7-72h/model-191273.pt",
+        "sha256": "2e3b51dbea1414fa4ed15009119beeb44ae0120138e1c6b5d45ebd55ad00ab48",
+        "samples": 4675338321,
+        "developmentWinRate": 0.59,
+        "weight": 0.2
+      },
+      {
+        "version": 265849,
+        "checkpoint": "/data/feiyu/code/Jaipur/campaigns/history-transformer-hand-h16-b3200-gpu7-72h-20261120/runs/history-transformer256-h16-b3200-aux-opponent-hand-gpu7-72h/model-265849.pt",
+        "sha256": "0177dea9c292a943de962801622aa819489b4f4f9dda92aa9a8e45a08e886908",
+        "samples": 6649169080,
+        "developmentWinRate": 0.585,
+        "weight": 0.2
+      },
+      {
+        "version": 258915,
+        "checkpoint": "/data/feiyu/code/Jaipur/campaigns/history-transformer-hand-h16-b3200-gpu7-72h-20261120/runs/history-transformer256-h16-b3200-aux-opponent-hand-gpu7-72h/model-258915.pt",
+        "sha256": "85d698ea3dff84afe4c21c96003e7d1b217601be99b25332a9a1ac7df5bf74ac",
+        "samples": 6466327429,
+        "developmentWinRate": 0.555,
+        "weight": 0.2
+      },
+      {
+        "version": 156364,
+        "checkpoint": "/data/feiyu/code/Jaipur/campaigns/history-transformer-hand-h16-b3200-gpu7-72h-20261120/runs/history-transformer256-h16-b3200-aux-opponent-hand-gpu7-72h/model-156364.pt",
+        "sha256": "055e90caeab72d4a02638586b98483d14e724ae3573772b82b1250e4d5031ddd",
+        "samples": 3772291996,
+        "developmentWinRate": 0.535,
+        "weight": 0.2
+      },
+      {
+        "version": 241551,
+        "checkpoint": "/data/feiyu/code/Jaipur/campaigns/history-transformer-hand-h16-b3200-gpu7-72h-20261120/runs/history-transformer256-h16-b3200-aux-opponent-hand-gpu7-72h/model-241551.pt",
+        "sha256": "e1ff6209f5dc7ec6a9dfedcc2d09677f467e31d65a5a44a9866b901458e88d96",
+        "samples": 6008245889,
+        "developmentWinRate": 0.525,
+        "weight": 0.2
+      }
+    ],
+    "method": "Equal arithmetic mean, float64 accumulation then original dtype",
+    "inferenceOnly": true
+  }
+}

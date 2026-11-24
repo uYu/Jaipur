@@ -1,3 +1,5 @@
+import { ModelLoadingStatus } from "./components/ModelLoadingStatus.tsx";
+import type { ModelLoadProgress } from "./game/model-cache.ts";
 import { SkinSwitch, useSkin } from "./components/Skin.tsx";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
@@ -212,6 +214,55 @@ export default function App({
   const [error, setError] = useState(initial.error),
     [aiError, setAiError] = useState(""),
     [retry, setRetry] = useState(0);
+  const aiWorker = useRef<Worker | null>(null);
+  const aiRequestId = useRef(0);
+  const [modelProgress, setModelProgress] = useState<ModelLoadProgress | null>(
+    null,
+  );
+  const [modelLoadError, setModelLoadError] = useState("");
+  const getAiWorker = useCallback(() => {
+    aiWorker.current ??= new Worker(
+      new URL("./game/ai.worker.ts", import.meta.url),
+      { type: "module" },
+    );
+    return aiWorker.current;
+  }, []);
+  useEffect(
+    () => () => {
+      aiWorker.current?.terminate();
+      aiWorker.current = null;
+    },
+    [],
+  );
+  useEffect(() => {
+    if (
+      screen !== "menu" ||
+      menu !== "new" ||
+      opponentPolicy(difficulty) !== "model"
+    )
+      return;
+    const worker = getAiWorker();
+    const requestId = ++aiRequestId.current;
+    let active = true;
+    setModelLoadError("");
+    worker.onmessage = (event) => {
+      if (!active || event.data.requestId !== requestId) return;
+      if (event.data.modelProgress) setModelProgress(event.data.modelProgress);
+      if (event.data.error) setModelLoadError(event.data.error);
+    };
+    worker.onerror = () => {
+      if (!active) return;
+      worker.terminate();
+      if (aiWorker.current === worker) aiWorker.current = null;
+      setModelLoadError("对手模型暂时无法加载，请重试。");
+    };
+    worker.postMessage({ kind: "preload", requestId });
+    return () => {
+      active = false;
+      worker.onmessage = null;
+      worker.onerror = null;
+    };
+  }, [screen, menu, difficulty, retry, getAiWorker]);
   const [transition, setTransition] = useState<ActionTransition | null>(null);
   const [turnIntro, setTurnIntro] = useState<"round" | "resume" | null>(null);
   const [numberFrame, setNumberFrame] = useState<{
@@ -320,16 +371,20 @@ export default function App({
       transition
     )
       return;
-    const worker = new Worker(new URL("./game/ai.worker.ts", import.meta.url), {
-      type: "module",
-    });
+    const worker = getAiWorker();
+    const requestId = ++aiRequestId.current;
     const activeDifficulty = save?.difficulty ?? difficulty;
     const usesModel = opponentPolicy(activeDifficulty) === "model";
     let active = true;
     const started = Date.now();
     let timer: ReturnType<typeof setTimeout>;
     worker.onmessage = (e) => {
-      if (!active) return;
+      if (!active || e.data.requestId !== requestId) return;
+      if (e.data.modelProgress) {
+        setModelProgress(e.data.modelProgress);
+        return;
+      }
+      if (!e.data.action && !e.data.error) return;
       if (e.data.error) {
         setAiError(e.data.error);
         return;
@@ -342,9 +397,12 @@ export default function App({
       );
     };
     worker.onerror = () => {
+      worker.terminate();
+      if (aiWorker.current === worker) aiWorker.current = null;
       if (active) setAiError("米拉暂时无法完成思考，请重试。");
     };
     worker.postMessage({
+      requestId,
       observation: observe(game, save?.events, usesModel ? 0.75 : false),
       history:
         usesModel && save
@@ -355,9 +413,10 @@ export default function App({
     return () => {
       active = false;
       clearTimeout(timer);
-      worker.terminate();
+      worker.onmessage = null;
+      worker.onerror = null;
     };
-    // A fresh worker receives only the acting player's observation for each committed turn.
+    // Reuse the model worker; request IDs reject stale results. Only public acting-player observations are sent.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     game,
@@ -467,7 +526,10 @@ export default function App({
       ? !tutorialScores
       : screen === "game" && explainedResult !== resultKey);
   const showResultBanner =
-    screen === "game" && !!viewed && viewed.phase !== "playing" && !showEndNotice;
+    screen === "game" &&
+    !!viewed &&
+    viewed.phase !== "playing" &&
+    !showEndNotice;
   const closeResult = () => {
     if (teaching) {
       setTutorialStep(TUTORIAL_LESSONS.length);
@@ -808,9 +870,7 @@ export default function App({
         active={active}
         separateOverview={bazaar}
         hint={
-          showOpeningHint
-            ? t("市场拿货、手牌卖货，或等量换货。")
-            : undefined
+          showOpeningHint ? t("市场拿货、手牌卖货，或等量换货。") : undefined
         }
         status={turnStatus}
         thinking={!teaching && viewed.current === 1 && !transition && !aiError}
@@ -867,7 +927,8 @@ export default function App({
                 <h1>
                   {t("满城好货，")}
                   <br />
-                  {t("只等")}<span>{t("好眼光。")}</span>
+                  {t("只等")}
+                  <span>{t("好眼光。")}</span>
                 </h1>
                 <p className="menu-intro">
                   {t("在粉红之城，做一场漂亮生意。")}
@@ -963,7 +1024,9 @@ export default function App({
                           <span>
                             <b>{wins === 1 ? "1 局定胜负" : "标准三局两胜"}</b>
                             <small>
-                              {wins === 1 ? "轻松开一局" : t("先赢两轮，角逐印章")}
+                              {wins === 1
+                                ? "轻松开一局"
+                                : t("先赢两轮，角逐印章")}
                             </small>
                           </span>
                         </label>
@@ -977,6 +1040,13 @@ export default function App({
                       onChange={setDifficulty}
                     />
                   </label>
+                  {opponentPolicy(difficulty) === "model" && (
+                    <ModelLoadingStatus
+                      progress={modelProgress}
+                      error={modelLoadError}
+                      onRetry={() => setRetry((n) => n + 1)}
+                    />
+                  )}
                   <fieldset className="match-format information-mode">
                     <legend>信息模式</legend>
                     <div className="format-options">
@@ -1006,7 +1076,9 @@ export default function App({
                       ))}
                     </div>
                     <p className="information-mode-note">
-                      {t("辅助模式显示对手的货物得分、骆驼和已知手牌；奖励面值与未公开的手牌仍保密。")}
+                      {t(
+                        "辅助模式显示对手的货物得分、骆驼和已知手牌；奖励面值与未公开的手牌仍保密。",
+                      )}
                     </p>
                   </fieldset>
                   {save && (
@@ -1038,20 +1110,22 @@ export default function App({
             </footer>
           </section>
           <section className="menu-art menu-illustration" aria-hidden="true">
-            {!hardware && <picture>
-              <source
-                media="(max-width: 860px)"
-                srcSet={menuMobileIllustration}
-              />
-              <img
-                className="menu-palace-image"
-                src={menuIllustration}
-                alt=""
-                width="1000"
-                height="1250"
-                fetchPriority="high"
-              />
-            </picture>}
+            {!hardware && (
+              <picture>
+                <source
+                  media="(max-width: 860px)"
+                  srcSet={menuMobileIllustration}
+                />
+                <img
+                  className="menu-palace-image"
+                  src={menuIllustration}
+                  alt=""
+                  width="1000"
+                  height="1250"
+                  fetchPriority="high"
+                />
+              </picture>
+            )}
             <div className="menu-art-location">{t("RAJASTHAN, INDIA")}</div>
             <div className="menu-art-caption">{t("买进风物，卖出眼光。")}</div>
           </section>
@@ -1282,7 +1356,11 @@ export default function App({
                   )
                 }
               />
-              <div className="market-zone" role="group" aria-label={t("公共集市")}>
+              <div
+                className="market-zone"
+                role="group"
+                aria-label={t("公共集市")}
+              >
                 {!bazaar && <MarketArchitecture />}
                 <div className="table-supply">
                   <MobileSupply
@@ -1441,6 +1519,9 @@ export default function App({
               {bazaar
                 ? !teaching && actionPanel && <ActionOverview />
                 : actionPanel}
+              {!teaching && viewed.current === 1 && !aiError && (
+                <ModelLoadingStatus progress={modelProgress} />
+              )}
               {aiError && !teaching && (
                 <div className="pause-note" role="alert">
                   {t(aiError)}
@@ -1487,11 +1568,7 @@ export default function App({
             </span>
           </footer>
           {screen === "replay" && (
-            <div
-              className="replay-bar"
-              role="group"
-              aria-label="比赛回放控制"
-            >
+            <div className="replay-bar" role="group" aria-label="比赛回放控制">
               <button
                 aria-label="上一步"
                 disabled={!replayIndex && !replayAnimating}
